@@ -1,0 +1,37 @@
+import {Navigate, useLocation} from "react-router-dom";
+import {useAuth} from "../context/AuthContext"; // must expose {user, loading}
+import {useEffect, useState} from "react";
+import {doc, getDoc} from "firebase/firestore";
+import {db} from "../lib/firebase";
+
+export default function OwnerRoute({children}) {
+    const {user, loading} = useAuth();
+    const [roleOk, setRoleOk] = useState(null);
+    const location = useLocation();
+
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            if (!user) return setRoleOk(false);
+            // Prefer custom claim first
+            if (user?.customClaims?.owner === true) return setRoleOk(true);
+            // Fallback: check owners/{uid} doc exists (and optionally role === "owner")
+            try {
+                const snap = await getDoc(doc(db, "owners", user.uid));
+                if (!alive) return;
+                setRoleOk(snap.exists() && (snap.data()?.role ?? "owner") === "owner");
+            } catch {
+                if (alive) setRoleOk(false);
+            }
+        })();
+        return () => {
+            alive = false;
+        };
+    }, [user]);
+
+    if (loading || roleOk === null) return <div className="p-6">Loading…</div>;
+    if (!user) return <Navigate to="/signin" replace state={{from: location}}/>;
+    if (!roleOk) return <Navigate to="/" replace/>;
+
+    return children;
+}

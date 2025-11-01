@@ -1,0 +1,217 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  collection, query, orderBy, onSnapshot,
+  doc, updateDoc, deleteDoc, serverTimestamp
+} from "firebase/firestore";
+import { Link } from "react-router-dom";
+import { db } from "../lib/firebase";
+import {deleteOwner} from "../lib/admin.js";
+
+function Row({ item, onSave, onDelete, isDeleting }) {
+  const [edit, setEdit] = useState(false);
+  const [form, setForm] = useState({
+    name: item.name || "",
+    city: item.city || "",
+    phone: item.phone || "",
+    business: item.business || "",
+    email: item.email || "",
+    status: item.status || "active",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!edit) setForm({
+      name: item.name || "", city: item.city || "",
+      phone: item.phone || "", business: item.business || "",
+        email: item.email || "", status: item.status || ""
+    });
+  }, [edit, item]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave(item.id, form);
+      setEdit(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const rowClass = isDeleting ? "opacity-60 pointer-events-none" : "";
+
+
+  return (
+    <tr className={`align-top ${rowClass}`}>
+       <td className="p-3 text-sm text-gray-500">{item.id.slice(0,6)}…</td>
+
+        {/* New Logo cell */}
+      <td className="p-3">
+          <img
+            src={item.logoUrl || "https://via.placeholder.com/64?text=Logo"}
+            alt={item.business || item.name}
+            className="w-12 h-12 object-cover rounded-lg border bg-white"
+            />
+      </td>
+      <td className="p-3">
+        {edit ? (
+          <input className="border rounded-lg px-2 py-1 w-full"
+                 value={form.name} onChange={e=>setForm({...form, name:e.target.value})}/>
+        ) : <div className="font-medium">{item.name}</div>}
+      </td>
+      <td className="p-3">
+        {edit ? (
+          <input className="border rounded-lg px-2 py-1 w-full"
+                 value={form.city} onChange={e=>setForm({...form, city:e.target.value})}/>
+        ) : item.city}
+      </td>
+      <td className="p-3">
+        {edit ? (
+          <input className="border rounded-lg px-2 py-1 w-full"
+                 value={form.phone} onChange={e=>setForm({...form, phone:e.target.value})}/>
+        ) : item.phone}
+      </td>
+      <td className="p-3">
+        {edit ? (
+          <input className="border rounded-lg px-2 py-1 w-full"
+                 value={form.business} onChange={e=>setForm({...form, business:e.target.value})}/>
+        ) : item.business}
+      </td>
+      <td className="p-3">
+       <span className={`text-xs px-2 py-0.5 rounded ${
+           item.status === 'disabled' ? 'bg-gray-200 text-gray-700' : 'bg-emerald-100 text-emerald-700'
+        }`}>
+          {item.status || 'active'}
+       </span>
+      </td>
+
+      <td className="p-3">
+        {edit ? (<input className="border rounded-lg px-2 py-1 w-full" value={form.email} onChange={e=>setForm({...form, email:e.target.value})}/>
+            ) : item.email}
+      </td>
+      <td className="p-3 text-right">
+        {!edit ? (
+          <div className="flex gap-2 justify-end">
+            <Link to={`/owners/${item.id}`} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">
+                Open
+            </Link>
+            <button className="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
+                    onClick={()=>setEdit(true)}>Edit</button>
+            <button className="px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:opacity-90 disabled:opacity-60"
+                  onClick={() => onDelete(item.id)}
+                  disabled={isDeleting}>
+                  {isDeleting ? (
+                      <span className="inline-flex items-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-transparent"></span>
+                        Deleting…
+                      </span>
+                  ) : (
+                      "Delete"
+                  )}
+              </button>
+          </div>
+        ) : (
+          <div className="flex gap-2 justify-end">
+            <button className="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
+                    onClick={()=>setEdit(false)} disabled={saving}>Cancel</button>
+            <button className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:opacity-90 disabled:opacity-60"
+                    onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+export default function Owners() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+
+  useEffect(() => {
+    const q = query(collection(db, "owners"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    }, (e) => {
+      console.error(e);
+      setErr("Failed to load owners. Check Firestore rules and project config.");
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  async function save(id, data) {
+    // simple client-side validation
+    if (!data.name || !data.city || !data.phone || !data.business) {
+      throw new Error("All fields are required.");
+    }
+    await updateDoc(doc(db, "owners", id), {
+      name: data.name,
+      city: data.city,
+      phone: data.phone,
+      email: data.email,
+      status: data.status,
+      business: data.business,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  async function remove(id) {
+    if (!confirm("Delete this owner? This cannot be undone.")) return;
+    setDeletingId(id);
+    try {
+      await deleteOwner(id);
+      // refresh your local list or re-fetch:
+      // await loadOwners();
+    } catch (e) {
+        alert(e.message);
+    } finally {
+        setDeletingId(null);
+    }
+  }
+
+  const empty = useMemo(() => !loading && items.length === 0, [loading, items]);
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Owners</h1>
+        <a href="/create-owner" className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:opacity-90">
+          + New Owner
+        </a>
+      </div>
+
+      {err && <div className="mb-4 text-rose-600">{err}</div>}
+
+      {loading ? (
+        <div className="glass p-6 animate-pulse">Loading owners…</div>
+      ) : empty ? (
+        <div className="glass p-6">No owners yet. <a className="underline" href="/create-owner">Create one</a>.</div>
+      ) : (
+        <div className="overflow-x-auto glass">
+          <table className="min-w-full">
+            <thead>
+              <tr className="text-left text-sm text-gray-500">
+                <th className="p-3">ID</th>
+                <th className="p-3">Logo</th>
+                <th className="p-3">Name</th>
+                <th className="p-3">City</th>
+                <th className="p-3">Phone</th>
+                <th className="p-3">Business</th>
+                <th className="p-3">status</th>
+                <th className="p-3">email</th>
+                <th className="p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it) => (
+                <Row key={it.id} item={it} onSave={save} onDelete={remove} isDeleting={deletingId === it.id} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

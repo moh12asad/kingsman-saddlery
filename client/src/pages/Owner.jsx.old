@@ -1,0 +1,253 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { db, storage } from "../lib/firebase";
+import OwnerServices from "../components/OwnerServices";
+import {
+  doc, getDoc, updateDoc, serverTimestamp, deleteDoc
+} from "firebase/firestore";
+import {
+  ref, uploadBytesResumable, getDownloadURL, deleteObject
+} from "firebase/storage";
+
+export default function Owner() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "", city: "", phone: "", business: "", email:"", status:"" , logoUrl: ""
+  });
+  const [logoFile, setLogoFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
+  const [msg, setMsg] = useState(null);
+
+  const ownerDocRef = useMemo(() => doc(db, "owners", id), [id]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const snap = await getDoc(ownerDocRef);
+        if (!snap.exists()) {
+          setErr("Owner not found.");
+          return;
+        }
+        const data = snap.data();
+        setFormData({
+          name: data.name || "",
+          city: data.city || "",
+          phone: data.phone || "",
+          business: data.business || "",
+          email: data.email || "",
+          status: data.status || "active",
+          logoUrl: data.logoUrl || "",
+        });
+      } catch (e) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [ownerDocRef]);
+
+  function handleChange(e) {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  }
+
+  function handleFile(e) {
+    const file = e.target.files?.[0] || null;
+    setLogoFile(file);
+    setPreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    setErr(null);
+    setMsg(null);
+    setProgress(0);
+
+    try {
+      let newLogoUrl = formData.logoUrl;
+
+      // If user picked a new image, upload it and optionally delete the old one
+      if (logoFile) {
+        if (!logoFile.type.startsWith("image/")) {
+          throw new Error("Logo must be an image.");
+        }
+
+        // Optional: delete previous file if it exists and lives under our owners/{id}/ path
+        try {
+          if (formData.logoUrl && formData.logoUrl.includes(`/owners%2F${id}%2F`)) {
+            // We only know the full URL, so just ignore deletion if it fails.
+            const url = new URL(formData.logoUrl);
+            // storage path is after `/o/` and before `?`
+            const pathEncoded = url.pathname.split("/o/")[1];
+            const path = decodeURIComponent(pathEncoded);
+            await deleteObject(ref(storage, path));
+          }
+        } catch (_) { /* ignore cleanup errors */ }
+
+        const ext = (logoFile.name.split(".").pop() || "png").toLowerCase();
+        const storagePath = `owners/${id}/logo.${ext}`;
+        const storageRef = ref(storage, storagePath);
+
+        const task = uploadBytesResumable(storageRef, logoFile, {
+          contentType: logoFile.type
+        });
+
+        await new Promise((resolve, reject) => {
+          task.on("state_changed",
+            (snap) => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+            reject,
+            resolve
+          );
+        });
+
+        newLogoUrl = await getDownloadURL(storageRef);
+      }
+
+      await updateDoc(ownerDocRef, {
+        name: formData.name,
+        city: formData.city,
+        phone: formData.phone,
+        business: formData.business,
+        email: formData.email,
+        status: formData.status,
+        logoUrl: newLogoUrl || null,
+        updatedAt: serverTimestamp(),
+      });
+
+      setMsg("Saved!");
+      if (logoFile) {
+        setFormData(f => ({ ...f, logoUrl: newLogoUrl }));
+        setLogoFile(null);
+        setPreview(null);
+        setProgress(0);
+      }
+    } catch (e) {
+      setErr(e.message || "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm("Delete this owner? This cannot be undone.")) return;
+    try {
+      // Best-effort: delete logo file if it belongs to this owner folder
+      if (formData.logoUrl && formData.logoUrl.includes(`/owners%2F${id}%2F`)) {
+        try {
+          const url = new URL(formData.logoUrl);
+          const pathEncoded = url.pathname.split("/o/")[1];
+          const path = decodeURIComponent(pathEncoded);
+          await deleteObject(ref(storage, path));
+        } catch (_) {}
+      }
+      await deleteDoc(ownerDocRef);
+      navigate("/owners");
+    } catch (e) {
+      setErr(e.message || "Delete failed.");
+    }
+  }
+
+  if (loading) return <div className="max-w-6xl mx-auto px-4 py-12 text-gray-500">Loading…</div>;
+  if (err) return (
+    <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="text-red-600 mb-4">Error: {err}</div>
+      <Link to="/owners" className="underline">Back to Owners</Link>
+    </div>
+  );
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Edit Owner</h1>
+        <Link to="/owners" className="text-sm underline">← Back to Owners</Link>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="glass p-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium">Name</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange}
+                     required className="w-full mt-1 p-2 border rounded-lg" />
+            </div>
+            <div>
+              <label className="block font-medium">City</label>
+              <input type="text" name="city" value={formData.city} onChange={handleChange}
+                     required className="w-full mt-1 p-2 border rounded-lg" />
+            </div>
+
+            <div>
+             <label className="block font-medium">Email</label>
+             <input type="text" name="email" value={formData.email} onChange={handleChange}
+                required className="w-full mt-1 p-2 border rounded-lg" />
+            </div>
+
+            <div>
+              <label className="block font-medium">Phone</label>
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange}
+                     required className="w-full mt-1 p-2 border rounded-lg" />
+            </div>
+            <div>
+              <label className="block font-medium">Business</label>
+              <input type="text" name="business" value={formData.business} onChange={handleChange}
+                     required className="w-full mt-1 p-2 border rounded-lg" />
+            </div>
+
+              <div>
+                  <label className="block font-medium">Status</label>
+                  <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleChange}
+                      className="w-full mt-1 p-2 border rounded-lg">
+                      <option value="active">Active</option>
+                      <option value="disabled">Disabled</option>
+                  </select>
+              </div>
+
+          </div>
+        </div>
+
+        <div className="glass p-4">
+          <label className="block font-medium">Logo</label>
+          <div className="flex items-center gap-4 mt-2">
+            <img
+              src={preview || formData.logoUrl || "https://via.placeholder.com/96?text=Logo"}
+              alt="logo"
+              className="w-24 h-24 object-cover rounded-lg border"
+            />
+            <input type="file" accept="image/*" onChange={handleFile} />
+          </div>
+          {progress > 0 && progress < 100 && (
+            <div className="mt-2 text-sm text-gray-600">Uploading… {progress}%</div>
+          )}
+          {formData.logoUrl && !preview && (
+            <div className="mt-2 text-xs text-gray-500 break-all">{formData.logoUrl}</div>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button type="submit" disabled={saving}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:opacity-90 disabled:opacity-60">
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          <button type="button" onClick={handleDelete}
+                  className="px-4 py-2 rounded-lg border hover:bg-gray-50">
+            Delete owner
+          </button>
+        </div>
+      </form>
+
+      <OwnerServices ownerId={id} />
+      
+      {msg && <div className="mt-4 text-green-600">{msg}</div>}
+      {err && <div className="mt-4 text-red-600">{err}</div>}
+    </div>
+  );
+}

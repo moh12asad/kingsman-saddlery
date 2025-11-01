@@ -1,0 +1,19 @@
+# client/.env.local  (Vite requires VITE_ prefix)
+VITE_FIREBASE_API_KEY=AIzaSyAf26pgR2EZ2I2K2jj8sLYJBNAjk0buS14
+VITE_FIREBASE_AUTH_DOMAIN=bookappdev-f6109.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=bookappdev-f6109
+VITE_FIREBASE_APP_ID=1:919773593593:web:d112447fd532ef1d5e8728
+VITE_FIREBASE_MESSAGING_SENDER_ID=919773593593
+VITE_FIREBASE_STORAGE_BUCKET=bookappdev-f6109.appspot.com
+
+# Comma-separated emails allowed to view the Admin Panel (client-side gate)
+VITE_ADMIN_EMAILS=moh12asad10@gmail.com,another.admin@example.com
+
+# server/.env
+PORT=5000
+# Option A: Path to service account JSON (Recommended for security)
+GOOGLE_APPLICATION_CREDENTIALS=./firebase-service-account.json
+# Option B: Or paste the whole JSON as a single line:
+# FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account", ...}
+# Note: Using GOOGLE_APPLICATION_CREDENTIALS (Option A) is strongly recommended for security
+# and keeping sensitive keys out of your code/environment file directly.

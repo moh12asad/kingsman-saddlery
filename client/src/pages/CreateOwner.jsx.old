@@ -1,0 +1,263 @@
+import { useState } from "react";
+import { db, storage, auth, getSecondaryAuth } from "../lib/firebase";
+import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import {
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    signOut as signOutSecondary,
+} from "firebase/auth";
+
+export default function CreateOwner() {
+    const [formData, setFormData] = useState({
+        name: "",
+        city: "",
+        phone: "",
+        business: "",
+        email: "",
+        status: "disabled",
+        logoUrl: "",
+        role:"owner"
+    });
+
+    const [logoFile, setLogoFile] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const [progress, setProgress] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [successMsg, setSuccessMsg] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
+
+    function handleChange(e) {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
+
+    function handleFile(e) {
+        const file = e.target.files?.[0] || null;
+        setLogoFile(file);
+        setPreview(file ? URL.createObjectURL(file) : null);
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        setLoading(true);
+        setErrorMsg(null);
+        setSuccessMsg(null);
+        setProgress(0);
+
+        const email = formData.email?.trim().toLowerCase();
+
+        if (!email) {
+            setLoading(false);
+            setErrorMsg("Email is required.");
+            return;
+        }
+
+        let uid = null;
+        const { secondaryAuth, destroy } = await getSecondaryAuth();
+
+        try {
+            // 1) Create Auth user on secondary app so admin session stays intact on primary app
+            const tempPassword = Math.random().toString(36).slice(-12);
+            const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPassword);
+            uid = cred.user.uid;
+
+            // 2) Immediately sign out the secondary session and tear down the app
+            await signOutSecondary(secondaryAuth);
+            await destroy();
+
+            // 3) Create Firestore document with the SAME uid as doc id
+            await setDoc(doc(db, "owners", uid), {
+                name: formData.name,
+                city: formData.city,
+                phone: formData.phone,
+                business: formData.business,
+                email,
+                status: formData.status || "active",
+                logoUrl: null, // we’ll fill after upload
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                role: "owner"
+            });
+
+            // 4) Upload logo if provided
+            if (logoFile) {
+                if (!logoFile.type?.startsWith?.("image/")) {
+                    throw new Error("Logo must be an image file.");
+                }
+                const ext = (logoFile.name.split(".").pop() || "png").toLowerCase();
+                const storagePath = `owners/${uid}/logo.${ext}`;
+                const storageRef = ref(storage, storagePath);
+
+                const task = uploadBytesResumable(storageRef, logoFile, {
+                    contentType: logoFile.type,
+                });
+
+                await new Promise((resolve, reject) => {
+                    task.on(
+                        "state_changed",
+                        (snap) => {
+                            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                            setProgress(pct);
+                        },
+                        reject,
+                        resolve
+                    );
+                });
+
+                const url = await getDownloadURL(storageRef);
+                await updateDoc(doc(db, "owners", uid), {
+                    logoUrl: url,
+                    updatedAt: serverTimestamp(),
+                });
+            }
+
+            // 5) Send first-time password setup email (same API as “Forgot password”)
+            await sendPasswordResetEmail(auth, email, {
+                // Optional: where to redirect after they set a password
+                url: `${window.location.origin}/welcome?email=${encodeURIComponent(email)}`,
+                handleCodeInApp: false, // use Firebase’s hosted page unless you have a custom handler
+            });
+
+            setSuccessMsg("Owner created and password setup email sent.");
+            setFormData({
+                name: "",
+                city: "",
+                phone: "",
+                business: "",
+                email: "",
+                status: "disabled",
+                logoUrl: "",
+                role: "owner"
+            });
+            setLogoFile(null);
+            setPreview(null);
+            setProgress(0);
+        } catch (err) {
+            console.error("Error creating owner:", err);
+            // Common helpful messages
+            if (err?.code === "auth/email-already-in-use") {
+                setErrorMsg("This email is already in use.");
+            } else if (err?.code === "auth/invalid-email") {
+                setErrorMsg("Invalid email address.");
+            } else {
+                setErrorMsg(err?.message || "Failed to add owner. Please try again.");
+            }
+
+            // try to clean secondary app if something threw before destroy()
+            try {
+                await signOutSecondary(secondaryAuth);
+                await destroy();
+            } catch {}
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <div className="max-w-xl mx-auto px-4 py-12">
+            <h1 className="text-2xl font-bold mb-6">Create New Owner</h1>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block font-medium">Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        className="w-full mt-1 p-2 border rounded-lg"
+                    />
+                </div>
+
+                <div>
+                    <label className="block font-medium">City</label>
+                    <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        required
+                        className="w-full mt-1 p-2 border rounded-lg"
+                    />
+                </div>
+
+                <div>
+                    <label className="block font-medium">Email</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className="w-full mt-1 p-2 border rounded-lg"
+                    />
+                </div>
+
+                <div>
+                    <label className="block font-medium">Status</label>
+                    <select
+                        name="status"
+                        value={formData.status}
+                        onChange={handleChange}
+                        className="w-full mt-1 p-2 border rounded-lg"
+                    >
+                        <option value="active">Active</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block font-medium">Phone Number</label>
+                    <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        required
+                        className="w-full mt-1 p-2 border rounded-lg"
+                    />
+                </div>
+
+                <div>
+                    <label className="block font-medium">Business Name</label>
+                    <input
+                        type="text"
+                        name="business"
+                        value={formData.business}
+                        onChange={handleChange}
+                        required
+                        className="w-full mt-1 p-2 border rounded-lg"
+                    />
+                </div>
+
+                {/* Logo upload */}
+                <div>
+                    <label className="block font-medium">Logo (image)</label>
+                    <input type="file" accept="image/*" onChange={handleFile} className="mt-1" />
+                    {preview && (
+                        <img
+                            src={preview}
+                            alt="preview"
+                            className="mt-3 h-20 w-20 object-cover rounded-lg border"
+                        />
+                    )}
+                    {progress > 0 && progress < 100 && (
+                        <div className="mt-2 text-sm text-gray-600">Uploading… {progress}%</div>
+                    )}
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:opacity-90 disabled:opacity-60"
+                >
+                    {loading ? "Saving..." : "Create Owner"}
+                </button>
+            </form>
+
+            {successMsg && <p className="mt-4 text-green-600">{successMsg}</p>}
+            {errorMsg && <p className="mt-4 text-red-600">{errorMsg}</p>}
+        </div>
+    );
+}

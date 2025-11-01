@@ -1,0 +1,157 @@
+import { useEffect, useState } from "react";
+import { db } from "../lib/firebase";
+import {
+  collection, addDoc, query, orderBy,
+  onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc
+} from "firebase/firestore";
+
+export default function OwnerServices({ ownerId }) {
+  const [services, setServices] = useState([]);
+  const [form, setForm] = useState({ name: "", duration: "", price: "", available: true });
+  const [loading, setLoading] = useState(false);
+
+  // Load services in real-time
+  useEffect(() => {
+    const q = query(
+      collection(db, "owners", ownerId, "services"),
+      orderBy("createdAt", "desc")
+    );
+    const unsub = onSnapshot(q, snap => {
+      setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, [ownerId]);
+
+  const toNumberOrNull = (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  async function addService(e) {
+    e.preventDefault();
+    if (!form.name || !form.duration) return;
+
+    const duration = parseInt(form.duration, 10);
+    const priceNum = toNumberOrNull(form.price);
+
+    if (!Number.isInteger(duration) || duration <= 0) {
+      alert("Duration must be a positive integer (minutes).");
+      return;
+    }
+    if (form.price !== "" && (priceNum === null || priceNum < 0)) {
+      alert("Price must be a non-negative number.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await addDoc(collection(db, "owners", ownerId, "services"), {
+        name: form.name,
+        duration,                         // minutes
+        price: priceNum,                  // number or null
+        available: !!form.available,      // boolean
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setForm({ name: "", duration: "", price: "", available: true });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function removeService(id) {
+    if (!confirm("Delete this service?")) return;
+    await deleteDoc(doc(db, "owners", ownerId, "services", id));
+  }
+
+  async function toggleAvailability(svc) {
+    await updateDoc(doc(db, "owners", ownerId, "services", svc.id), {
+      available: !svc.available,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  return (
+    <div className="mt-10">
+      <h2 className="text-xl font-bold mb-4">Services</h2>
+
+      {/* Create form */}
+      <form onSubmit={addService} className="grid gap-2 md:grid-cols-[1fr_130px_130px_130px_120px] md:items-center mb-6">
+        <input
+          type="text"
+          placeholder="Service name"
+          value={form.name}
+          onChange={e => setForm({ ...form, name: e.target.value })}
+          className="border rounded-lg px-3 py-2"
+          required
+        />
+        <input
+          type="number"
+          placeholder="Duration (min)"
+          value={form.duration}
+          onChange={e => setForm({ ...form, duration: e.target.value })}
+          className="border rounded-lg px-3 py-2"
+          min={1}
+          step={1}
+          required
+        />
+        <input
+          type="number"
+          placeholder="Price"
+          value={form.price}
+          onChange={e => setForm({ ...form, price: e.target.value })}
+          className="border rounded-lg px-3 py-2"
+          min={0}
+          step="0.01"
+        />
+        <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={form.available}
+            onChange={e => setForm({ ...form, available: e.target.checked })}
+          />
+          Available
+        </label>
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:opacity-90 disabled:opacity-60"
+        >
+          {loading ? "Adding…" : "Add"}
+        </button>
+      </form>
+
+      {/* List */}
+      <ul className="space-y-2">
+        {services.map(s => (
+          <li key={s.id} className="flex justify-between items-center p-3 border rounded-lg">
+            <div className="text-sm">
+              <span className="font-medium">{s.name}</span>
+              {" — "}
+              {s.duration} min
+              {typeof s.price === "number" ? <span>{` — $${s.price.toFixed(2)}`}</span> : null}
+              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${s.available ? "bg-emerald-100 text-emerald-700" : "bg-gray-200 text-gray-700"}`}>
+                {s.available ? "Available" : "Unavailable"}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => toggleAvailability(s)}
+                className="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
+              >
+                Toggle
+              </button>
+              <button
+                onClick={() => removeService(s.id)}
+                className="px-3 py-1.5 bg-rose-600 text-white rounded-lg hover:opacity-90"
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

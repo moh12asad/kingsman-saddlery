@@ -1,0 +1,57 @@
+# 1) Install
+cd server && npm i
+cd ../client && npm i
+cd ..
+
+# 2) Env files
+cp .env.example client/.env.local
+cp server/.env.example server/.env
+# Fill in values as described earlier (Firebase config + admin emails)
+
+# 3) Start backend
+cd server
+npm run dev
+# Server on http://localhost:5000
+
+# 4) Start frontend (new terminal)
+cd client
+npm run dev
+# Vite on http://localhost:5173
+
+
+Project hierarchy:
+your-project/
+├─ README.md
+├─ .gitignore
+├─ .env.example
+├─ client/                     # React (Vite) app
+│  ├─ index.html
+│  ├─ package.json
+│  ├─ postcss.config.js
+│  ├─ tailwind.config.js
+│  ├─ vite.config.js
+│  └─ src/
+│     ├─ main.jsx
+│     ├─ App.jsx
+│     ├─ routes/router.jsx
+│     ├─ styles/index.css
+│     ├─ lib/firebase.js
+│     ├─ context/AuthContext.jsx
+│     ├─ components/
+│     │  ├─ Navbar.jsx
+│     │  ├─ Footer.jsx
+│     │  ├─ Hero.jsx
+│     │  ├─ FeatureCards.jsx
+│     │  └─ ProtectedRoute.jsx
+│     └─ pages/
+│        ├─ Home.jsx
+│        ├─ Admin.jsx
+│        └─ NotFound.jsx
+└─ server/                     # Node/Express backend
+   ├─ package.json
+   ├─ server.js
+   ├─ .env.example
+   ├─ middlewares/
+   │  └─ auth.js
+   └─ routes/
+      └─ admin.js
