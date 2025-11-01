@@ -6,7 +6,8 @@ import App from "./App.jsx";
 
 // your existing pages
 import Home from "./pages/Home.jsx"; // adjust to your actual landing page
-
+// ✅ Add this line to load Tailwind
+import "./styles/index.css";
 // admin pages you added
 import AdminLayout from "./pages/Admin/index.jsx";
 import AdminUsers from "./pages/Admin/Users.jsx";
