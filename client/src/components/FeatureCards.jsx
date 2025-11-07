@@ -1,14 +1,14 @@
 const features = [
-  { title: "Google SSO", desc: "Secure sign-in via Firebase Authentication." },
-  { title: "Protected Admin", desc: "Only allowed emails can access." },
-  { title: "Firestore Ready", desc: "Add collections/tables later with zero friction." },
-  { title: "Node API", desc: "Verify tokens server-side for secure endpoints." }
+  { title: "Saddles", desc: "Dressage, jumping, and trail saddles for every rider." },
+  { title: "Bridles & Bits", desc: "Quality leatherwork and ergonomic designs for comfort." },
+  { title: "Blankets & Pads", desc: "Protective layers for stable, turnout, and training." },
+  { title: "Care & Grooming", desc: "Brushes, shampoos, conditioners, and daily essentials." }
 ];
 
 export default function FeatureCards() {
   return (
-    <section className="max-w-6xl mx-auto px-4 py-16">
-      <h2 className="text-2xl font-bold mb-6">What’s Inside</h2>
+    <section id="shop" className="max-w-6xl mx-auto px-4 py-16">
+      <h2 className="text-2xl font-bold mb-6">Shop by Category</h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {features.map((f, i) => (
           <div key={i} className="glass p-5 shadow">
