@@ -1,0 +1,103 @@
+import { Router } from "express";
+import admin from "firebase-admin";
+import { requireRole } from "../middlewares/roles.js";
+import { verifyFirebaseToken } from "../middlewares/auth.js";
+
+const db = admin.firestore();
+const router = Router();
+
+router.use(verifyFirebaseToken);
+
+router.get("/", requireRole("ADMIN"), async (_req, res) => {
+  try {
+    const snap = await db
+      .collection("orders")
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
+
+    const orders = snap.docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt?.toDate?.() ?? null;
+      const updatedAt = data.updatedAt?.toDate?.() ?? null;
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: createdAt ? createdAt.toISOString() : null,
+        updatedAt: updatedAt ? updatedAt.toISOString() : null,
+      };
+    });
+
+    res.json({ orders });
+  } catch (error) {
+    console.error("orders.list error", error);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+router.post("/", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const {
+      customerId = "",
+      customerName = "",
+      customerEmail = "",
+      items = [],
+      status = "pending",
+      notes = "",
+      subtotal,
+      tax,
+      total,
+      metadata = {},
+    } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Order items are required" });
+    }
+
+    const normalizedItems = items.map((item, index) => ({
+      productId: item.productId || "",
+      name: item.name || `Item ${index + 1}`,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.price) || 0,
+    }));
+
+    const computedSubtotal = normalizedItems.reduce(
+      (sum, item) => sum + item.quantity * item.price,
+      0
+    );
+    const orderSubtotal = typeof subtotal === "number" ? subtotal : computedSubtotal;
+    const orderTax = typeof tax === "number" ? tax : 0;
+    const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
+
+    const docRef = await db.collection("orders").add({
+      customerId,
+      customerName,
+      customerEmail,
+      items: normalizedItems,
+      status,
+      notes,
+      subtotal: orderSubtotal,
+      tax: orderTax,
+      total: orderTotal,
+      metadata,
+      createdBy: req.user.uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.status(201).json({ id: docRef.id });
+  } catch (error) {
+    console.error("orders.create error", error);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+export default router;
+
+
+
+
+
+
+
+

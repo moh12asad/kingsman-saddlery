@@ -1,5 +1,6 @@
 // server/middlewares/auth.js
 import admin from "firebase-admin";
+import "../lib/firebaseAdmin.js";
 
 /**
  * Verifies a Firebase ID token from the Authorization: Bearer <token> header.

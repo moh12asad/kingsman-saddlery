@@ -2,14 +2,35 @@
 import { Router } from "express";
 import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
+import { verifyFirebaseToken } from "../middlewares/auth.js";
 
 const db = admin.firestore();
 const router = Router();
 
 // Public: list products
 router.get("/", async (_req, res) => {
-  const snap = await db.collection("products").get();
-  res.json({ products: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+  try {
+    const snap = await db.collection("products").get();
+    res.json({ products: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    if (error.code === 7 || error.message?.includes("PERMISSION_DENIED") || error.message?.includes("invalid authentication credentials")) {
+      res.status(500).json({ 
+        error: "Service account lacks Firestore permissions",
+        details: "The Firebase service account needs 'Cloud Datastore User' or 'Firebase Admin SDK Administrator Service Agent' role in Google Cloud Console"
+      });
+    } else {
+      res.status(500).json({ error: "Failed to fetch products", details: error.message });
+    }
+  }
+});
+
+// Require authentication for mutating routes
+router.use((req, res, next) => {
+  if (["GET", "OPTIONS", "HEAD"].includes(req.method)) {
+    return next();
+  }
+  return verifyFirebaseToken(req, res, next);
 });
 
 // Create product (ADMIN or STAFF)
