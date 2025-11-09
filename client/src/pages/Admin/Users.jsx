@@ -17,7 +17,12 @@ export default function AdminUsers(){
 
   async function save(u){
     const token = await auth.currentUser?.getIdToken();
-    await fetch(`${API}/api/users/${u.id}`, {
+    const userId = u.uid || u.id;
+    if (!userId) {
+      console.error("User missing uid/id:", u);
+      return;
+    }
+    await fetch(`${API}/api/users/${userId}`, {
       method:"PATCH",
       headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}`},
       body: JSON.stringify({ active:u.active, role:u.role, phone:u.phone, name:u.name })
@@ -31,23 +36,26 @@ export default function AdminUsers(){
       <table className="min-w-full text-sm">
         <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Active</th><th/></tr></thead>
         <tbody>
-          {rows.map(u => (
-            <tr key={u.id}>
-              <td><input className="border p-1" value={u.name||""} onChange={e=>setRows(rows.map(r=>r.id===u.id?{...r,name:e.target.value}:r))}/></td>
-              <td>{u.email}</td>
-              <td><input className="border p-1" value={u.phone||""} onChange={e=>setRows(rows.map(r=>r.id===u.id?{...r,phone:e.target.value}:r))}/></td>
-              <td>
-                <select className="border p-1" value={u.role||""} onChange={e=>setRows(rows.map(r=>r.id===u.id?{...r,role:e.target.value}:r))}>
-                  <option value="">(none)</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="STAFF">STAFF</option>
-                  <option value="CUSTOMER">CUSTOMER</option>
-                </select>
-              </td>
-              <td><input type="checkbox" checked={!!u.active} onChange={e=>setRows(rows.map(r=>r.id===u.id?{...r,active:e.target.checked}:r))}/></td>
-              <td><button className="px-2 py-1 border rounded" onClick={()=>save(u)}>Save</button></td>
-            </tr>
-          ))}
+          {rows.map((u, index) => {
+            const userId = u.uid || u.id || `user-${index}`;
+            return (
+              <tr key={userId}>
+                <td><input className="border p-1" value={u.name||""} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,name:e.target.value}:r))}/></td>
+                <td>{u.email}</td>
+                <td><input className="border p-1" value={u.phone||""} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,phone:e.target.value}:r))}/></td>
+                <td>
+                  <select className="border p-1" value={u.role||""} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,role:e.target.value}:r))}>
+                    <option value="">(none)</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="STAFF">STAFF</option>
+                    <option value="CUSTOMER">CUSTOMER</option>
+                  </select>
+                </td>
+                <td><input type="checkbox" checked={!!u.active} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,active:e.target.checked}:r))}/></td>
+                <td><button className="px-2 py-1 border rounded" onClick={()=>save(u)}>Save</button></td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

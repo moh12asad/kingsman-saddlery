@@ -19,6 +19,7 @@ import AdminProducts from "./pages/Admin/Products.jsx";
 import AdminDashboard from "./pages/Admin/Dashboard.jsx";
 import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
+import AdminCategories from "./pages/Admin/Categories.jsx";
 
 import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
           { path: "orders", element: <AdminOrders /> },
           { path: "users", element: <AdminUsers /> },
           { path: "products", element: <AdminProducts /> },
+          { path: "categories", element: <AdminCategories /> },
           { path: "settings", element: <AdminSettings /> },
         ],
       },

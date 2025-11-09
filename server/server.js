@@ -9,6 +9,7 @@ import admin from "firebase-admin";
 import usersAdmin from "./routes/users.admin.basic.js";
 import productsAdmin from "./routes/products.admin.basic.js";
 import ordersAdmin from "./routes/orders.admin.js";
+import categoriesAdmin from "./routes/categories.admin.js";
 import { verifyFirebaseToken } from "./middlewares/auth.js";
 
 dotenv.config();
@@ -108,6 +109,7 @@ app.use("/api/users", verifyFirebaseToken, usersAdmin);
 // Public GET is allowed for listing products; POST/PATCH protected inside the router:
 app.use("/api/products", productsAdmin);
 app.use("/api/orders", ordersAdmin);
+app.use("/api/categories", categoriesAdmin);
 
 // ---------- Fallback ----------
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
