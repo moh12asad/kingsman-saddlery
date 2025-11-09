@@ -12,6 +12,7 @@ export default function AdminLayout(){
               <NavLink to="." end className={({isActive})=>isActive?"active":""}>Dashboard</NavLink>
               <NavLink to="orders" className={({isActive})=>isActive?"active":""}>Orders</NavLink>
               <NavLink to="products" className={({isActive})=>isActive?"active":""}>Products</NavLink>
+              <NavLink to="categories" className={({isActive})=>isActive?"active":""}>Categories</NavLink>
               <NavLink to="users" className={({isActive})=>isActive?"active":""}>Users</NavLink>
               <NavLink to="settings" className={({isActive})=>isActive?"active":""}>Settings</NavLink>
             </nav>

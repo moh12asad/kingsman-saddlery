@@ -6,6 +6,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminProducts(){
   const [rows, setRows] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
     name: "",
     price: 0,
@@ -24,7 +25,25 @@ export default function AdminProducts(){
     const b = await r.json();
     setRows(b.products||[]);
   }
-  useEffect(()=>{ load(); },[]);
+
+  async function loadCategories(){
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+      const r = await fetch(`${API}/api/categories`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const b = await r.json();
+      setCategories(b.categories || []);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+    }
+  }
+
+  useEffect(()=>{ 
+    load(); 
+    loadCategories();
+  },[]);
 
   const canSubmit = useMemo(() => form.name && form.price > 0 && form.category, [form]);
 
@@ -119,7 +138,17 @@ export default function AdminProducts(){
       <div className="flex gap-2 mb-4 flex-wrap">
         <input className="border p-2" placeholder="name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
         <input className="border p-2" type="number" placeholder="price" value={form.price} onChange={e=>setForm({...form,price:Number(e.target.value)})}/>
-        <input className="border p-2" placeholder="category" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/>
+        <select 
+          className="border p-2" 
+          value={form.category} 
+          onChange={e=>setForm({...form,category:e.target.value})}
+          required
+        >
+          <option value="">Select category...</option>
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
+          ))}
+        </select>
         <input className="border p-2" placeholder="Image URL (optional)" value={form.image} onChange={e=>setForm({...form,image:e.target.value})}/>
         <label className="flex items-center gap-2 border rounded px-3">
           <span className="text-sm">Upload image</span>
@@ -147,7 +176,18 @@ export default function AdminProducts(){
             <tr key={p.id}>
               <td><input className="border p-1" value={p.name||""} onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,name:e.target.value}:r))}/></td>
               <td><input className="border p-1" type="number" value={p.price||0} onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,price:Number(e.target.value)}:r))}/></td>
-              <td><input className="border p-1" value={p.category||""} onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,category:e.target.value}:r))}/></td>
+              <td>
+                <select 
+                  className="border p-1" 
+                  value={p.category||""} 
+                  onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,category:e.target.value}:r))}
+                >
+                  <option value="">(none)</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </td>
               <td className="space-y-2">
                 {p.image && <img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded border" />}
                 <label className="flex flex-col text-xs">
