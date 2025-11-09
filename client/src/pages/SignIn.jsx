@@ -48,15 +48,22 @@ export default function SignIn() {
             //await redirectByRole(cred.user);
         } catch (e) {
             const code = e.code || "";
+            let errorMessage = e.message || "Sign-in failed.";
+            
             if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
-                setErr("Incorrect email or password.");
+                errorMessage = "Incorrect email or password.";
             } else if (code === "auth/user-not-found") {
-                setErr("No account for this email.");
+                errorMessage = "No account for this email.";
             } else if (code === "auth/too-many-requests") {
-                setErr("Too many attempts. Try again later.");
-            } else {
-                setErr(e.message || "Sign-in failed.");
+                errorMessage = "Too many attempts. Try again later.";
+            } else if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
+                errorMessage = "Firebase project configuration not found. Please check your .env file and ensure the Firebase project exists and Authentication is enabled.";
+            } else if (code === "auth/network-request-failed") {
+                errorMessage = "Network error. Please check your internet connection.";
             }
+            
+            console.error("Sign-in error:", code, errorMessage);
+            setErr(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -68,7 +75,22 @@ export default function SignIn() {
             const cred = await signInWithGoogle(); // must return a UserCredential
             //await redirectByRole(cred.user);
         } catch (e) {
-            setErr(e.message || "Google sign-in failed.");
+            const code = e.code || "";
+            let errorMessage = e.message || "Google sign-in failed.";
+            
+            // Handle specific Firebase configuration errors
+            if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
+                errorMessage = "Firebase Authentication configuration not found. This usually means:\n\n1. ❌ Your API key doesn't match the project ID\n   → Check that VITE_FIREBASE_API_KEY belongs to the 'kingsman-saddlery' project\n\n2. ❌ Authentication is not enabled in Firebase Console\n   → Go to Firebase Console → Authentication → Get Started\n\n3. ❌ API key restrictions in Google Cloud Console\n   → Check Google Cloud Console → APIs & Services → Credentials\n\n4. ❌ Wrong project configuration\n   → Make sure ALL .env values are from the SAME Firebase project\n\nTo fix: Get a fresh config from Firebase Console → Project Settings → General → Your apps";
+            } else if (code === "auth/popup-closed-by-user") {
+                errorMessage = "Sign-in popup was closed.";
+            } else if (code === "auth/popup-blocked") {
+                errorMessage = "Sign-in popup was blocked. Please allow popups for this site.";
+            } else if (code === "auth/cancelled-popup-request") {
+                errorMessage = "Only one popup request is allowed at a time.";
+            }
+            
+            console.error("Sign-in error:", code, errorMessage);
+            setErr(errorMessage);
         } finally {
             setLoading(false);
         }
