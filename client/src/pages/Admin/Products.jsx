@@ -12,6 +12,7 @@ export default function AdminProducts(){
     price: 0,
     category: "",
     image: "",
+    description: "",
     available: true,
     sale: false,
     sale_proce: 0,
@@ -68,6 +69,7 @@ export default function AdminProducts(){
         price: Number(form.price) || 0,
         category: form.category,
         image: form.image,
+        description: form.description ? form.description.trim() : "",
         available: form.available,
         sale: form.sale,
         sale_proce: Number(form.sale_proce) || 0,
@@ -83,7 +85,7 @@ export default function AdminProducts(){
         throw new Error(data.error || "Failed to create product");
       }
 
-      setForm({ name:"", price:0, category:"", image:"", available:true, sale:false, sale_proce:0 });
+      setForm({ name:"", price:0, category:"", image:"", description:"", available:true, sale:false, sale_proce:0 });
       await load();
     } catch (err) {
       setError(err.message || "Unable to create product");
@@ -197,6 +199,13 @@ export default function AdminProducts(){
             <input type="file" accept="image/*" className="hidden" onChange={handleFormImageChange} />
           </label>
           {uploadingImage && <span className="text-sm text-gray-500 flex items-center">Uploading...</span>}
+          <textarea
+            className="input md:col-span-2 lg:col-span-3"
+            placeholder="Product description (optional)"
+            rows="3"
+            value={form.description}
+            onChange={e=>setForm({...form,description:e.target.value})}
+          />
           <label className="flex items-center gap-2 cursor-pointer">
             <input 
               type="checkbox" 
@@ -250,6 +259,7 @@ export default function AdminProducts(){
                 <th>Name</th>
                 <th>Price</th>
                 <th>Category</th>
+                <th>Description</th>
                 <th>Status</th>
                 <th>Sale</th>
                 <th>Actions</th>
@@ -258,7 +268,7 @@ export default function AdminProducts(){
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-8 text-gray-500">
+                  <td colSpan="8" className="text-center py-8 text-gray-500">
                     No products yet. Create your first product above!
                   </td>
                 </tr>
@@ -309,6 +319,15 @@ export default function AdminProducts(){
                           <option key={cat.id} value={cat.name}>{cat.name}</option>
                         ))}
                       </select>
+                    </td>
+                    <td>
+                      <textarea
+                        className="table-input text-xs"
+                        rows="2"
+                        value={p.description||""}
+                        onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,description:e.target.value}:r))}
+                        placeholder="Description"
+                      />
                     </td>
                     <td>
                       <label className="flex items-center gap-2 cursor-pointer">

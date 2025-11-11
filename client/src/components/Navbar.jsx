@@ -1,13 +1,24 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, NavLink } from "react-router-dom";
 import { signInWithGoogle, signOutUser } from "../lib/firebase";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart, FaCog } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
+import { useMemo } from "react";
 
 export default function Navbar() {
   const { user } = useAuth();
   const { getTotalItems } = useCart();
   const cartCount = getTotalItems();
+
+  // Check if user is admin
+  const isAdmin = useMemo(() => {
+    if (!user?.email) return false;
+    const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
+      .split(",")
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean);
+    return adminEmails.length === 0 || adminEmails.includes(user.email.toLowerCase());
+  }, [user]);
 
   return (
     <header className="sticky top-0 z-40 bg-white/70 backdrop-blur border-b">
@@ -30,6 +41,20 @@ export default function Navbar() {
               </span>
             )}
           </NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                isActive 
+                  ? "bg-indigo-600 text-white" 
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              title="Admin Panel"
+            >
+              <FaCog className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">Admin</span>
+            </NavLink>
+          )}
             {!user ? (
                 <NavLink
                     to="/signin"
