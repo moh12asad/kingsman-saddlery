@@ -22,6 +22,9 @@ import AdminDashboard from "./pages/Admin/Dashboard.jsx";
 import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
 import AdminCategories from "./pages/Admin/Categories.jsx";
+import EditProduct from "./pages/Admin/EditProduct.jsx";
+import EditUser from "./pages/Admin/EditUser.jsx";
+import EditCategory from "./pages/Admin/EditCategory.jsx";
 
 import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
@@ -47,8 +50,11 @@ const router = createBrowserRouter([
           { index: true, element: <AdminDashboard /> },
           { path: "orders", element: <AdminOrders /> },
           { path: "users", element: <AdminUsers /> },
+          { path: "users/edit/:id", element: <EditUser /> },
           { path: "products", element: <AdminProducts /> },
+          { path: "products/edit/:id", element: <EditProduct /> },
           { path: "categories", element: <AdminCategories /> },
+          { path: "categories/edit/:id", element: <EditCategory /> },
           { path: "settings", element: <AdminSettings /> },
         ],
       },
