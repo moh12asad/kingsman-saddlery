@@ -8,6 +8,8 @@ import App from "./App.jsx";
 import Home from "./pages/Home.jsx"; // adjust to your actual landing page
 import SignIn from "./pages/SignIn.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
+import Shop from "./pages/Shop.jsx";
+import Cart from "./pages/Cart.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -23,15 +25,19 @@ import AdminCategories from "./pages/Admin/Categories.jsx";
 
 import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { CartProvider } from "./context/CartContext.jsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,            // this is your layout with <Navbar/><Outlet/><Footer/>
     children: [
-      { index: true, element: <Home /> },
+      { index: true, element: <Shop /> },
+      { path: "home", element: <Home /> },
       { path: "signin", element: <SignIn /> },
       { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "shop", element: <Shop /> },
+      { path: "cart", element: <Cart /> },
 
       // ADMIN (nested under App layout)
       {
@@ -56,7 +62,9 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <CartProvider>
+        <RouterProvider router={router} />
+      </CartProvider>
     </AuthProvider>
   </React.StrictMode>
 );
