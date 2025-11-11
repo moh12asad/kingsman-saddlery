@@ -48,6 +48,7 @@ export function CartProvider({ children }) {
           price: product.sale && product.sale_proce > 0 ? product.sale_proce : product.price,
           image: product.image,
           category: product.category,
+          description: product.description || "",
           sale: product.sale,
           originalPrice: product.price,
           quantity: 1,

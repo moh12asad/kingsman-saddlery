@@ -40,21 +40,25 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
     price = 0,
     category = "",
     image = "",
+    description = "",
     available = true,
     sale = false,
     sale_proce = 0,
   } = req.body;
 
-  const doc = await db.collection("products").add({
+  const productData = {
     name,
     price,
     category,
     image,
+    description: description || "",
     available,
     sale,
     sale_proce,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  };
+
+  const doc = await db.collection("products").add(productData);
 
   res.json({ id: doc.id });
 });
