@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminProducts(){
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
@@ -18,7 +20,6 @@ export default function AdminProducts(){
     sale_proce: 0,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [rowUploading, setRowUploading] = useState({});
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -92,11 +93,6 @@ export default function AdminProducts(){
     }
   }
 
-  async function save(p){
-    const token = await auth.currentUser?.getIdToken();
-    await fetch(`${API}/api/products/${p.id}`, { method:"PATCH", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}`}, body: JSON.stringify(p) });
-    load();
-  }
 
   async function deleteProduct(id){
     if (confirmDelete !== id) {
@@ -132,32 +128,6 @@ export default function AdminProducts(){
     }
   }
 
-  async function handleRowImageUpload(productId, file){
-    if (!file) return;
-    setRowUploading(prev => ({ ...prev, [productId]: true }));
-    try {
-      const url = await uploadImage(file, productId);
-      let updatedProduct;
-      setRows(prev => prev.map(p => {
-        if (p.id === productId) {
-          updatedProduct = { ...p, image: url };
-          return updatedProduct;
-        }
-        return p;
-      }));
-
-      if (updatedProduct) {
-        const token = await auth.currentUser?.getIdToken();
-        await fetch(`${API}/api/products/${productId}`, {
-          method:"PATCH",
-          headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}`},
-          body: JSON.stringify(updatedProduct)
-        });
-      }
-    } finally {
-      setRowUploading(prev => ({ ...prev, [productId]: false }));
-    }
-  }
   return (
     <div className="space-y-6">
       {/* Create Product Form */}
@@ -276,104 +246,44 @@ export default function AdminProducts(){
                 rows.map(p => (
                   <tr key={p.id}>
                     <td>
-                      <div className="flex flex-col gap-2">
-                        {p.image ? (
-                          <img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">No image</div>
-                        )}
-                        <label className="text-xs text-blue-600 cursor-pointer hover:underline">
-                          Replace
-                          <input type="file" accept="image/*" className="hidden" onChange={e=>handleRowImageUpload(p.id, e.target.files?.[0])} />
-                        </label>
-                        {rowUploading[p.id] && <div className="text-xs text-gray-500">Uploading...</div>}
-                      </div>
+                      {p.image ? (
+                        <img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">No image</div>
+                      )}
+                    </td>
+                    <td className="font-medium">{p.name || "-"}</td>
+                    <td>${(p.price || 0).toFixed(2)}</td>
+                    <td>{p.category || "-"}</td>
+                    <td className="max-w-xs">
+                      <p className="text-sm text-gray-600 truncate" title={p.description || ""}>
+                        {p.description || "-"}
+                      </p>
                     </td>
                     <td>
-                      <input 
-                        className="table-input" 
-                        value={p.name||""} 
-                        onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,name:e.target.value}:r))}
-                        placeholder="Product name"
-                      />
+                      <span className={p.available ? "badge badge-success" : "badge badge-danger"}>
+                        {p.available ? "Available" : "Unavailable"}
+                      </span>
                     </td>
                     <td>
-                      <div className="flex items-center gap-1">
-                        <span className="text-gray-500">$</span>
-                        <input 
-                          className="table-input" 
-                          type="number" 
-                          value={p.price||0} 
-                          onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,price:Number(e.target.value)}:r))}
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <select 
-                        className="table-select" 
-                        value={p.category||""} 
-                        onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,category:e.target.value}:r))}
-                      >
-                        <option value="">(none)</option>
-                        {categories.map(cat => (
-                          <option key={cat.id} value={cat.name}>{cat.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <textarea
-                        className="table-input text-xs"
-                        rows="2"
-                        value={p.description||""}
-                        onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,description:e.target.value}:r))}
-                        placeholder="Description"
-                      />
-                    </td>
-                    <td>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={!!p.available} 
-                          onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,available:e.target.checked}:r))}
-                          className="w-4 h-4"
-                        />
-                        <span className={p.available ? "badge badge-success" : "badge badge-danger"}>
-                          {p.available ? "Available" : "Unavailable"}
-                        </span>
-                      </label>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
-                          <input 
-                            type="checkbox" 
-                            checked={!!p.sale} 
-                            onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,sale:e.target.checked}:r))}
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">On Sale</span>
-                        </label>
-                        {p.sale && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-500 text-sm">$</span>
-                            <input 
-                              className="table-input text-xs w-20" 
-                              type="number" 
-                              placeholder="Sale price" 
-                              value={p.sale_proce||0} 
-                              onChange={e=>setRows(prev=>prev.map(r=>r.id===p.id?{...r,sale_proce:Number(e.target.value)}:r))}
-                            />
-                          </div>
-                        )}
-                      </div>
+                      {p.sale ? (
+                        <div className="flex items-center gap-2">
+                          <span className="badge badge-danger">On Sale</span>
+                          {p.sale_proce > 0 && (
+                            <span className="text-sm text-red-600 font-semibold">${p.sale_proce.toFixed(2)}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td>
                       <div className="flex gap-2">
                         <button 
-                          className="btn btn-success btn-sm" 
-                          onClick={()=>save(p)}
+                          className="btn btn-primary btn-sm" 
+                          onClick={() => navigate(`/admin/products/edit/${p.id}`)}
                         >
-                          Save
+                          Edit
                         </button>
                         {confirmDelete === p.id ? (
                           <div className="flex gap-1">

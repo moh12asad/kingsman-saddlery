@@ -93,10 +93,10 @@ export default function Shop() {
   if (loading) {
     return (
       <main className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="container-main padding-y-xl">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            <p className="mt-4 text-gray-600">Loading products...</p>
+            <div className="loading-spinner"></div>
+            <p className="margin-top-md text-muted">Loading products...</p>
           </div>
         </div>
       </main>
@@ -106,9 +106,9 @@ export default function Shop() {
   if (error) {
     return (
       <main className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="container-main padding-y-xl">
           <div className="text-center">
-            <p className="text-red-600 text-lg">{error}</p>
+            <p className="text-error heading-3">{error}</p>
           </div>
         </div>
       </main>
@@ -118,29 +118,29 @@ export default function Shop() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">Kingsman Saddlery</h1>
-          <p className="text-indigo-100 text-lg">Premium Equestrian Equipment & Supplies</p>
+      <div className="header-hero">
+        <div className="container-main">
+          <h1 className="header-title">Kingsman Saddlery</h1>
+          <p className="header-subtitle">Premium Equestrian Equipment & Supplies</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="container-main padding-y-lg">
+        <div className="flex-row flex-gap-lg" style={{ alignItems: 'flex-start' }}>
           {/* Sidebar - Categories */}
-          <aside className={`lg:w-64 flex-shrink-0 ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
-            <div className="bg-white rounded-lg shadow-sm border p-4 sticky top-24">
-              <div className="flex items-center justify-between mb-4 lg:hidden">
-                <h2 className="text-lg font-semibold">Categories</h2>
+          <aside className={`sidebar-filter ${sidebarOpen ? 'sidebar-filter-open' : ''}`}>
+            <div className="sidebar-content">
+              <div className="flex-row-between margin-bottom-md lg:hidden">
+                <h2 className="sidebar-title">Categories</h2>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-muted transition"
                 >
                   <FaTimes />
                 </button>
               </div>
-              <h2 className="text-lg font-semibold mb-4 hidden lg:block">Categories</h2>
-              <div className="space-y-1">
+              <h2 className="sidebar-title hidden lg:block">Categories</h2>
+              <div className="spacing-y-sm">
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -148,10 +148,8 @@ export default function Shop() {
                       setSelectedCategory(category);
                       setSidebarOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                      selectedCategory === category
-                        ? "bg-indigo-600 text-white font-medium"
-                        : "text-gray-700 hover:bg-gray-100"
+                    className={`category-button ${
+                      selectedCategory === category ? "category-button-active" : ""
                     }`}
                   >
                     {category === "all" ? "All Products" : category}
@@ -162,22 +160,22 @@ export default function Shop() {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1" style={{ order: 2, minWidth: 0 }}>
             {/* Search Bar */}
-            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <div className="search-container">
+              <div className="search-input-wrapper">
+                <FaSearch className="search-icon" />
                 <input
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="search-input"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="search-clear"
                   >
                     <FaTimes />
                   </button>
@@ -188,24 +186,24 @@ export default function Shop() {
             {/* Mobile Category Toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden mb-4 w-full bg-white border rounded-lg px-4 py-2 text-left flex items-center justify-between hover:bg-gray-50"
+              className="lg:hidden margin-bottom-md w-full card flex-row-between transition"
             >
               <span className="font-medium">Filter by Category</span>
-              <span className="text-sm text-gray-500">
+              <span className="text-small text-muted">
                 {selectedCategory === "all" ? "All Products" : selectedCategory}
               </span>
             </button>
 
             {/* Sale Products Section */}
             {filteredProducts.saleProducts.length > 0 && (
-              <section className="mb-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900">On Sale</h2>
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+              <section className="margin-bottom-xl">
+                <div className="flex-row flex-gap-md margin-bottom-md">
+                  <h2 className="heading-2">On Sale</h2>
+                  <span className="badge-sale">
                     {filteredProducts.saleProducts.length} items
                   </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid-products">
                   {filteredProducts.saleProducts.map((product) => (
                     <ProductCard
                       key={product.id}
@@ -220,10 +218,10 @@ export default function Shop() {
             {/* Regular Products Section */}
             {filteredProducts.regularProducts.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                <h2 className="heading-2 margin-bottom-md">
                   {filteredProducts.saleProducts.length > 0 ? "All Products" : "Products"}
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid-products">
                   {filteredProducts.regularProducts.map((product) => (
                     <ProductCard
                       key={product.id}
@@ -237,14 +235,14 @@ export default function Shop() {
 
             {/* No Results */}
             {filteredProducts.saleProducts.length === 0 && filteredProducts.regularProducts.length === 0 && (
-              <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
-                <p className="text-gray-600 text-lg mb-4">No products found</p>
+              <div className="card-empty">
+                <p className="text-muted heading-3 margin-bottom-md">No products found</p>
                 <button
                   onClick={() => {
                     setSearchQuery("");
                     setSelectedCategory("all");
                   }}
-                  className="text-indigo-600 hover:text-indigo-700 underline"
+                  className="btn-link"
                 >
                   Clear filters
                 </button>
@@ -257,62 +255,62 @@ export default function Shop() {
       {/* Confirmation Modal */}
       {confirmProduct && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="modal-overlay"
           onClick={cancelAddToCart}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+            className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-bold mb-4">Add to Cart?</h2>
-            <div className="flex items-center gap-4 mb-6">
+            <h2 className="heading-3 margin-bottom-md">Add to Cart?</h2>
+            <div className="flex-row flex-gap-md margin-bottom-lg">
               {confirmProduct.image ? (
                 <img
                   src={confirmProduct.image}
                   alt={confirmProduct.name}
-                  className="w-20 h-20 object-cover rounded-lg"
+                  className="img-cart"
                 />
               ) : (
-                <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs">
+                <div className="img-placeholder">
                   No image
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="font-semibold text-lg">{confirmProduct.name}</h3>
+                <h3 className="font-semibold heading-3">{confirmProduct.name}</h3>
                 {confirmProduct.category && (
-                  <p className="text-sm text-gray-500">{confirmProduct.category}</p>
+                  <p className="text-small text-muted">{confirmProduct.category}</p>
                 )}
                 {confirmProduct.description && (
-                  <p className="text-sm text-gray-600 mt-2">{confirmProduct.description}</p>
+                  <p className="text-small text-muted margin-top-sm">{confirmProduct.description}</p>
                 )}
-                <div className="mt-1">
+                <div className="margin-top-sm">
                   {confirmProduct.sale && confirmProduct.sale_proce > 0 ? (
                     <>
-                      <span className="text-lg font-bold text-red-600">
+                      <span className="price-sale">
                         ${confirmProduct.sale_proce.toFixed(2)}
                       </span>
-                      <span className="text-sm text-gray-400 line-through ml-2">
+                      <span className="price-original margin-left-sm">
                         ${confirmProduct.price.toFixed(2)}
                       </span>
                     </>
                   ) : (
-                    <span className="text-lg font-bold text-gray-900">
+                    <span className="price">
                       ${confirmProduct.price.toFixed(2)}
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex-row flex-gap-md">
               <button
                 onClick={cancelAddToCart}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                className="btn-secondary btn-full"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmAddToCart}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:opacity-90 transition"
+                className="btn-primary btn-full"
               >
                 Add to Cart
               </button>
@@ -324,7 +322,8 @@ export default function Shop() {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed z-40 hidden lg:block"
+          style={{ inset: 0, background: 'rgba(0, 0, 0, 0.5)' }}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -335,51 +334,54 @@ export default function Shop() {
 // Product Card Component
 function ProductCard({ product, onAddToCart }) {
   return (
-    <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group">
+    <div className="card-product">
       <div className="relative">
         {product.image ? (
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200"
+            className="img-product transition"
+            style={{ transform: 'scale(1)' }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           />
         ) : (
-          <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400 text-xs">
+          <div className="img-placeholder">
             No image
           </div>
         )}
         {product.sale && (
-          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
+          <span className="badge-sale absolute" style={{ top: '0.5rem', right: '0.5rem' }}>
             SALE
           </span>
         )}
       </div>
-      <div className="p-3 flex-1 flex flex-col">
-        <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2 min-h-[2.5rem]">
+      <div className="padding-sm flex-col flex-1">
+        <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm" style={{ minHeight: '2.5rem' }}>
           {product.name}
         </h3>
         {product.category && (
-          <p className="text-xs text-gray-500 mb-2">{product.category}</p>
+          <p className="text-xs text-muted margin-bottom-sm">{product.category}</p>
         )}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex-row flex-gap-sm margin-bottom-md">
           {product.sale && product.sale_proce > 0 ? (
             <>
-              <span className="text-base font-bold text-red-600">
+              <span className="price-sale">
                 ${product.sale_proce.toFixed(2)}
               </span>
-              <span className="text-xs text-gray-400 line-through">
+              <span className="price-original">
                 ${product.price.toFixed(2)}
               </span>
             </>
           ) : (
-            <span className="text-base font-bold text-gray-900">
+            <span className="price">
               ${product.price.toFixed(2)}
             </span>
           )}
         </div>
         <button
           onClick={() => onAddToCart(product)}
-          className="mt-auto w-full px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+          className="btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
         >
           Add to Cart
         </button>

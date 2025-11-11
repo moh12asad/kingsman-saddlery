@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { auth } from "../../lib/firebase"; // your existing firebase init
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminUsers(){
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   async function load(){
@@ -15,20 +17,6 @@ export default function AdminUsers(){
   }
   useEffect(()=>{ load(); },[]);
 
-  async function save(u){
-    const token = await auth.currentUser?.getIdToken();
-    const userId = u.uid || u.id;
-    if (!userId) {
-      console.error("User missing uid/id:", u);
-      return;
-    }
-    await fetch(`${API}/api/users/${userId}`, {
-      method:"PATCH",
-      headers:{ "Content-Type":"application/json", Authorization:`Bearer ${token}`},
-      body: JSON.stringify({ active:u.active, role:u.role, phone:u.phone, name:u.name })
-    });
-    load();
-  }
 
   return (
     <div className="space-y-6">
@@ -65,14 +53,7 @@ export default function AdminUsers(){
                     const userId = u.uid || u.id || `user-${index}`;
                     return (
                       <tr key={userId}>
-                        <td>
-                          <input 
-                            className="table-input" 
-                            value={u.name||""} 
-                            placeholder="User name"
-                            onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,name:e.target.value}:r))}
-                          />
-                        </td>
+                        <td className="font-medium">{u.name || "-"}</td>
                         <td>
                           <div className="flex items-center gap-2">
                             <span>{u.email}</span>
@@ -81,56 +62,31 @@ export default function AdminUsers(){
                             )}
                           </div>
                         </td>
+                        <td>{u.phone || u.phoneNumber || "-"}</td>
                         <td>
-                          <input 
-                            className="table-input" 
-                            value={u.phone||u.phoneNumber||""} 
-                            placeholder="Phone number"
-                            onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,phone:e.target.value}:r))}
-                          />
-                        </td>
-                        <td>
-                          <select 
-                            className="table-select" 
-                            value={u.role||""} 
-                            onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,role:e.target.value}:r))}
-                          >
-                            <option value="">(none)</option>
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="STAFF">STAFF</option>
-                            <option value="CUSTOMER">CUSTOMER</option>
-                          </select>
-                          {u.role && (
-                            <div className="mt-1">
-                              <span className={`badge ${
-                                u.role === "ADMIN" ? "badge-danger" :
-                                u.role === "STAFF" ? "badge-warning" :
-                                "badge-info"
-                              }`}>
-                                {u.role}
-                              </span>
-                            </div>
+                          {u.role ? (
+                            <span className={`badge ${
+                              u.role === "ADMIN" ? "badge-danger" :
+                              u.role === "STAFF" ? "badge-warning" :
+                              "badge-info"
+                            }`}>
+                              {u.role}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
                           )}
                         </td>
                         <td>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={!!u.active && !u.disabled} 
-                              onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,active:e.target.checked}:r))}
-                              className="w-4 h-4"
-                            />
-                            <span className={u.active && !u.disabled ? "badge badge-success" : "badge badge-danger"}>
-                              {u.active && !u.disabled ? "Active" : "Inactive"}
-                            </span>
-                          </label>
+                          <span className={u.active && !u.disabled ? "badge badge-success" : "badge badge-danger"}>
+                            {u.active && !u.disabled ? "Active" : "Inactive"}
+                          </span>
                         </td>
                         <td>
                           <button 
-                            className="btn btn-success btn-sm" 
-                            onClick={()=>save(u)}
+                            className="btn btn-primary btn-sm" 
+                            onClick={() => navigate(`/admin/users/edit/${userId}`)}
                           >
-                            Save
+                            Edit
                           </button>
                         </td>
                       </tr>
