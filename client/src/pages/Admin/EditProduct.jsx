@@ -53,20 +53,62 @@ export default function EditProduct() {
   }
 
   async function uploadImage(file) {
+    // Ensure user is authenticated
+    if (!auth.currentUser) {
+      throw new Error("You must be signed in to upload images");
+    }
+    
+    // Verify file type
+    if (!file.type.startsWith("image/")) {
+      throw new Error("File must be an image");
+    }
+    
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
     const path = `products/${id}-${Date.now()}-${safeName}`;
     const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    
+    try {
+      // Upload with metadata
+      await uploadBytes(storageRef, file, {
+        contentType: file.type,
+        customMetadata: {
+          uploadedBy: auth.currentUser.uid,
+          uploadedAt: new Date().toISOString()
+        }
+      });
+      return await getDownloadURL(storageRef);
+    } catch (error) {
+      console.error("Upload error:", error);
+      if (error.code === 'storage/unauthorized') {
+        throw new Error("You don't have permission to upload images. Please check Firebase Storage rules.");
+      } else if (error.code === 'storage/canceled') {
+        throw new Error("Upload was canceled");
+      } else if (error.code) {
+        throw new Error(`Upload failed: ${error.message}`);
+      }
+      throw error;
+    }
   }
 
   async function handleImageChange(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    // Check file size (e.g., max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setError("Image size must be less than 5MB");
+      return;
+    }
+    
     setUploadingImage(true);
+    setError("");
     try {
       const publicUrl = await uploadImage(file);
       setProduct(prev => ({ ...prev, image: publicUrl }));
+    } catch (err) {
+      setError(err.message || "Failed to upload image");
+      console.error("Image upload error:", err);
     } finally {
       setUploadingImage(false);
     }
