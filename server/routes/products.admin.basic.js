@@ -71,4 +71,15 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
   res.json({ ok: true });
 });
 
+// Delete product (ADMIN only)
+router.delete("/:id", requireRole("ADMIN"), async (req, res) => {
+  try {
+    await db.collection("products").doc(req.params.id).delete();
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ error: "Failed to delete product", details: error.message });
+  }
+});
+
 export default router;

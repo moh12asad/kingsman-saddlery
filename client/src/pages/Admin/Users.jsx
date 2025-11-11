@@ -31,33 +31,117 @@ export default function AdminUsers(){
   }
 
   return (
-    <div>
-      {loading && <div>Loading...</div>}
-      <table className="min-w-full text-sm">
-        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Active</th><th/></tr></thead>
-        <tbody>
-          {rows.map((u, index) => {
-            const userId = u.uid || u.id || `user-${index}`;
-            return (
-              <tr key={userId}>
-                <td><input className="border p-1" value={u.name||""} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,name:e.target.value}:r))}/></td>
-                <td>{u.email}</td>
-                <td><input className="border p-1" value={u.phone||""} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,phone:e.target.value}:r))}/></td>
-                <td>
-                  <select className="border p-1" value={u.role||""} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,role:e.target.value}:r))}>
-                    <option value="">(none)</option>
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="STAFF">STAFF</option>
-                    <option value="CUSTOMER">CUSTOMER</option>
-                  </select>
-                </td>
-                <td><input type="checkbox" checked={!!u.active} onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,active:e.target.checked}:r))}/></td>
-                <td><button className="px-2 py-1 border rounded" onClick={()=>save(u)}>Save</button></td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-6">
+      {loading && (
+        <div className="card text-center py-8">
+          <div className="text-gray-500">Loading users...</div>
+        </div>
+      )}
+      
+      {!loading && (
+        <div className="card">
+          <h2 className="section-title">Users ({rows.length})</h2>
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-8 text-gray-500">
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((u, index) => {
+                    const userId = u.uid || u.id || `user-${index}`;
+                    return (
+                      <tr key={userId}>
+                        <td>
+                          <input 
+                            className="table-input" 
+                            value={u.name||""} 
+                            placeholder="User name"
+                            onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,name:e.target.value}:r))}
+                          />
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <span>{u.email}</span>
+                            {u.emailVerified && (
+                              <span className="badge badge-success text-xs">Verified</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <input 
+                            className="table-input" 
+                            value={u.phone||u.phoneNumber||""} 
+                            placeholder="Phone number"
+                            onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,phone:e.target.value}:r))}
+                          />
+                        </td>
+                        <td>
+                          <select 
+                            className="table-select" 
+                            value={u.role||""} 
+                            onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,role:e.target.value}:r))}
+                          >
+                            <option value="">(none)</option>
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="STAFF">STAFF</option>
+                            <option value="CUSTOMER">CUSTOMER</option>
+                          </select>
+                          {u.role && (
+                            <div className="mt-1">
+                              <span className={`badge ${
+                                u.role === "ADMIN" ? "badge-danger" :
+                                u.role === "STAFF" ? "badge-warning" :
+                                "badge-info"
+                              }`}>
+                                {u.role}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={!!u.active && !u.disabled} 
+                              onChange={e=>setRows(rows.map(r=>(r.uid || r.id)===userId?{...r,active:e.target.checked}:r))}
+                              className="w-4 h-4"
+                            />
+                            <span className={u.active && !u.disabled ? "badge badge-success" : "badge badge-danger"}>
+                              {u.active && !u.disabled ? "Active" : "Inactive"}
+                            </span>
+                          </label>
+                        </td>
+                        <td>
+                          <button 
+                            className="btn btn-success btn-sm" 
+                            onClick={()=>save(u)}
+                          >
+                            Save
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
