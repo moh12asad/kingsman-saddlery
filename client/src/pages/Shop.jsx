@@ -381,7 +381,7 @@ function ProductCard({ product, onAddToCart }) {
         </div>
         <button
           onClick={() => onAddToCart(product)}
-          className="btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+          className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
         >
           Add to Cart
         </button>

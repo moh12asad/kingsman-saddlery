@@ -24,7 +24,7 @@ export default function Navbar() {
     <header className="navbar">
       <nav className="navbar-content">
         <Link to="/" className="font-bold text-xl tracking-tight">
-          <span className="text-indigo-600">Book</span>Book
+          <span className="text-indigo-600">Kingsman</span>Saddlery
         </Link>
         <div className="navbar-links">
           <NavLink to="/shop" className={({ isActive }) => isActive ? "nav-link-active" : "nav-link"}>

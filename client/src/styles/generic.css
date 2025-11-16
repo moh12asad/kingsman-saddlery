@@ -46,6 +46,10 @@
   background: var(--brand);
   color: #fff;
   border-color: transparent;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .btn-ghost {
