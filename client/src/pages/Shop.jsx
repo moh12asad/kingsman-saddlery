@@ -132,12 +132,6 @@ export default function Shop() {
             <div className="sidebar-content">
               <div className="flex-row-between margin-bottom-md lg:hidden">
                 <h2 className="sidebar-title">Categories</h2>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="text-muted transition"
-                >
-                  <FaTimes />
-                </button>
               </div>
               <h2 className="sidebar-title hidden lg:block">Categories</h2>
               <div className="spacing-y-sm">
