@@ -1,6 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
-import { FaSearch, FaTimes } from "react-icons/fa";
+import { useFavorites } from "../context/FavoritesContext";
+import { FaSearch, FaTimes, FaChevronLeft, FaChevronRight, FaBars, FaHeart, FaShoppingCart } from "react-icons/fa";
+import HeroCarousel from "../components/HeroCarousel";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -14,6 +16,7 @@ export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   useEffect(() => {
     async function loadProducts() {
@@ -68,11 +71,22 @@ export default function Shop() {
       );
     }
 
-    // Separate sale and regular products
+    // Separate sale products
     const saleProducts = filtered.filter(p => p.sale);
-    const regularProducts = filtered.filter(p => !p.sale);
+    
+    // Group regular products by category
+    const productsByCategory = {};
+    filtered
+      .filter(p => !p.sale)
+      .forEach(product => {
+        const category = product.category || "Uncategorized";
+        if (!productsByCategory[category]) {
+          productsByCategory[category] = [];
+        }
+        productsByCategory[category].push(product);
+      });
 
-    return { saleProducts, regularProducts };
+    return { saleProducts, productsByCategory };
   }, [allProducts, selectedCategory, searchQuery]);
 
   const handleAddToCart = (product) => {
@@ -116,133 +130,131 @@ export default function Shop() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="header-hero">
-        <div className="container-main">
-          <h1 className="header-title">Kingsman Saddlery</h1>
-          <p className="header-subtitle">Premium Equestrian Equipment & Supplies</p>
-        </div>
-      </div>
+    <main className="shop-page">
+      {/* Hero Carousel */}
+      <HeroCarousel />
 
-      <div className="container-main padding-y-lg">
-        <div className="flex-row flex-gap-lg" style={{ alignItems: 'flex-start' }}>
-          {/* Sidebar - Categories */}
-          <aside className={`sidebar-filter ${sidebarOpen ? 'sidebar-filter-open' : ''}`}>
-            <div className="sidebar-content">
-              <div className="flex-row-between margin-bottom-md lg:hidden">
-                <h2 className="sidebar-title">Categories</h2>
-              </div>
-              <h2 className="sidebar-title hidden lg:block">Categories</h2>
-              <div className="spacing-y-sm">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setSidebarOpen(false);
-                    }}
-                    className={`category-button ${
-                      selectedCategory === category ? "category-button-active" : ""
-                    }`}
-                  >
-                    {category === "all" ? "All Products" : category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
+      <div className="shop-layout">
+        {/* Mobile Menu Button */}
+        <button
+          className="shop-mobile-menu-btn"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label="Toggle categories menu"
+        >
+          <FaBars />
+        </button>
 
-          {/* Main Content */}
-          <div className="flex-1" style={{ order: 2, minWidth: 0 }}>
-            {/* Search Bar */}
-            <div className="search-container">
-              <div className="search-input-wrapper">
-                <FaSearch className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="search-clear"
-                  >
-                    <FaTimes />
-                  </button>
-                )}
-              </div>
-            </div>
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div
+            className="shop-mobile-overlay"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-            {/* Mobile Category Toggle */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden margin-bottom-md w-full card flex-row-between transition"
-            >
-              <span className="font-medium">Filter by Category</span>
-              <span className="text-small text-muted">
-                {selectedCategory === "all" ? "All Products" : selectedCategory}
-              </span>
-            </button>
-
-            {/* Sale Products Section */}
-            {filteredProducts.saleProducts.length > 0 && (
-              <section className="margin-bottom-xl">
-                <div className="flex-row flex-gap-md margin-bottom-md">
-                  <h2 className="heading-2">On Sale</h2>
-                  <span className="badge-sale">
-                    {filteredProducts.saleProducts.length} items
-                  </span>
-                </div>
-                <div className="grid-products">
-                  {filteredProducts.saleProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Regular Products Section */}
-            {filteredProducts.regularProducts.length > 0 && (
-              <section>
-                <h2 className="heading-2 margin-bottom-md">
-                  {filteredProducts.saleProducts.length > 0 ? "All Products" : "Products"}
-                </h2>
-                <div className="grid-products">
-                  {filteredProducts.regularProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* No Results */}
-            {filteredProducts.saleProducts.length === 0 && filteredProducts.regularProducts.length === 0 && (
-              <div className="card-empty">
-                <p className="text-muted heading-3 margin-bottom-md">No products found</p>
+        {/* Fixed Left Sidebar - Categories */}
+        <aside className={`shop-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
+          <div className="shop-sidebar-content">
+            <h2 className="shop-sidebar-title">Categories</h2>
+            <nav className="shop-sidebar-nav">
+              {categories.map((category) => (
                 <button
+                  key={category}
                   onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("all");
+                    setSelectedCategory(category);
+                    setSidebarOpen(false);
                   }}
-                  className="btn-link"
+                  className={`shop-category-button ${
+                    selectedCategory === category ? "shop-category-button-active" : ""
+                  }`}
                 >
-                  Clear filters
+                  {category === "all" ? "All Products" : category}
                 </button>
-              </div>
-            )}
+              ))}
+            </nav>
           </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <div className="shop-main-content">
+          {/* Search Bar */}
+          <div className="shop-search-container">
+            <div className="shop-search-wrapper">
+              <FaSearch className="shop-search-icon" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="shop-search-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="shop-search-clear"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Sale Products Section */}
+          {filteredProducts.saleProducts.length > 0 && (
+            <>
+              <section className="shop-section">
+                <div className="shop-section-header">
+                  <div className="shop-section-title-wrapper">
+                    <h2 className="shop-section-title">On Sale</h2>
+                  </div>
+                </div>
+                <ProductCarousel products={filteredProducts.saleProducts} onAddToCart={handleAddToCart} />
+              </section>
+
+              {/* Hero Overlay after Sale Section */}
+              <CategoryHeroOverlay 
+                category="On Sale"
+                title="Discover Amazing Deals"
+                subtitle="Shop our exclusive sale collection and save on premium equestrian equipment"
+              />
+            </>
+          )}
+
+          {/* Category Products Sections with Hero Overlays */}
+          {Object.entries(filteredProducts.productsByCategory).map(([category, products], index) => (
+            <div key={category}>
+              {/* Category Products Section */}
+              <section className="shop-section">
+                <div className="shop-section-title-wrapper">
+                  <h2 className="shop-section-title">{category}</h2>
+                </div>
+                <ProductCarousel products={products} onAddToCart={handleAddToCart} />
+              </section>
+
+              {/* Hero Overlay after each category section */}
+              <CategoryHeroOverlay 
+                category={category}
+                title={`Explore ${category}`}
+                subtitle={`Discover our premium ${category.toLowerCase()} collection`}
+              />
+            </div>
+          ))}
+
+          {/* No Results */}
+          {filteredProducts.saleProducts.length === 0 && Object.keys(filteredProducts.productsByCategory).length === 0 && (
+            <div className="shop-empty">
+              <p className="shop-empty-text">No products found</p>
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("all");
+                }}
+                className="btn-link"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -313,51 +325,173 @@ export default function Shop() {
         </div>
       )}
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed z-40 hidden lg:block"
-          style={{ inset: 0, background: 'rgba(0, 0, 0, 0.5)' }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
     </main>
+  );
+}
+
+// Category Hero Overlay Component
+function CategoryHeroOverlay({ category, title, subtitle }) {
+  // Hero images - using reliable Unsplash source URLs
+  const heroImages = [
+    "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=1920&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1516726817505-2a5bc90e8d03?w=1920&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=1920&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=600&fit=crop"
+  ];
+  
+  // Use category name to get consistent image per category
+  const imageIndex = category.length % heroImages.length;
+  const backgroundImage = heroImages[imageIndex];
+
+  return (
+    <div 
+      className="category-hero-overlay"
+      style={{ 
+        backgroundImage: `url(${backgroundImage})`
+      }}
+    >
+      <div className="category-hero-overlay-content">
+        <h2 className="category-hero-title">{title}</h2>
+        <p className="category-hero-subtitle">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+// Product Carousel Component
+function ProductCarousel({ products, onAddToCart }) {
+  const scrollRef = useRef(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeftArrow(scrollLeft > 0);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+      
+      // Disable manual scrolling - only allow arrow navigation
+      const preventScroll = (e) => {
+        if (e.type === 'wheel') {
+          e.preventDefault();
+        }
+      };
+      
+      scrollElement.addEventListener('wheel', preventScroll, { passive: false });
+      scrollElement.addEventListener('touchmove', preventScroll, { passive: false });
+      
+      return () => {
+        scrollElement.removeEventListener('scroll', checkScroll);
+        window.removeEventListener('resize', checkScroll);
+        scrollElement.removeEventListener('wheel', preventScroll);
+        scrollElement.removeEventListener('touchmove', preventScroll);
+      };
+    }
+  }, [products]);
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const cardWidth = 280; // Match the card width + gap
+      const scrollAmount = cardWidth + 20; // Card width + gap
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  if (products.length === 0) return null;
+
+  // Check if carousel is scrollable
+  const isScrollable = products.length > 0;
+
+  return (
+    <div className="product-carousel-container">
+      {isScrollable && (
+        <>
+          <button
+            className={`product-carousel-arrow product-carousel-arrow-left ${!showLeftArrow ? 'disabled' : ''}`}
+            onClick={() => scroll('left')}
+            aria-label="Scroll left"
+            disabled={!showLeftArrow}
+          >
+            <FaChevronLeft />
+          </button>
+          <button
+            className={`product-carousel-arrow product-carousel-arrow-right ${!showRightArrow ? 'disabled' : ''}`}
+            onClick={() => scroll('right')}
+            aria-label="Scroll right"
+            disabled={!showRightArrow}
+          >
+            <FaChevronRight />
+          </button>
+        </>
+      )}
+      <div className="product-carousel" ref={scrollRef}>
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onAddToCart={onAddToCart}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
 // Product Card Component
 function ProductCard({ product, onAddToCart }) {
+  const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
+  const isFav = checkFavorite(product.id);
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    toggleFavorite(product);
+  };
+
   return (
-    <div className="card-product">
-      <div className="relative">
+    <div className="card-product-carousel">
+      <div className="card-product-image-wrapper">
         {product.image ? (
           <img
             src={product.image}
             alt={product.name}
-            className="img-product transition"
-            style={{ transform: 'scale(1)' }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            className="card-product-image"
           />
         ) : (
-          <div className="img-placeholder">
+          <div className="card-product-placeholder">
             No image
           </div>
         )}
+        <button
+          className={`card-product-favorite ${isFav ? 'active' : ''}`}
+          onClick={handleFavoriteClick}
+          aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <FaHeart />
+        </button>
         {product.sale && (
-          <span className="badge-sale absolute" style={{ top: '0.5rem', right: '0.5rem' }}>
+          <span className="card-product-badge">
             SALE
           </span>
         )}
       </div>
-      <div className="padding-sm flex-col flex-1">
-        <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm" style={{ minHeight: '2.5rem' }}>
+      <div className="card-product-content">
+        <h3 className="card-product-title">
           {product.name}
         </h3>
-        {product.category && (
-          <p className="text-xs text-muted margin-bottom-sm">{product.category}</p>
-        )}
-        <div className="flex-row flex-gap-sm margin-bottom-md">
+        <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (
             <>
               <span className="price-sale">
@@ -375,8 +509,10 @@ function ProductCard({ product, onAddToCart }) {
         </div>
         <button
           onClick={() => onAddToCart(product)}
-          className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+          className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
+          style={{ marginTop: '0.75rem' }}
         >
+          <FaShoppingCart style={{ marginRight: '0.5rem' }} />
           Add to Cart
         </button>
       </div>
