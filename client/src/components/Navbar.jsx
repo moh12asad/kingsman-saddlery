@@ -1,14 +1,17 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, NavLink } from "react-router-dom";
 import { signInWithGoogle, signOutUser } from "../lib/firebase";
-import { FaShoppingCart, FaCog } from "react-icons/fa";
+import { FaShoppingCart, FaCog, FaHeart } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { useMemo } from "react";
 
 export default function Navbar() {
   const { user } = useAuth();
   const { getTotalItems } = useCart();
+  const { getFavoriteCount } = useFavorites();
   const cartCount = getTotalItems();
+  const favoriteCount = getFavoriteCount();
 
   // Check if user is admin
   const isAdmin = useMemo(() => {
@@ -23,12 +26,24 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <nav className="navbar-content">
-        <Link to="/" className="font-bold text-xl tracking-tight">
+        <Link to="/" className="font-bold text-xl tracking-tight" style={{ flexShrink: 0, marginRight: 'auto' }}>
           <span className="text-indigo-600">Kingsman</span>Saddlery
         </Link>
-        <div className="navbar-links">
+        <div className="navbar-links" style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <NavLink to="/shop" className={({ isActive }) => isActive ? "nav-link-active" : "nav-link"}>
             Shop
+          </NavLink>
+          <NavLink 
+            to="/favorites" 
+            className={({ isActive }) => `relative flex-row-center ${isActive ? "nav-link-active" : "nav-link"}`}
+            title="Favorites"
+          >
+            <FaHeart className="w-5 h-5" />
+            {favoriteCount > 0 && (
+              <span className="badge-count">
+                {favoriteCount > 9 ? '9+' : favoriteCount}
+              </span>
+            )}
           </NavLink>
           <NavLink 
             to="/cart" 

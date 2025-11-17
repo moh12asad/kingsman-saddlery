@@ -10,6 +10,7 @@ import SignIn from "./pages/SignIn.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import Shop from "./pages/Shop.jsx";
 import Cart from "./pages/Cart.jsx";
+import Favorites from "./pages/Favorites.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -29,6 +30,7 @@ import EditCategory from "./pages/Admin/EditCategory.jsx";
 import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
+import { FavoritesProvider } from "./context/FavoritesContext.jsx";
 
 const router = createBrowserRouter([
   {
@@ -41,6 +43,7 @@ const router = createBrowserRouter([
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "shop", element: <Shop /> },
       { path: "cart", element: <Cart /> },
+      { path: "favorites", element: <Favorites /> },
 
       // ADMIN (nested under App layout)
       {
@@ -69,7 +72,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
       <CartProvider>
-        <RouterProvider router={router} />
+        <FavoritesProvider>
+          <RouterProvider router={router} />
+        </FavoritesProvider>
       </CartProvider>
     </AuthProvider>
   </React.StrictMode>

@@ -11,6 +11,8 @@ import SignIn from "../pages/SignIn.jsx";
 import GuestRoute from "../components/GuestRoute.jsx";
 import OwnerView from "../pages/OwnerView.jsx";
 import OwnerRoute from "../components/OwnerRoute.jsx";
+import Shop from "../pages/Shop.jsx";
+import Cart from "../pages/Cart.jsx";
 
 export const router = createBrowserRouter([
   {
@@ -19,6 +21,8 @@ export const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       { index: true, element: <Home /> },
+      { path: "shop", element: <Shop /> },
+      { path: "cart", element: <Cart /> },
       { path: "signin", element: <SignIn /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "admin", element: (
