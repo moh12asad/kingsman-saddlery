@@ -380,21 +380,47 @@ function ProductCarousel({ products, onAddToCart }) {
       scrollElement.addEventListener('scroll', checkScroll);
       window.addEventListener('resize', checkScroll);
       
-      // Disable manual scrolling - only allow arrow navigation
-      const preventScroll = (e) => {
+      // Only prevent horizontal scrolling, allow vertical page scrolling
+      const preventHorizontalScroll = (e) => {
+        // Only prevent if scrolling horizontally
         if (e.type === 'wheel') {
-          e.preventDefault();
+          // Check if the scroll is primarily horizontal
+          if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+            e.preventDefault();
+          }
+        } else if (e.type === 'touchmove') {
+          // For touch, only prevent if it's a horizontal swipe
+          const touch = e.touches[0];
+          const startTouch = scrollElement.dataset.startTouch;
+          if (startTouch) {
+            const deltaX = Math.abs(touch.clientX - parseFloat(startTouch.x));
+            const deltaY = Math.abs(touch.clientY - parseFloat(startTouch.y));
+            if (deltaX > deltaY) {
+              e.preventDefault();
+            }
+          }
         }
       };
       
-      scrollElement.addEventListener('wheel', preventScroll, { passive: false });
-      scrollElement.addEventListener('touchmove', preventScroll, { passive: false });
+      const handleTouchStart = (e) => {
+        if (e.touches[0]) {
+          scrollElement.dataset.startTouch = JSON.stringify({
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+          });
+        }
+      };
+      
+      scrollElement.addEventListener('wheel', preventHorizontalScroll, { passive: false });
+      scrollElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+      scrollElement.addEventListener('touchmove', preventHorizontalScroll, { passive: false });
       
       return () => {
         scrollElement.removeEventListener('scroll', checkScroll);
         window.removeEventListener('resize', checkScroll);
-        scrollElement.removeEventListener('wheel', preventScroll);
-        scrollElement.removeEventListener('touchmove', preventScroll);
+        scrollElement.removeEventListener('wheel', preventHorizontalScroll);
+        scrollElement.removeEventListener('touchstart', handleTouchStart);
+        scrollElement.removeEventListener('touchmove', preventHorizontalScroll);
       };
     }
   }, [products]);
