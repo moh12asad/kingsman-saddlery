@@ -726,8 +726,10 @@
    ============================================ */
 
 .navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
@@ -1072,6 +1074,7 @@
   overflow-x: hidden; /* Prevent horizontal scrollbar */
   width: 100%;
   max-width: 100vw; /* Prevent page width overflow */
+  padding-top: 80px; /* Add padding for fixed navbar */
 }
 
 .shop-layout {
