@@ -6,6 +6,8 @@ import AdminOption from "../components/AdminOptions.jsx"
 // import { collection, addDoc, getDocs } from "firebase/firestore";
 // import { db } from "../lib/firebase";
 
+const API = import.meta.env.VITE_API_BASE_URL || "";
+
 export default function Admin() {
   const { user } = useAuth();
   const [apiMsg, setApiMsg] = useState(null);
@@ -16,7 +18,7 @@ export default function Admin() {
     setApiMsg(null);
     try {
       const token = await getIdToken();
-      const res = await fetch("http://localhost:5000/api/admin/hello", {
+      const res = await fetch(`${API}/api/admin/hello`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
