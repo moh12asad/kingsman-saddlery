@@ -13,81 +13,277 @@ This guide covers multiple hosting options for your full-stack application.
 
 ## 🚀 Recommended Option: Railway (Easiest Full-Stack)
 
-Railway can host both your frontend and backend in one place.
+Railway can host both your frontend and backend as separate services in the same project. This guide covers the complete setup process.
 
 ### Prerequisites
 1. Create a [Railway account](https://railway.app) (free tier available)
-2. Install Railway CLI: `npm i -g @railway/cli`
-3. Or use the Railway web dashboard
+2. Have your Firebase project credentials ready
+3. Have your `firebase-service-account.json` file available (you'll extract values from it)
 
-### Backend Deployment (Server)
+---
 
-1. **Initialize Railway project:**
-   ```bash
-   cd server
-   railway login
-   railway init
-   ```
+### Step 1: Create Railway Project
 
-2. **Set Environment Variables in Railway Dashboard:**
-   - Go to your project → Variables tab
-   - Add these variables:
-     ```
-     PORT=5000
-     NODE_ENV=production
-     ```
-   - Upload your `firebase-service-account.json` file or set it as an environment variable
-   - Add any other environment variables your server needs
+1. Go to [railway.app](https://railway.app) and sign in
+2. Click **"New Project"**
+3. Select **"Deploy from GitHub repo"** (recommended) or **"Empty Project"**
+4. If using GitHub, select your repository
 
-3. **Deploy:**
-   ```bash
-   railway up
-   ```
-   Or connect your GitHub repo and Railway will auto-deploy on push.
+---
 
-4. **Get your backend URL:**
-   - Railway will give you a URL like: `https://your-app-name.up.railway.app`
-   - Copy this URL - you'll need it for the frontend
+### Step 2: Deploy Backend Service
 
-### Frontend Deployment (Client)
+#### 2.1 Create Backend Service
 
-1. **Create a new Railway service for the frontend:**
-   ```bash
-   cd client
-   railway init
-   ```
+1. In your Railway project, you'll see one service (or click **"+ New"** → **"GitHub Repo"**)
+2. If using GitHub, select the same repository
+3. Rename the service to **"backend"** or **"server"** (optional, for clarity)
 
-2. **Set Environment Variables:**
-   ```
-   VITE_API_BASE_URL=https://your-backend-url.up.railway.app
-   VITE_FIREBASE_API_KEY=your-firebase-api-key
-   VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your-project-id
-   VITE_FIREBASE_APP_ID=your-app-id
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-   VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-   ```
+#### 2.2 Configure Root Directory
 
-3. **Create `railway.json` in client folder:**
-   ```json
-   {
-     "$schema": "https://railway.app/railway.schema.json",
-     "build": {
-       "builder": "NIXPACKS",
-       "buildCommand": "npm install && npm run build"
-     },
-     "deploy": {
-       "startCommand": "npm run preview",
-       "restartPolicyType": "ON_FAILURE",
-       "restartPolicyMaxRetries": 10
-     }
-   }
-   ```
+**This is critical for monorepo setups!**
 
-4. **Deploy:**
-   ```bash
-   railway up
-   ```
+1. Click on your backend service
+2. Go to **Settings** tab
+3. Scroll to **"Root Directory"**
+4. Set it to: `server`
+5. This tells Railway to treat the `server/` folder as the working directory
+
+#### 2.3 Set Backend Environment Variables
+
+Go to **Variables** tab and add these:
+
+**Basic Variables:**
+```
+PORT=5000
+NODE_ENV=production
+```
+
+**Firebase Service Account Variables:**
+
+Instead of uploading the JSON file, set these three environment variables (extract from your `server/firebase-service-account.json`):
+
+1. **FIREBASE_PROJECT_ID**
+   - Value: Your project ID (e.g., `kingsman-saddlery-dev`)
+   - From JSON: `project_id` field
+
+2. **FIREBASE_CLIENT_EMAIL**
+   - Value: Service account email (e.g., `firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com`)
+   - From JSON: `client_email` field
+
+3. **FIREBASE_PRIVATE_KEY**
+   - Value: The entire private key from JSON file
+   - From JSON: `private_key` field (line 5)
+   - **Important:** Copy the entire value including:
+     - `-----BEGIN PRIVATE KEY-----`
+     - All the encoded characters
+     - `-----END PRIVATE KEY-----`
+     - Keep all `\n` characters as-is (they represent newlines)
+   - Example format: `-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWyryiQryKwXgf\n...\n-----END PRIVATE KEY-----\n`
+
+#### 2.4 Deploy Backend
+
+- Railway will auto-detect Node.js and use your `server/railway.json` config
+- Or manually trigger deployment from the **Deployments** tab
+- Wait for deployment to complete
+
+#### 2.5 Get Backend URL
+
+1. Go to **Settings** → **Generate Domain** (or use the existing domain)
+2. Copy the URL (e.g., `https://server-dev-xxxxx.up.railway.app`)
+3. **Save this URL** - you'll need it for the frontend
+
+#### 2.6 Grant Firebase IAM Permissions
+
+**Critical step!** The service account needs Firestore permissions:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Select your Firebase project (e.g., `kingsman-saddlery-dev`)
+3. Navigate to **IAM & Admin** → **IAM**
+4. Find your service account (the `client_email` from step 2.3)
+5. Click the **pencil icon** (Edit)
+6. Click **"+ ADD ANOTHER ROLE"**
+7. Add role: **"Firebase Admin SDK Administrator Service Agent"**
+8. Click **"SAVE"**
+9. Wait 1-2 minutes for permissions to propagate
+
+**Verify it worked:**
+- Test: `https://your-backend-url.up.railway.app/api/test-firestore`
+- Should return: `{"ok": true, "message": "Service account can access Firestore"}`
+
+---
+
+### Step 3: Deploy Frontend Service
+
+#### 3.1 Create Frontend Service
+
+1. In the same Railway project, click **"+ New"**
+2. Select **"GitHub Repo"** (or **"Empty Service"**)
+3. Select the same repository
+4. Rename the service to **"frontend"** or **"client"** (optional)
+
+#### 3.2 Configure Root Directory
+
+1. Click on your frontend service
+2. Go to **Settings** tab
+3. Scroll to **"Root Directory"**
+4. Set it to: `client`
+5. This tells Railway to treat the `client/` folder as the working directory
+
+#### 3.3 Set Frontend Environment Variables
+
+Go to **Variables** tab and add:
+
+```
+VITE_API_BASE_URL=https://your-backend-url.up.railway.app
+VITE_FIREBASE_API_KEY=your-firebase-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+```
+
+**Important Notes:**
+- Replace `https://your-backend-url.up.railway.app` with your actual backend URL from Step 2.5
+- **No trailing slash** on `VITE_API_BASE_URL`
+- All Firebase values should match between frontend and backend (especially `VITE_FIREBASE_PROJECT_ID` must match `FIREBASE_PROJECT_ID`)
+- Get Firebase values from: Firebase Console → Project Settings → General → Your apps
+
+#### 3.4 Configure Vite for Railway
+
+The `client/vite.config.js` should already have the preview configuration, but verify it includes:
+
+```javascript
+preview: {
+  host: true,
+  port: 5174,
+  allowedHosts: true,  // Allows Railway's dynamic domains
+}
+```
+
+#### 3.5 Deploy Frontend
+
+- Railway will use your `client/railway.json` which:
+  - Builds with: `npm install && npm run build`
+  - Starts with: `npm run preview`
+- Wait for deployment to complete
+
+#### 3.6 Get Frontend URL
+
+1. Go to **Settings** → **Generate Domain**
+2. Copy the URL (e.g., `https://client-dev-xxxxx.up.railway.app`)
+
+#### 3.7 Add Frontend Domain to Firebase Authorized Domains
+
+**Critical for authentication to work!**
+
+1. Go to [Firebase Console](https://console.firebase.google.com)
+2. Select your project
+3. Go to **Authentication** → **Settings** → **Authorized domains**
+4. Click **"Add domain"**
+5. Add your Railway frontend domain (e.g., `client-dev-xxxxx.up.railway.app`)
+6. Click **"Add"**
+
+**Note:** If Railway generates a new domain after redeployment, add it again.
+
+---
+
+### Step 4: Verify Deployment
+
+#### Test Backend:
+- Health: `https://your-backend-url.up.railway.app/api/health`
+- Products: `https://your-backend-url.up.railway.app/api/products`
+- Firestore test: `https://your-backend-url.up.railway.app/api/test-firestore`
+
+#### Test Frontend:
+- Open your frontend URL in a browser
+- Try signing in with Google
+- Verify products load correctly
+
+---
+
+### Railway Project Structure
+
+Your Railway project should look like this:
+
+```
+Railway Project: kingsman-saddlery
+│
+├── Service 1: "backend"
+│   ├── Root Directory: server
+│   ├── Environment Variables: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, PORT, NODE_ENV
+│   ├── URL: https://server-xxxxx.up.railway.app
+│   └── Uses: server/railway.json
+│
+└── Service 2: "frontend"
+    ├── Root Directory: client
+    ├── Environment Variables: VITE_API_BASE_URL, VITE_FIREBASE_*
+    ├── URL: https://client-xxxxx.up.railway.app
+    └── Uses: client/railway.json
+```
+
+---
+
+### Common Issues & Troubleshooting
+
+#### Issue: "Blocked request. This host is not allowed"
+**Solution:** Add `allowedHosts: true` in `client/vite.config.js` preview section (already done)
+
+#### Issue: "Service account lacks Firestore permissions"
+**Solution:** 
+1. Grant "Firebase Admin SDK Administrator Service Agent" role in Google Cloud Console IAM
+2. Wait 1-2 minutes for propagation
+3. Redeploy backend service
+
+#### Issue: "Firebase ID token has incorrect 'aud' (audience) claim"
+**Solution:** 
+1. Ensure `FIREBASE_PROJECT_ID` (backend) matches `VITE_FIREBASE_PROJECT_ID` (frontend)
+2. Both should be exactly: `kingsman-saddlery-dev` (or your project ID)
+3. Redeploy both services after fixing
+
+#### Issue: "Failed to parse private key"
+**Solution:**
+1. Copy the entire `private_key` value from JSON (including BEGIN/END markers)
+2. Keep all `\n` characters as-is (don't convert to actual newlines)
+3. Paste as one continuous line in Railway
+
+#### Issue: Products not loading / API errors
+**Solution:**
+1. Verify `VITE_API_BASE_URL` is set correctly (no trailing slash)
+2. Check backend is running: test `/api/health` endpoint
+3. Check browser console for specific errors
+4. Verify CORS is working (server already has `cors({ origin: true })`)
+
+#### Issue: "Unauthorized domain" for Firebase Auth
+**Solution:**
+1. Add your Railway frontend domain to Firebase Console → Authentication → Settings → Authorized domains
+2. If Railway generates a new domain, add it again
+
+---
+
+### Quick Checklist
+
+**Backend:**
+- [ ] Service created with Root Directory = `server`
+- [ ] Environment variables set: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `PORT`, `NODE_ENV`
+- [ ] Backend deployed and URL obtained
+- [ ] IAM permissions granted in Google Cloud Console
+- [ ] Test endpoint works: `/api/test-firestore`
+
+**Frontend:**
+- [ ] Service created with Root Directory = `client`
+- [ ] Environment variables set: `VITE_API_BASE_URL` (pointing to backend), all `VITE_FIREBASE_*` variables
+- [ ] `VITE_FIREBASE_PROJECT_ID` matches backend's `FIREBASE_PROJECT_ID`
+- [ ] Frontend deployed and URL obtained
+- [ ] Domain added to Firebase Authorized domains
+- [ ] `vite.config.js` has `allowedHosts: true` in preview section
+
+**Both:**
+- [ ] Both services in the same Railway project
+- [ ] Both using the same GitHub repository
+- [ ] Both have correct Root Directory settings
+- [ ] Project IDs match between frontend and backend
 
 ---
 
@@ -191,35 +387,81 @@ Deploy backend to Railway or Render.
 
 ## 📝 Environment Variables Setup
 
-### Backend (.env in server/)
+### Backend Environment Variables (Railway)
+
+**Required for Railway deployment:**
+
 ```env
 PORT=5000
 NODE_ENV=production
-# Firebase Admin SDK credentials (or use service account JSON file)
+FIREBASE_PROJECT_ID=kingsman-saddlery-dev
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@kingsman-saddlery-dev.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWyryiQryKwXgf\n...\n-----END PRIVATE KEY-----\n
 ```
 
-### Frontend (.env.production in client/)
+**How to get Firebase values:**
+1. Open `server/firebase-service-account.json`
+2. `FIREBASE_PROJECT_ID` = value of `project_id` field
+3. `FIREBASE_CLIENT_EMAIL` = value of `client_email` field
+4. `FIREBASE_PRIVATE_KEY` = entire value of `private_key` field (line 5, keep all `\n` characters)
+
+**Note:** For local development, you can use the JSON file directly. For Railway, use environment variables.
+
+### Frontend Environment Variables (Railway)
+
+**Required for Railway deployment:**
+
 ```env
-VITE_API_BASE_URL=https://your-backend-url.com
-VITE_FIREBASE_API_KEY=your-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_APP_ID=your-app-id
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_API_BASE_URL=https://your-backend-url.up.railway.app
+VITE_FIREBASE_API_KEY=AIzaSyApFMY1z4dAIXzG...
+VITE_FIREBASE_AUTH_DOMAIN=kingsman-saddlery-dev.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=kingsman-saddlery-dev
+VITE_FIREBASE_APP_ID=1:642994104577:web:0a15b4fb123c22c73f1300
+VITE_FIREBASE_MESSAGING_SENDER_ID=642994104577
+VITE_FIREBASE_STORAGE_BUCKET=kingsman-saddlery-dev.firebasestorage.app
 ```
+
+**How to get Firebase values:**
+1. Go to Firebase Console → Project Settings → General
+2. Scroll to "Your apps" section
+3. Copy values from the web app config
+4. Or use the Firebase config object from your project
+
+**Important:**
+- `VITE_API_BASE_URL` must match your backend Railway URL (no trailing slash)
+- `VITE_FIREBASE_PROJECT_ID` must exactly match `FIREBASE_PROJECT_ID` in backend
+- All values are case-sensitive
 
 ---
 
 ## 🔧 Pre-Deployment Checklist
 
+### Before Deploying to Railway
+
+**Code Preparation:**
 - [ ] Update all hardcoded `localhost` URLs to use `VITE_API_BASE_URL`
-- [ ] Set up environment variables in your hosting platform
-- [ ] Ensure Firebase service account has proper permissions
+- [ ] Verify `client/vite.config.js` has `allowedHosts: true` in preview section
 - [ ] Test the build locally: `npm run build` in client folder
 - [ ] Test the server locally: `npm start` in server folder
-- [ ] Update CORS settings if needed (your server already allows all origins)
-- [ ] Add your production domain to Firebase authorized domains
+- [ ] Ensure `server/railway.json` and `client/railway.json` exist
+
+**Firebase Setup:**
+- [ ] Have `server/firebase-service-account.json` file ready
+- [ ] Note your Firebase project ID (must match in both frontend and backend)
+- [ ] Get all Firebase config values from Firebase Console
+
+**Railway Setup:**
+- [ ] Create Railway account
+- [ ] Create new project
+- [ ] Have GitHub repository ready (or use Railway CLI)
+
+**Post-Deployment:**
+- [ ] Set all environment variables in Railway (see Step 2.3 and 3.3)
+- [ ] Grant IAM permissions in Google Cloud Console (see Step 2.6)
+- [ ] Add frontend domain to Firebase Authorized domains (see Step 3.7)
+- [ ] Verify backend test endpoint works: `/api/test-firestore`
+- [ ] Verify frontend can load products
+- [ ] Test authentication (Google sign-in)
 
 ---
 
@@ -247,13 +489,61 @@ Your server already has `cors({ origin: true })` which should work, but if you h
 
 ### Environment Variables Not Working
 - Make sure Vite variables start with `VITE_`
-- Rebuild after changing env vars
+- Rebuild after changing env vars (Railway auto-rebuilds on variable changes)
 - Check that variables are set in your hosting platform
+- For Railway: Variables are case-sensitive, ensure exact spelling
+- Verify `VITE_API_BASE_URL` has no trailing slash
 
 ### Firebase Service Account Issues
-- Ensure the service account JSON is uploaded or set as environment variable
-- Check IAM permissions in Google Cloud Console
-- Verify the service account email has "Firebase Admin SDK Administrator Service Agent" role
+
+#### "Service account lacks Firestore permissions"
+1. Go to [Google Cloud Console IAM](https://console.cloud.google.com/iam-admin/iam)
+2. Find your service account (from `FIREBASE_CLIENT_EMAIL`)
+3. Add role: **"Firebase Admin SDK Administrator Service Agent"**
+4. Wait 1-2 minutes for propagation
+5. Redeploy backend service
+
+#### "Failed to parse private key"
+- Copy entire `private_key` from JSON (including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`)
+- Keep all `\n` characters as literal `\n` (don't convert to newlines)
+- Paste as one continuous line in Railway
+- Verify no extra spaces or quotes around the value
+
+#### "Firebase ID token has incorrect 'aud' (audience) claim"
+- **Root cause:** Project ID mismatch between frontend and backend
+- **Fix:** Ensure `FIREBASE_PROJECT_ID` (backend) exactly matches `VITE_FIREBASE_PROJECT_ID` (frontend)
+- Both should be: `kingsman-saddlery-dev` (or your exact project ID)
+- Redeploy both services after fixing
+
+#### "Unauthorized domain" for Firebase Authentication
+- Go to Firebase Console → Authentication → Settings → Authorized domains
+- Add your Railway frontend domain (e.g., `client-dev-xxxxx.up.railway.app`)
+- If Railway generates a new domain after redeployment, add it again
+
+### Railway-Specific Issues
+
+#### "Cannot find package.json"
+- Verify **Root Directory** is set correctly:
+  - Backend: `server`
+  - Frontend: `client`
+- Check in Settings → Root Directory
+
+#### "Blocked request. This host is not allowed" (Vite)
+- Ensure `client/vite.config.js` has:
+  ```javascript
+  preview: {
+    host: true,
+    port: 5174,
+    allowedHosts: true,
+  }
+  ```
+- Redeploy frontend after updating config
+
+#### Products API returns HTML instead of JSON
+- Verify `VITE_API_BASE_URL` is set correctly
+- Check it points to your backend URL (no trailing slash)
+- Test backend directly: `https://your-backend-url.up.railway.app/api/products`
+- Should return JSON, not HTML
 
 ---
 
