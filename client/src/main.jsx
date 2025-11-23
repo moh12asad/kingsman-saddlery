@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import Shop from "./pages/Shop.jsx";
 import Cart from "./pages/Cart.jsx";
 import Favorites from "./pages/Favorites.jsx";
+import Profile from "./pages/Profile.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: "shop", element: <Shop /> },
       { path: "cart", element: <Cart /> },
       { path: "favorites", element: <Favorites /> },
+      { path: "profile", element: <Profile /> },
 
       // ADMIN (nested under App layout)
       {

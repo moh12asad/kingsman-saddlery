@@ -8,6 +8,66 @@ const router = Router();
 
 router.use(verifyFirebaseToken);
 
+// Get current user's orders
+router.get("/my-orders", async (req, res) => {
+  try {
+    const { uid, email } = req.user;
+    
+    // Fetch orders by customerId (without orderBy to avoid index requirement)
+    const snap = await db
+      .collection("orders")
+      .where("customerId", "==", uid)
+      .limit(100)
+      .get();
+
+    // If no orders by customerId, try by email
+    let orders = [];
+    if (snap.empty && email) {
+      const emailSnap = await db
+        .collection("orders")
+        .where("customerEmail", "==", email)
+        .limit(100)
+        .get();
+      
+      orders = emailSnap.docs.map((doc) => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate?.() ?? null;
+        const updatedAt = data.updatedAt?.toDate?.() ?? null;
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: createdAt ? createdAt.toISOString() : null,
+          updatedAt: updatedAt ? updatedAt.toISOString() : null,
+        };
+      });
+    } else {
+      orders = snap.docs.map((doc) => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate?.() ?? null;
+        const updatedAt = data.updatedAt?.toDate?.() ?? null;
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: createdAt ? createdAt.toISOString() : null,
+          updatedAt: updatedAt ? updatedAt.toISOString() : null,
+        };
+      });
+    }
+
+    // Sort by createdAt in descending order (newest first) in memory
+    orders.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA; // Descending order
+    });
+
+    res.json({ orders });
+  } catch (error) {
+    console.error("orders.my-orders error", error);
+    res.status(500).json({ error: "Failed to fetch orders", details: error.message });
+  }
+});
+
 router.get("/", requireRole("ADMIN"), async (_req, res) => {
   try {
     const snap = await db

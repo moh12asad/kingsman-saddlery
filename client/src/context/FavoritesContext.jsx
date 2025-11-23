@@ -4,24 +4,38 @@ const FavoritesContext = createContext();
 
 export function FavoritesProvider({ children }) {
   const [favorites, setFavorites] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("favorites");
-    if (savedFavorites) {
-      try {
-        setFavorites(JSON.parse(savedFavorites));
-      } catch (error) {
-        console.error("Error loading favorites:", error);
-        setFavorites([]);
+    try {
+      const savedFavorites = localStorage.getItem("favorites");
+      if (savedFavorites) {
+        const parsed = JSON.parse(savedFavorites);
+        if (Array.isArray(parsed)) {
+          setFavorites(parsed);
+        }
       }
+    } catch (error) {
+      console.error("Error loading favorites:", error);
+      // Clear corrupted data
+      localStorage.removeItem("favorites");
+      setFavorites([]);
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
-  // Save favorites to localStorage whenever they change
+  // Save favorites to localStorage whenever they change (but only after initial load)
   useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-  }, [favorites]);
+    if (isLoaded) {
+      try {
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+      } catch (error) {
+        console.error("Error saving favorites:", error);
+      }
+    }
+  }, [favorites, isLoaded]);
 
   const addFavorite = (product) => {
     setFavorites((prev) => {
@@ -61,6 +75,7 @@ export function FavoritesProvider({ children }) {
         toggleFavorite,
         isFavorite,
         getFavoriteCount,
+        isLoaded,
       }}
     >
       {children}

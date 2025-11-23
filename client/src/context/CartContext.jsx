@@ -12,23 +12,37 @@ const CartContext = createContext({
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (err) {
-        console.error("Failed to load cart from localStorage:", err);
+    try {
+      const savedCart = localStorage.getItem("cart");
+      if (savedCart) {
+        const parsed = JSON.parse(savedCart);
+        if (Array.isArray(parsed)) {
+          setCartItems(parsed);
+        }
       }
+    } catch (err) {
+      console.error("Failed to load cart from localStorage:", err);
+      // Clear corrupted data
+      localStorage.removeItem("cart");
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes (but only after initial load)
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (isLoaded) {
+      try {
+        localStorage.setItem("cart", JSON.stringify(cartItems));
+      } catch (err) {
+        console.error("Failed to save cart to localStorage:", err);
+      }
+    }
+  }, [cartItems, isLoaded]);
 
   const addToCart = (product) => {
     setCartItems((prev) => {
@@ -68,7 +82,7 @@ export function CartProvider({ children }) {
     }
     setCartItems((prev) =>
       prev.map((item) =>
-        item.id === productId ? { ...item, quantity: quantity } : item
+        item.id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
       )
     );
   };
@@ -94,8 +108,9 @@ export function CartProvider({ children }) {
       clearCart,
       getTotalItems,
       getTotalPrice,
+      isLoaded,
     }),
-    [cartItems]
+    [cartItems, isLoaded]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

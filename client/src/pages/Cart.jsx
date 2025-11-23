@@ -1,8 +1,26 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function Cart() {
-  const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart, isLoaded } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Show loading state while cart is being loaded from localStorage
+  if (!isLoaded) {
+    return (
+      <main className="cart-page">
+        <div className="cart-container">
+          <h1 className="cart-title">Your Cart</h1>
+          <div className="text-center padding-y-lg">
+            <div className="loading-spinner mx-auto"></div>
+            <p className="margin-top-md text-muted">Loading cart...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -24,6 +42,17 @@ export default function Cart() {
   }
 
   const total = getTotalPrice();
+
+  function handleCheckout() {
+    if (!user) {
+      // Redirect to sign-in with return URL
+      navigate("/signin?redirect=/cart");
+      return;
+    }
+    // TODO: Implement checkout flow
+    // For now, just show an alert or navigate to a checkout page
+    alert("Checkout functionality coming soon!");
+  }
 
   return (
     <main className="cart-page">
@@ -113,6 +142,21 @@ export default function Cart() {
           ))}
         </div>
 
+        {!user && (
+          <div className="card padding-md margin-bottom-lg" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
+            <div className="flex-row flex-gap-sm margin-bottom-sm">
+              <strong style={{ color: "#92400e" }}>Sign in required:</strong>
+              <span style={{ color: "#92400e" }}>Please sign in to proceed to checkout.</span>
+            </div>
+            <Link
+              to="/signin?redirect=/cart"
+              className="btn-primary"
+            >
+              Sign in to Checkout
+            </Link>
+          </div>
+        )}
+
         <div className="cart-summary">
           <div className="cart-total">
             <span className="cart-total-label">Total:</span>
@@ -127,7 +171,11 @@ export default function Cart() {
             >
               Continue Shopping
             </Link>
-            <button className="btn-primary btn-full">
+            <button 
+              className="btn-primary btn-full"
+              onClick={handleCheckout}
+              disabled={!user}
+            >
               Proceed to Checkout
             </button>
           </div>

@@ -1,7 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, NavLink } from "react-router-dom";
 import { signInWithGoogle, signOutUser } from "../lib/firebase";
-import { FaShoppingCart, FaCog, FaHeart } from "react-icons/fa";
+import { FaShoppingCart, FaCog, FaHeart, FaUser } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useMemo } from "react";
@@ -86,7 +86,14 @@ export default function Navbar() {
                             alt="avatar"
                         />
                     )}
-                    <span className="text-small">{user.displayName || user.email}</span>
+                    <NavLink
+                        to="/profile"
+                        className={({ isActive }) => `flex-row flex-gap-sm ${isActive ? "nav-link-active" : "nav-link"}`}
+                        title="Profile"
+                    >
+                        <FaUser className="w-4 h-4" />
+                        <span className="text-small sm:inline hidden">{user.displayName || user.email}</span>
+                    </NavLink>
                     <button
                         onClick={signOutUser}
                         className="btn-secondary padding-x-md padding-y-sm"
