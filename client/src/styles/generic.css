@@ -108,6 +108,15 @@
 .table:not(.admin-products-table) td:last-child {
   text-align: right;
 }
+
+/* Order Confirmation Page */
+.border-bottom {
+  border-bottom: 1px solid var(--border);
+}
+
+.border-top {
+  border-top: 1px solid var(--border);
+}
 .table tbody tr {
   transition: background-color 0.15s ease;
 }

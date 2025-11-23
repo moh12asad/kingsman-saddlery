@@ -12,6 +12,7 @@ import Shop from "./pages/Shop.jsx";
 import Cart from "./pages/Cart.jsx";
 import Favorites from "./pages/Favorites.jsx";
 import Profile from "./pages/Profile.jsx";
+import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "shop", element: <Shop /> },
       { path: "cart", element: <Cart /> },
+      { path: "checkout", element: <OrderConfirmation /> },
       { path: "favorites", element: <Favorites /> },
       { path: "profile", element: <Profile /> },
 

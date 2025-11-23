@@ -42,7 +42,6 @@ export default function Profile() {
     address: {
       street: "",
       city: "",
-      state: "",
       zipCode: "",
       country: ""
     }
@@ -82,7 +81,6 @@ export default function Profile() {
           address: data.address || {
             street: "",
             city: "",
-            state: "",
             zipCode: "",
             country: ""
           }
@@ -96,7 +94,6 @@ export default function Profile() {
           address: {
             street: "",
             city: "",
-            state: "",
             zipCode: "",
             country: ""
           }
@@ -357,16 +354,6 @@ export default function Profile() {
                     address: { ...profileData.address, city: e.target.value }
                   })}
                   placeholder="City"
-                />
-                <input
-                  type="text"
-                  className="input"
-                  value={profileData.address.state}
-                  onChange={e => setProfileData({
-                    ...profileData,
-                    address: { ...profileData.address, state: e.target.value }
-                  })}
-                  placeholder="State/Province"
                 />
                 <input
                   type="text"
