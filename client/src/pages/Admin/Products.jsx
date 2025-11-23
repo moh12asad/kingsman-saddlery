@@ -285,10 +285,9 @@ export default function AdminProducts(){
           <div className="flex items-center gap-3">
             <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
             <select 
-              className="select" 
+              className="select select-min-width" 
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              style={{ minWidth: '200px' }}
             >
               <option value="all">All Categories</option>
               {productCategories.map(cat => (
@@ -306,7 +305,7 @@ export default function AdminProducts(){
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="table">
+          <table className="table admin-products-table">
             <thead>
               <tr>
                 <th>Image</th>
