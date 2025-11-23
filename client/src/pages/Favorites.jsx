@@ -57,7 +57,7 @@ export default function Favorites() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gray-50 page-with-navbar">
         <div className="container-main padding-y-xl">
           <div className="text-center">
             <div className="loading-spinner"></div>
@@ -69,7 +69,7 @@ export default function Favorites() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 page-with-navbar">
       <div className="container-main padding-y-xl">
         <div className="flex-row flex-gap-md margin-bottom-lg" style={{ alignItems: 'center' }}>
           <FaHeart className="text-red-500" style={{ fontSize: '1.5rem' }} />
