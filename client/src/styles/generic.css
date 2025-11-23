@@ -2041,6 +2041,14 @@ html {
   animation: spin 1s linear infinite;
 }
 
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6rem;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
