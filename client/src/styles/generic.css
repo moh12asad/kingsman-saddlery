@@ -66,6 +66,10 @@
   font-size: 0.875rem;
 }
 
+.select-min-width {
+  min-width: 200px;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -93,8 +97,15 @@
   min-width: 0;
   text-align: left;
 }
-.table th:last-child,
-.table td:last-child {
+/* Admin products table - all cells left-aligned */
+.admin-products-table th,
+.admin-products-table td {
+  text-align: left;
+}
+
+/* Default: last column right-aligned for other tables */
+.table:not(.admin-products-table) th:last-child,
+.table:not(.admin-products-table) td:last-child {
   text-align: right;
 }
 .table tbody tr {
