@@ -57,12 +57,10 @@ export default function Favorites() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 page-with-navbar">
-        <div className="container-main padding-y-xl">
-          <div className="text-center">
-            <div className="loading-spinner"></div>
-            <p className="margin-top-md text-muted">Loading favorites...</p>
-          </div>
+      <main className="min-h-screen bg-gray-50 loading-container">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto"></div>
+          <p className="margin-top-md text-muted">Loading favorites...</p>
         </div>
       </main>
     );
