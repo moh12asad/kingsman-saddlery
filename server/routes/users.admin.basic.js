@@ -29,7 +29,6 @@ router.get("/me", async (req, res) => {
       address: userData.address || {
         street: "",
         city: "",
-        state: "",
         zipCode: "",
         country: ""
       },

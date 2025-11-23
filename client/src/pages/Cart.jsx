@@ -49,9 +49,8 @@ export default function Cart() {
       navigate("/signin?redirect=/cart");
       return;
     }
-    // TODO: Implement checkout flow
-    // For now, just show an alert or navigate to a checkout page
-    alert("Checkout functionality coming soon!");
+    // Navigate to order confirmation page
+    navigate("/checkout");
   }
 
   return (
