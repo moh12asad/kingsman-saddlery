@@ -97,7 +97,7 @@ export default function SignIn() {
     }
 
     return (
-        <div className="max-w-md mx-auto px-4 py-12">
+        <div className="max-w-md mx-auto px-4 py-12 signin-page-container">
             <h1 className="text-2xl font-bold mb-6">Sign in</h1>
 
             <form onSubmit={onSubmit} className="space-y-4">

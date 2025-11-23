@@ -8,7 +8,9 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function AdminProducts(){
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
+  const [allRows, setAllRows] = useState([]); // Store all products
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("all"); // Filter by category
   const [form, setForm] = useState({
     name: "",
     price: 0,
@@ -27,7 +29,9 @@ export default function AdminProducts(){
   async function load(){
     const r = await fetch(`${API}/api/products`);
     const b = await r.json();
-    setRows(b.products||[]);
+    const products = b.products || [];
+    setAllRows(products);
+    setRows(products);
   }
 
   async function loadCategories(){
@@ -50,6 +54,20 @@ export default function AdminProducts(){
   },[]);
 
   const canSubmit = useMemo(() => form.name && form.price > 0 && form.category, [form]);
+
+  // Filter products by category
+  const filteredRows = useMemo(() => {
+    if (selectedCategory === "all") {
+      return allRows;
+    }
+    return allRows.filter(p => p.category === selectedCategory);
+  }, [allRows, selectedCategory]);
+
+  // Get unique categories from products for filter dropdown
+  const productCategories = useMemo(() => {
+    const cats = new Set(allRows.map(p => p.category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [allRows]);
 
   async function uploadImage(file, key = "") {
     // Ensure user is authenticated
@@ -262,7 +280,31 @@ export default function AdminProducts(){
 
       {/* Products Table */}
       <div className="card">
-        <h2 className="section-title">Products ({rows.length})</h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+          <h2 className="section-title">Products ({filteredRows.length})</h2>
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
+            <select 
+              className="select" 
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+              style={{ minWidth: '200px' }}
+            >
+              <option value="all">All Categories</option>
+              {productCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            {selectedCategory !== "all" && (
+              <button 
+                className="btn btn-sm"
+                onClick={() => setSelectedCategory("all")}
+              >
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
@@ -278,14 +320,16 @@ export default function AdminProducts(){
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {filteredRows.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="text-center py-8 text-gray-500">
-                    No products yet. Create your first product above!
+                    {selectedCategory === "all" 
+                      ? "No products yet. Create your first product above!"
+                      : `No products found in category "${selectedCategory}".`}
                   </td>
                 </tr>
               ) : (
-                rows.map(p => (
+                filteredRows.map(p => (
                   <tr key={p.id}>
                     <td>
                       {p.image ? (

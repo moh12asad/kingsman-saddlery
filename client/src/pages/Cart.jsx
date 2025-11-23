@@ -6,16 +6,18 @@ export default function Cart() {
 
   if (cartItems.length === 0) {
     return (
-      <main className="container-narrow padding-y-lg">
-        <h1 className="heading-2 margin-bottom-lg">Your Cart</h1>
-        <div className="card-empty">
-          <p className="text-muted margin-bottom-md">Your cart is empty</p>
-          <Link
-            to="/shop"
-            className="btn-link"
-          >
-            Continue Shopping
-          </Link>
+      <main className="cart-page">
+        <div className="cart-container">
+          <h1 className="cart-title">Your Cart</h1>
+          <div className="card-empty">
+            <p className="text-muted margin-bottom-md">Your cart is empty</p>
+            <Link
+              to="/shop"
+              className="btn-primary"
+            >
+              Continue Shopping
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -24,23 +26,24 @@ export default function Cart() {
   const total = getTotalPrice();
 
   return (
-    <main className="container-narrow padding-y-lg">
-      <div className="flex-row-between margin-bottom-lg">
-        <h1 className="heading-2">Your Cart</h1>
-        <button
-          onClick={clearCart}
-          className="text-xs text-error underline transition"
-        >
-          Clear Cart
-        </button>
-      </div>
-
-      <div className="spacing-y-sm margin-bottom-lg">
-        {cartItems.map((item) => (
-          <div
-            key={item.id}
-            className="card-cart-item"
+    <main className="cart-page">
+      <div className="cart-container">
+        <div className="cart-header">
+          <h1 className="cart-title">Your Cart</h1>
+          <button
+            onClick={clearCart}
+            className="cart-clear-btn"
           >
+            Clear Cart
+          </button>
+        </div>
+
+        <div className="cart-items">
+          {cartItems.map((item) => (
+            <div
+              key={item.id}
+              className="card-cart-item"
+            >
             {item.image ? (
               <img
                 src={item.image}
@@ -107,26 +110,27 @@ export default function Cart() {
               </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="card padding-md">
-        <div className="flex-row-between margin-bottom-md">
-          <span className="heading-3 font-semibold">Total:</span>
-          <span className="price-total">
-            ${total.toFixed(2)}
-          </span>
+          ))}
         </div>
-        <div className="flex-row flex-gap-md">
-          <Link
-            to="/shop"
-            className="btn-secondary btn-full text-small transition"
-          >
-            Continue Shopping
-          </Link>
-          <button className="btn-primary btn-full text-small transition">
-            Proceed to Checkout
-          </button>
+
+        <div className="cart-summary">
+          <div className="cart-total">
+            <span className="cart-total-label">Total:</span>
+            <span className="cart-total-amount">
+              ${total.toFixed(2)}
+            </span>
+          </div>
+          <div className="cart-actions">
+            <Link
+              to="/shop"
+              className="btn-secondary btn-full"
+            >
+              Continue Shopping
+            </Link>
+            <button className="btn-primary btn-full">
+              Proceed to Checkout
+            </button>
+          </div>
         </div>
       </div>
     </main>
