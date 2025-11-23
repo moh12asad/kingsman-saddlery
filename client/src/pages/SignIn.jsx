@@ -1,6 +1,6 @@
 // src/pages/SignIn.jsx
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, signInWithGoogle } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
@@ -14,15 +14,23 @@ export default function SignIn() {
     const [err, setErr] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const redirectTo = searchParams.get("redirect") || null;
 
     const { user, loading: authLoading } = useAuth?.() ?? { user: null, loading: false };
 
-    // If already signed in, don't allow /signin
+    // If already signed in, redirect appropriately
     useEffect(() => {
         if (authLoading || !user) return;
 
         (async () => {
             try {
+                // Check if there's a redirect parameter
+                if (redirectTo) {
+                    navigate(redirectTo, { replace: true });
+                    return;
+                }
+
                 const role = await resolveRole(user);// "admin" | "owner" | null
                 console.log("role: ",role)
                 if (role === "admin") {
@@ -35,10 +43,10 @@ export default function SignIn() {
                 }
             } catch (e) {
                 console.error("resolveRole failed:", e);
-                navigate("/", { replace: true });
+                navigate(redirectTo || "/", { replace: true });
             }
         })();
-    }, [user, authLoading, navigate]);
+    }, [user, authLoading, navigate, redirectTo]);
 
     async function onSubmit(e) {
         e.preventDefault();

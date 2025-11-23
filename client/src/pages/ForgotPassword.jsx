@@ -1,5 +1,6 @@
 // src/pages/ForgotPassword.jsx
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
 
@@ -7,35 +8,81 @@ export default function ForgotPassword() {
     const [email, setEmail] = useState("");
     const [msg, setMsg] = useState("");
     const [err, setErr] = useState("");
+    const [loading, setLoading] = useState(false);
 
     async function onSubmit(e) {
         e.preventDefault();
-        setMsg(""); setErr("");
+        setMsg(""); 
+        setErr("");
+        setLoading(true);
         try {
             await sendPasswordResetEmail(auth, email.trim().toLowerCase(), {
-                url: `${window.location.origin}/welcome?email=${encodeURIComponent(email.trim().toLowerCase())}`,
+                url: `${window.location.origin}/signin`,
                 handleCodeInApp: false,
             });
-            setMsg("Reset link sent. Check your inbox.");
+            setMsg("Password reset link sent! Check your email inbox.");
         } catch (e) {
-            setErr(e?.message || "Failed to send reset email.");
+            const code = e.code || "";
+            let errorMessage = e.message || "Failed to send reset email.";
+            
+            if (code === "auth/user-not-found") {
+                errorMessage = "No account found with this email address.";
+            } else if (code === "auth/invalid-email") {
+                errorMessage = "Invalid email address.";
+            } else if (code === "auth/too-many-requests") {
+                errorMessage = "Too many requests. Please try again later.";
+            }
+            
+            setErr(errorMessage);
+        } finally {
+            setLoading(false);
         }
     }
 
     return (
-        <form onSubmit={onSubmit} className="max-w-md mx-auto space-y-3">
-            <h1 className="text-xl font-semibold">Forgot Password</h1>
-            <input
-                className="border rounded-lg px-2 py-1 w-full"
-                type="email"
-                value={email}
-                onChange={e=>setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-            />
-            <button className="px-3 py-2 rounded-lg bg-indigo-600 text-white">Send reset link</button>
-            {msg && <p className="text-green-600">{msg}</p>}
-            {err && <p className="text-red-600">{err}</p>}
-        </form>
+        <main className="signin-page-container">
+            <div className="max-w-md mx-auto px-4 py-12">
+                <h1 className="text-2xl font-bold mb-2">Forgot Password</h1>
+                <p className="text-muted mb-6">
+                    Enter your email address and we'll send you a link to reset your password.
+                </p>
+
+                <form onSubmit={onSubmit} className="space-y-4">
+                    <input
+                        className="w-full p-2 border rounded-lg"
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                        disabled={loading}
+                    />
+                    <button 
+                        className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-60"
+                        disabled={loading}
+                    >
+                        {loading ? "Sending..." : "Send reset link"}
+                    </button>
+                </form>
+
+                {msg && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-green-700 text-sm">{msg}</p>
+                    </div>
+                )}
+                
+                {err && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-red-700 text-sm">{err}</p>
+                    </div>
+                )}
+
+                <div className="mt-6 text-center">
+                    <Link to="/signin" className="text-indigo-600 hover:underline text-sm">
+                        Back to Sign In
+                    </Link>
+                </div>
+            </div>
+        </main>
     );
 }

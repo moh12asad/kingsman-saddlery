@@ -6,7 +6,7 @@ import { FaHeart, FaShoppingCart } from "react-icons/fa";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function Favorites() {
-  const { favorites, removeFavorite } = useFavorites();
+  const { favorites, removeFavorite, isLoaded: favoritesLoaded } = useFavorites();
   const { addToCart } = useCart();
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
@@ -55,7 +55,8 @@ export default function Favorites() {
     setConfirmProduct(null);
   };
 
-  if (loading) {
+  // Show loading state while favorites or products are being loaded
+  if (!favoritesLoaded || loading) {
     return (
       <main className="min-h-screen bg-gray-50 loading-container">
         <div className="text-center">
