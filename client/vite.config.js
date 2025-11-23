@@ -13,4 +13,11 @@ export default defineConfig({
             interval: 100,         // tweak (100–300ms) if needed
         },
     },
+    preview: {
+        host: true,              // allow access via Network URL
+        port: 5174,              // matches the port in package.json preview script
+        // Allow all hosts for Railway deployment (dynamic domains)
+        // In production preview mode, this is safe as the app is already built
+        allowedHosts: true,
+    },
 });
