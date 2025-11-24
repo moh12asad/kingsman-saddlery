@@ -106,3 +106,4 @@ After updating credentials, test by:
 4. **Try** generating a new App Password
 5. **Consider** using Mailtrap for easier testing
 
+

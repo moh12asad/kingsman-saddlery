@@ -119,3 +119,4 @@ Mailtrap is great for development - emails are captured and not actually sent:
 - The `.env` file should already be in `.gitignore`
 - For production, use environment variables provided by your hosting service (Railway, Render, etc.)
 
+

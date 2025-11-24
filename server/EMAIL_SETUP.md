@@ -86,3 +86,4 @@ The template is located in `server/lib/emailService.js` and can be customized as
 - **Connection timeout**: Verify your SMTP host and port are correct
 - **Check server logs**: The email service logs errors to the console
 
+
