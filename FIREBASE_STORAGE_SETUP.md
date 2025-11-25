@@ -36,6 +36,12 @@ service firebase.storage {
       allow read: if true;
       allow write: if request.auth != null; // Admin role verified by client and backend
     }
+    
+    // Allow authenticated users to upload to hero folder (for hero carousel images)
+    match /hero/{allPaths=**} {
+      allow read: if true; // Anyone can read
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
   }
 }
 ```
