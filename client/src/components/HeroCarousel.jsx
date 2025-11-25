@@ -1,49 +1,44 @@
 import { useState, useEffect } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-// Hero slides configuration
-// You can replace these placeholder images with your actual hero images
-const heroSlides = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=1920&h=800&fit=crop",
-    title: "Elevate Every Ride",
-    subtitle: "Add luxury style, performance and comfort to every ride with premium equestrian equipment.",
-    button1: "Shop Saddles",
-    button2: "Shop Equipment"
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1516726817505-2a5bc90e8d03?w=1920&h=800&fit=crop",
-    title: "Premium Quality",
-    subtitle: "Discover our collection of handcrafted saddles and equestrian gear.",
-    button1: "View Collection",
-    button2: "Learn More"
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=800&fit=crop",
-    title: "Expert Craftsmanship",
-    subtitle: "Built for comfort, durability, and performance in the arena and on the trail.",
-    button1: "Shop Now",
-    button2: "Browse Products"
-  }
-];
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function HeroCarousel() {
+  const [heroSlides, setHeroSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch hero slides from API
+  useEffect(() => {
+    async function loadSlides() {
+      try {
+        const res = await fetch(`${API}/api/hero-slides`);
+        const data = await res.json();
+        const slides = data.slides || [];
+        // Sort by order if available
+        setHeroSlides(slides.sort((a, b) => (a.order || 0) - (b.order || 0)));
+      } catch (error) {
+        console.error("Failed to load hero slides:", error);
+        // Fallback to empty array if API fails
+        setHeroSlides([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSlides();
+  }, []);
 
   // Auto-rotate slides every 5 seconds
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || heroSlides.length === 0) return;
 
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAutoPlaying]);
+  }, [isAutoPlaying, heroSlides.length]);
 
   const goToSlide = (index) => {
     setCurrentSlide(index);
@@ -64,6 +59,29 @@ export default function HeroCarousel() {
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
 
+  // Don't render if loading or no slides
+  if (loading) {
+    return (
+      <div className="hero-carousel">
+        <div className="hero-carousel-container">
+          <div className="hero-slide active" style={{ background: "#1a1a1a" }}>
+            <div className="hero-slide-overlay">
+              <div className="container-main">
+                <div className="hero-content">
+                  <p className="text-white">Loading...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (heroSlides.length === 0) {
+    return null; // Don't render carousel if no slides
+  }
+
   return (
     <div className="hero-carousel">
       <div className="hero-carousel-container">
@@ -76,16 +94,22 @@ export default function HeroCarousel() {
             <div className="hero-slide-overlay">
               <div className="container-main">
                 <div className="hero-content">
-                  <h1 className="hero-title">{slide.title}</h1>
-                  <p className="hero-subtitle">{slide.subtitle}</p>
-                  <div className="hero-buttons">
-                    <button className="btn-hero btn-hero-primary">
-                      {slide.button1}
-                    </button>
-                    <button className="btn-hero btn-hero-secondary">
-                      {slide.button2}
-                    </button>
-                  </div>
+                  {slide.title && <h1 className="hero-title">{slide.title}</h1>}
+                  {slide.subtitle && <p className="hero-subtitle">{slide.subtitle}</p>}
+                  {(slide.button1 || slide.button2) && (
+                    <div className="hero-buttons">
+                      {slide.button1 && (
+                        <button className="btn-hero btn-hero-primary">
+                          {slide.button1}
+                        </button>
+                      )}
+                      {slide.button2 && (
+                        <button className="btn-hero btn-hero-secondary">
+                          {slide.button2}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -93,33 +117,39 @@ export default function HeroCarousel() {
         ))}
       </div>
 
-      {/* Navigation Arrows */}
-      <button
-        className="hero-nav hero-nav-prev"
-        onClick={goToPrevious}
-        aria-label="Previous slide"
-      >
-        <FaChevronLeft />
-      </button>
-      <button
-        className="hero-nav hero-nav-next"
-        onClick={goToNext}
-        aria-label="Next slide"
-      >
-        <FaChevronRight />
-      </button>
-
-      {/* Slide Indicators */}
-      <div className="hero-indicators">
-        {heroSlides.map((_, index) => (
+      {/* Navigation Arrows - only show if more than one slide */}
+      {heroSlides.length > 1 && (
+        <>
           <button
-            key={index}
-            className={`hero-indicator ${index === currentSlide ? "active" : ""}`}
-            onClick={() => goToSlide(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+            className="hero-nav hero-nav-prev"
+            onClick={goToPrevious}
+            aria-label="Previous slide"
+          >
+            <FaChevronLeft />
+          </button>
+          <button
+            className="hero-nav hero-nav-next"
+            onClick={goToNext}
+            aria-label="Next slide"
+          >
+            <FaChevronRight />
+          </button>
+        </>
+      )}
+
+      {/* Slide Indicators - only show if more than one slide */}
+      {heroSlides.length > 1 && (
+        <div className="hero-indicators">
+          {heroSlides.map((_, index) => (
+            <button
+              key={index}
+              className={`hero-indicator ${index === currentSlide ? "active" : ""}`}
+              onClick={() => goToSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
