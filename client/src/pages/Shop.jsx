@@ -3,17 +3,21 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { FaSearch, FaTimes, FaChevronLeft, FaChevronRight, FaBars, FaHeart, FaShoppingCart } from "react-icons/fa";
 import HeroCarousel from "../components/HeroCarousel";
+import { auth } from "../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function Shop() {
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [hoveredCategory, setHoveredCategory] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
@@ -44,22 +48,55 @@ export default function Shop() {
       }
     }
 
+    async function loadCategories() {
+      try {
+        // Try to get token if user is logged in, but don't require it
+        const token = await auth.currentUser?.getIdToken().catch(() => null);
+        const response = await fetch(`${API}/api/categories`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+        const data = await response.json();
+        setCategories(data.categories || []);
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+        // Continue without categories - will use product-based categories
+      }
+    }
+
     loadProducts();
+    loadCategories();
   }, []);
 
-  // Get unique categories from products
-  const categories = useMemo(() => {
+  // Get unique categories from products (fallback if API categories not loaded)
+  const productCategories = useMemo(() => {
     const cats = ["all", ...new Set(allProducts.map(p => p.category).filter(Boolean))];
     return cats;
   }, [allProducts]);
 
-  // Filter products based on search and category
+  // Use API categories if available, otherwise fallback to product-based categories
+  const displayCategories = useMemo(() => {
+    if (categories.length > 0) {
+      return categories;
+    }
+    // Fallback: create simple category objects from product categories
+    return productCategories.filter(c => c !== "all").map(cat => ({ name: cat, subCategories: [] }));
+  }, [categories, productCategories]);
+
+  // Filter products based on search, category, and sub-category
   const filteredProducts = useMemo(() => {
     let filtered = allProducts;
 
     // Filter by category
     if (selectedCategory !== "all") {
       filtered = filtered.filter(p => p.category === selectedCategory);
+      
+      // Filter by sub-category if selected
+      if (selectedSubCategory) {
+        filtered = filtered.filter(p => p.subCategory === selectedSubCategory);
+      }
     }
 
     // Filter by search query
@@ -67,27 +104,45 @@ export default function Shop() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(query) ||
-        (p.category && p.category.toLowerCase().includes(query))
+        (p.category && p.category.toLowerCase().includes(query)) ||
+        (p.subCategory && p.subCategory.toLowerCase().includes(query))
       );
     }
 
     // Separate sale products
     const saleProducts = filtered.filter(p => p.sale);
     
-    // Group regular products by category
+    // Group regular products by category and sub-category
     const productsByCategory = {};
+    const productsBySubCategory = {};
+    
     filtered
       .filter(p => !p.sale)
       .forEach(product => {
         const category = product.category || "Uncategorized";
-        if (!productsByCategory[category]) {
-          productsByCategory[category] = [];
+        const subCategory = product.subCategory;
+        
+        // If sub-category is selected, group by sub-category
+        if (selectedSubCategory && subCategory) {
+          const key = `${category} > ${subCategory}`;
+          if (!productsBySubCategory[key]) {
+            productsBySubCategory[key] = [];
+          }
+          productsBySubCategory[key].push(product);
+        } else {
+          // Otherwise group by category
+          if (!productsByCategory[category]) {
+            productsByCategory[category] = [];
+          }
+          productsByCategory[category].push(product);
         }
-        productsByCategory[category].push(product);
       });
 
-    return { saleProducts, productsByCategory };
-  }, [allProducts, selectedCategory, searchQuery]);
+    return { 
+      saleProducts, 
+      productsByCategory: selectedSubCategory ? productsBySubCategory : productsByCategory 
+    };
+  }, [allProducts, selectedCategory, selectedSubCategory, searchQuery]);
 
   const handleAddToCart = (product) => {
     setConfirmProduct(product);
@@ -155,21 +210,89 @@ export default function Shop() {
           <div className="shop-sidebar-content">
             <h2 className="shop-sidebar-title">Categories</h2>
             <nav className="shop-sidebar-nav">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setSidebarOpen(false);
-                  }}
-                  className={`shop-category-button ${
-                    selectedCategory === category ? "shop-category-button-active" : ""
-                  }`}
-                >
-                  {category === "all" ? "All Products" : category}
-                </button>
-              ))}
+              <button
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setSelectedSubCategory("");
+                  setSidebarOpen(false);
+                }}
+                className={`shop-category-button ${
+                  selectedCategory === "all" ? "shop-category-button-active" : ""
+                }`}
+              >
+                All Products
+              </button>
+              {displayCategories.map((category) => {
+                const categoryName = typeof category === 'string' ? category : category.name;
+                const subCategories = category.subCategories || [];
+                const hasSubCategories = subCategories.length > 0;
+                const isExpanded = hoveredCategory === categoryName || (selectedCategory === categoryName && selectedSubCategory);
+                
+                return (
+                  <div 
+                    key={categoryName}
+                    className="shop-category-item"
+                    onMouseEnter={() => hasSubCategories && setHoveredCategory(categoryName)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  >
+                    <button
+                      onClick={() => {
+                        setSelectedCategory(categoryName);
+                        setSelectedSubCategory("");
+                        setSidebarOpen(false);
+                      }}
+                      className={`shop-category-button ${
+                        selectedCategory === categoryName ? "shop-category-button-active" : ""
+                      }`}
+                    >
+                      {categoryName}
+                      {hasSubCategories && (
+                        <span className={`shop-category-arrow ${isExpanded ? 'expanded' : ''}`}>
+                          ›
+                        </span>
+                      )}
+                    </button>
+                    {hasSubCategories && isExpanded && (
+                      <div className="shop-subcategory-list">
+                        {subCategories.map((sub, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setSelectedCategory(categoryName);
+                              setSelectedSubCategory(sub.name);
+                              setSidebarOpen(false);
+                            }}
+                            className={`shop-subcategory-button ${
+                              selectedCategory === categoryName && selectedSubCategory === sub.name
+                                ? "shop-subcategory-button-active"
+                                : ""
+                            }`}
+                          >
+                            {sub.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
+            {selectedSubCategory && (
+              <div className="shop-active-filter">
+                <span className="shop-active-filter-label">Active Filter:</span>
+                <span className="shop-active-filter-value">
+                  {selectedCategory} {selectedSubCategory && `> ${selectedSubCategory}`}
+                </span>
+                <button
+                  onClick={() => {
+                    setSelectedSubCategory("");
+                  }}
+                  className="shop-clear-filter-btn"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -246,6 +369,7 @@ export default function Shop() {
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedCategory("all");
+                  setSelectedSubCategory("");
                 }}
                 className="btn-link"
               >

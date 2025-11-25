@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -125,6 +125,7 @@ export default function EditProduct() {
         name: product.name,
         price: Number(product.price) || 0,
         category: product.category || "",
+        subCategory: product.subCategory || "",
         image: product.image || "",
         description: product.description ? product.description.trim() : "",
         available: product.available,
@@ -219,7 +220,7 @@ export default function EditProduct() {
               <select
                 className="select"
                 value={product.category || ""}
-                onChange={e => setProduct({ ...product, category: e.target.value })}
+                onChange={e => setProduct({ ...product, category: e.target.value, subCategory: "" })}
               >
                 <option value="">Select category...</option>
                 {categories.map(cat => (
@@ -228,6 +229,32 @@ export default function EditProduct() {
               </select>
             </div>
           </div>
+
+          {(() => {
+            const selectedCategoryObj = categories.find(cat => cat.name === product.category);
+            const availableSubCategories = selectedCategoryObj?.subCategories || [];
+            
+            if (availableSubCategories.length > 0) {
+              return (
+                <div>
+                  <div className="form-group">
+                    <label className="form-label">Sub-Category</label>
+                    <select
+                      className="select"
+                      value={product.subCategory || ""}
+                      onChange={e => setProduct({ ...product, subCategory: e.target.value })}
+                    >
+                      <option value="">Select sub-category (optional)...</option>
+                      {availableSubCategories.map((sub, idx) => (
+                        <option key={idx} value={sub.name}>{sub.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">

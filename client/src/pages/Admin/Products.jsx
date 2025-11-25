@@ -11,10 +11,12 @@ export default function AdminProducts(){
   const [allRows, setAllRows] = useState([]); // Store all products
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all"); // Filter by category
+  const [searchQuery, setSearchQuery] = useState(""); // Search query
   const [form, setForm] = useState({
     name: "",
     price: 0,
     category: "",
+    subCategory: "",
     image: "",
     description: "",
     available: true,
@@ -55,13 +57,37 @@ export default function AdminProducts(){
 
   const canSubmit = useMemo(() => form.name && form.price > 0 && form.category, [form]);
 
-  // Filter products by category
+  // Get selected category object and its sub-categories
+  const selectedCategoryObj = useMemo(() => {
+    return categories.find(cat => cat.name === form.category);
+  }, [categories, form.category]);
+
+  const availableSubCategories = useMemo(() => {
+    return selectedCategoryObj?.subCategories || [];
+  }, [selectedCategoryObj]);
+
+  // Filter products by category and search query
   const filteredRows = useMemo(() => {
-    if (selectedCategory === "all") {
-      return allRows;
+    let filtered = allRows;
+
+    // Filter by category
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(p => p.category === selectedCategory);
     }
-    return allRows.filter(p => p.category === selectedCategory);
-  }, [allRows, selectedCategory]);
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(p => 
+        (p.name && p.name.toLowerCase().includes(query)) ||
+        (p.category && p.category.toLowerCase().includes(query)) ||
+        (p.subCategory && p.subCategory.toLowerCase().includes(query)) ||
+        (p.description && p.description.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [allRows, selectedCategory, searchQuery]);
 
   // Get unique categories from products for filter dropdown
   const productCategories = useMemo(() => {
@@ -117,6 +143,7 @@ export default function AdminProducts(){
         name: form.name,
         price: Number(form.price) || 0,
         category: form.category,
+        subCategory: form.subCategory || "",
         image: form.image,
         description: form.description ? form.description.trim() : "",
         available: form.available,
@@ -134,7 +161,7 @@ export default function AdminProducts(){
         throw new Error(data.error || "Failed to create product");
       }
 
-      setForm({ name:"", price:0, category:"", image:"", description:"", available:true, sale:false, sale_proce:0 });
+      setForm({ name:"", price:0, category:"", subCategory:"", image:"", description:"", available:true, sale:false, sale_proce:0 });
       await load();
     } catch (err) {
       setError(err.message || "Unable to create product");
@@ -210,7 +237,7 @@ export default function AdminProducts(){
           <select 
             className="select" 
             value={form.category} 
-            onChange={e=>setForm({...form,category:e.target.value})}
+            onChange={e=>setForm({...form, category: e.target.value, subCategory: ""})}
             required
           >
             <option value="">Select category...</option>
@@ -218,6 +245,18 @@ export default function AdminProducts(){
               <option key={cat.id} value={cat.name}>{cat.name}</option>
             ))}
           </select>
+          {availableSubCategories.length > 0 && (
+            <select 
+              className="select" 
+              value={form.subCategory} 
+              onChange={e=>setForm({...form, subCategory: e.target.value})}
+            >
+              <option value="">Select sub-category (optional)...</option>
+              {availableSubCategories.map((sub, idx) => (
+                <option key={idx} value={sub.name}>{sub.name}</option>
+              ))}
+            </select>
+          )}
           <input 
             className="input" 
             placeholder="Image URL (optional)" 
@@ -282,7 +321,35 @@ export default function AdminProducts(){
       <div className="card">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
           <h2 className="section-title">Products ({filteredRows.length})</h2>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Search Bar */}
+            <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input w-full pl-10"
+              />
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
             <select 
               className="select select-min-width" 
@@ -294,12 +361,15 @@ export default function AdminProducts(){
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
-            {selectedCategory !== "all" && (
+            {(selectedCategory !== "all" || searchQuery) && (
               <button 
                 className="btn btn-sm"
-                onClick={() => setSelectedCategory("all")}
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setSearchQuery("");
+                }}
               >
-                Clear Filter
+                Clear Filters
               </button>
             )}
           </div>
@@ -312,6 +382,7 @@ export default function AdminProducts(){
                 <th>Name</th>
                 <th>Price</th>
                 <th>Category</th>
+                <th>Sub-Category</th>
                 <th>Description</th>
                 <th>Status</th>
                 <th>Sale</th>
@@ -321,7 +392,7 @@ export default function AdminProducts(){
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 text-gray-500">
+                  <td colSpan="9" className="text-center py-8 text-gray-500">
                     {selectedCategory === "all" 
                       ? "No products yet. Create your first product above!"
                       : `No products found in category "${selectedCategory}".`}
@@ -340,6 +411,7 @@ export default function AdminProducts(){
                     <td className="font-medium">{p.name || "-"}</td>
                     <td>${(p.price || 0).toFixed(2)}</td>
                     <td>{p.category || "-"}</td>
+                    <td>{p.subCategory || "-"}</td>
                     <td className="max-w-xs">
                       <p className="text-sm text-gray-600 truncate" title={p.description || ""}>
                         {p.description || "-"}

@@ -6,9 +6,7 @@ import { verifyFirebaseToken } from "../middlewares/auth.js";
 const db = admin.firestore();
 const router = Router();
 
-router.use(verifyFirebaseToken);
-
-// Get all categories
+// Get all categories (public endpoint for shop page)
 router.get("/", async (_req, res) => {
   try {
     const snap = await db
@@ -28,18 +26,31 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// Create category (ADMIN or STAFF)
-router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
+// Require authentication for mutating routes
+router.use(verifyFirebaseToken);
+
+// Create category (ADMIN only)
+router.post("/", requireRole("ADMIN"), async (req, res) => {
   try {
-    const { name = "", description = "" } = req.body;
+    const { name = "", description = "", image = "", subCategories = [] } = req.body;
 
     if (!name || name.trim() === "") {
       return res.status(400).json({ error: "Category name is required" });
     }
 
+    // Validate subCategories structure
+    const validSubCategories = Array.isArray(subCategories) 
+      ? subCategories.filter(sub => sub && typeof sub === 'object' && sub.name && sub.name.trim())
+      : [];
+
     const docRef = await db.collection("categories").add({
       name: name.trim(),
       description: description.trim() || "",
+      image: image || "",
+      subCategories: validSubCategories.map(sub => ({
+        name: sub.name.trim(),
+        image: sub.image || "",
+      })),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -51,10 +62,10 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
   }
 });
 
-// Update category (ADMIN or STAFF)
-router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
+// Update category (ADMIN only)
+router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, image, subCategories } = req.body;
 
     const updateData = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -62,6 +73,18 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
 
     if (name !== undefined) updateData.name = name.trim();
     if (description !== undefined) updateData.description = description.trim() || "";
+    if (image !== undefined) updateData.image = image || "";
+    
+    if (subCategories !== undefined) {
+      // Validate subCategories structure
+      const validSubCategories = Array.isArray(subCategories) 
+        ? subCategories.filter(sub => sub && typeof sub === 'object' && sub.name && sub.name.trim())
+        : [];
+      updateData.subCategories = validSubCategories.map(sub => ({
+        name: sub.name.trim(),
+        image: sub.image || "",
+      }));
+    }
 
     await db.collection("categories").doc(req.params.id).set(updateData, { merge: true });
 
