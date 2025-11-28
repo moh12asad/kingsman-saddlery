@@ -1,0 +1,1 @@
+how create-a-bottom-container-for-more-details:client/src/styles/generic.css
