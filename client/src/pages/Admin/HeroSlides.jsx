@@ -182,7 +182,7 @@ export default function AdminHeroSlides() {
 
   return (
     <div className="space-y-6">
-      <div className="card top:7.5rem">
+      <div className="card">
         <div className="section-title">Manage Hero Carousel Slides</div>
         <p className="text-gray-600 text-sm mb-4">
           Upload and manage the sliding images that appear on the homepage carousel.
