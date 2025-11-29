@@ -28,6 +28,7 @@ import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
 import AdminCategories from "./pages/Admin/Categories.jsx";
 import AdminHeroSlides from "./pages/Admin/HeroSlides.jsx";
+import AdminAds from "./pages/Admin/Ads.jsx";
 import AdminBrands from "./pages/Admin/Brands.jsx";
 import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
           { path: "categories", element: <AdminCategories /> },
           { path: "categories/edit/:id", element: <EditCategory /> },
           { path: "hero-slides", element: <AdminHeroSlides /> },
+          { path: "ads", element: <AdminAds /> },
           { path: "brands", element: <AdminBrands /> },
           { path: "settings", element: <AdminSettings /> },
         ],
