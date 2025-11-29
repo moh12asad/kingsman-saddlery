@@ -42,19 +42,19 @@ export default function Footer() {
               <Link to="/profile">My Account</Link>
             </li>
             <li>
-              <a href="#about">About Us</a>
+              <Link to="/about">About Us</Link>
             </li>
             <li>
-              <a href="#contact">Contact Us</a>
+              <Link to="/contact">Contact Us</Link>
             </li>
             <li>
-              <a href="#shipping">Shipping & Returns</a>
+              <Link to="/shipping">Shipping & Returns</Link>
             </li>
             <li>
-              <a href="#terms">Terms & Conditions</a>
+              <Link to="/terms">Terms & Conditions</Link>
             </li>
             <li>
-              <a href="#privacy">Privacy Policy</a>
+              <Link to="/privacy">Privacy Policy</Link>
             </li>
           </ul>
         </div>
@@ -68,7 +68,7 @@ export default function Footer() {
                 const categoryName = typeof category === 'string' ? category : category.name;
                 return (
                   <li key={categoryName}>
-                    <Link to={`/shop?category=${encodeURIComponent(categoryName)}`}>
+                    <Link to={`/products?category=${encodeURIComponent(categoryName)}`}>
                       {categoryName}
                     </Link>
                   </li>

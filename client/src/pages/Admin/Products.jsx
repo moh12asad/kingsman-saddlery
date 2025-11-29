@@ -23,8 +23,17 @@ export default function AdminProducts(){
     sale: false,
     sale_proce: 0,
     featured: false,
+    sku: "",
+    brand: "",
+    technicalDetails: "",
+    additionalDetails: "",
+    warranty: "",
+    shippingInfo: "",
+    videoUrl: "",
+    additionalImages: [],
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState([]);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -151,6 +160,14 @@ export default function AdminProducts(){
         sale: form.sale,
         sale_proce: Number(form.sale_proce) || 0,
         featured: form.featured || false,
+        sku: form.sku || "",
+        brand: form.brand || "",
+        technicalDetails: form.technicalDetails || "",
+        additionalDetails: form.additionalDetails || "",
+        warranty: form.warranty || "",
+        shippingInfo: form.shippingInfo || "",
+        videoUrl: form.videoUrl || "",
+        additionalImages: form.additionalImages || [],
       };
 
       const res = await fetch(`${API}/api/products`, {
@@ -163,7 +180,12 @@ export default function AdminProducts(){
         throw new Error(data.error || "Failed to create product");
       }
 
-      setForm({ name:"", price:0, category:"", subCategory:"", image:"", description:"", available:true, sale:false, sale_proce:0, featured:false });
+      setForm({ 
+        name:"", price:0, category:"", subCategory:"", image:"", description:"", 
+        available:true, sale:false, sale_proce:0, featured:false,
+        sku:"", brand:"", technicalDetails:"", additionalDetails:"",
+        warranty:"", shippingInfo:"", videoUrl:"", additionalImages:[]
+      });
       await load();
     } catch (err) {
       setError(err.message || "Unable to create product");
@@ -208,12 +230,85 @@ export default function AdminProducts(){
     setError("");
     try {
       const publicUrl = await uploadImage(file, `new-${Date.now()}`);
-      setForm(prev => ({ ...prev, image: publicUrl }));
+      // If no main image exists, set it as main, otherwise add to additional images
+      if (!form.image) {
+        setForm(prev => ({ ...prev, image: publicUrl }));
+      } else {
+        setForm(prev => ({ 
+          ...prev, 
+          additionalImages: [...(prev.additionalImages || []), publicUrl] 
+        }));
+      }
     } catch (err) {
       setError(err.message || "Failed to upload image");
       console.error("Image upload error:", err);
     } finally {
       setUploadingImage(false);
+    }
+  }
+
+  async function handleMultipleImagesChange(event) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    
+    // Check file sizes
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = files.filter(f => f.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      setError(`Some images exceed 5MB limit: ${oversizedFiles.map(f => f.name).join(", ")}`);
+      return;
+    }
+    
+    setUploadingImages(files.map((_, i) => i));
+    setError("");
+    
+    try {
+      const uploadedUrls = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const publicUrl = await uploadImage(file, `new-${Date.now()}-${i}`);
+        uploadedUrls.push(publicUrl);
+        setUploadingImages(prev => prev.filter(idx => idx !== i));
+      }
+      
+      // First image becomes main if no main exists, rest go to additional
+      if (!form.image && uploadedUrls.length > 0) {
+        setForm(prev => ({ 
+          ...prev, 
+          image: uploadedUrls[0],
+          additionalImages: [...(prev.additionalImages || []), ...uploadedUrls.slice(1)]
+        }));
+      } else {
+        setForm(prev => ({ 
+          ...prev, 
+          additionalImages: [...(prev.additionalImages || []), ...uploadedUrls]
+        }));
+      }
+    } catch (err) {
+      setError(err.message || "Failed to upload images");
+      console.error("Image upload error:", err);
+    } finally {
+      setUploadingImages([]);
+    }
+  }
+
+  function removeImage(index, isMain = false) {
+    if (isMain) {
+      // If removing main image, make first additional image the new main
+      const newMain = form.additionalImages?.[0] || "";
+      const newAdditional = form.additionalImages?.slice(1) || [];
+      setForm(prev => ({ 
+        ...prev, 
+        image: newMain,
+        additionalImages: newAdditional
+      }));
+    } else {
+      // Remove from additional images
+      setForm(prev => ({
+        ...prev,
+        additionalImages: prev.additionalImages?.filter((_, i) => i !== index) || []
+      }));
     }
   }
 
@@ -261,15 +356,24 @@ export default function AdminProducts(){
           )}
           <input 
             className="input" 
-            placeholder="Image URL (optional)" 
+            placeholder="Image URL (optional - or use upload below)" 
             value={form.image} 
             onChange={e=>setForm({...form,image:e.target.value})}
           />
           <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition text-sm">
-            <span>Upload image</span>
+            <span>Upload Main Image</span>
             <input type="file" accept="image/*" className="hidden" onChange={handleFormImageChange} />
           </label>
-          {uploadingImage && <span className="text-sm text-gray-500 flex items-center">Uploading...</span>}
+          <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition text-sm">
+            <span>Upload Multiple Images</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handleMultipleImagesChange} />
+          </label>
+          {uploadingImage && <span className="text-sm text-gray-500 flex items-center">Uploading main image...</span>}
+          {uploadingImages.length > 0 && (
+            <span className="text-sm text-gray-500 flex items-center">
+              Uploading {uploadingImages.length} image(s)...
+            </span>
+          )}
           <textarea
             className="input md:col-span-2 lg:col-span-3"
             placeholder="Product description (optional)"
@@ -277,6 +381,90 @@ export default function AdminProducts(){
             value={form.description}
             onChange={e=>setForm({...form,description:e.target.value})}
           />
+          <input 
+            className="input" 
+            placeholder="SKU (optional)" 
+            value={form.sku} 
+            onChange={e=>setForm({...form,sku:e.target.value})}
+          />
+          <input 
+            className="input" 
+            placeholder="Brand (optional)" 
+            value={form.brand} 
+            onChange={e=>setForm({...form,brand:e.target.value})}
+          />
+          <textarea
+            className="input md:col-span-2 lg:col-span-3"
+            placeholder="Technical Details (optional, one per line)"
+            rows="3"
+            value={form.technicalDetails}
+            onChange={e=>setForm({...form,technicalDetails:e.target.value})}
+          />
+          <textarea
+            className="input md:col-span-2 lg:col-span-3"
+            placeholder="Additional Details (optional, one per line)"
+            rows="3"
+            value={form.additionalDetails}
+            onChange={e=>setForm({...form,additionalDetails:e.target.value})}
+          />
+          <input 
+            className="input" 
+            placeholder="Warranty (optional)" 
+            value={form.warranty} 
+            onChange={e=>setForm({...form,warranty:e.target.value})}
+          />
+          <input 
+            className="input" 
+            placeholder="Shipping Info (optional)" 
+            value={form.shippingInfo} 
+            onChange={e=>setForm({...form,shippingInfo:e.target.value})}
+          />
+          <input 
+            className="input md:col-span-2 lg:col-span-3" 
+            placeholder="Video URL (optional)" 
+            value={form.videoUrl} 
+            onChange={e=>setForm({...form,videoUrl:e.target.value})}
+          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <label className="form-label">Product Images</label>
+            {form.image && (
+              <div className="mb-2">
+                <div className="text-sm font-medium mb-1">Main Image:</div>
+                <div className="relative inline-block">
+                  <img src={form.image} alt="Main" className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(0, true)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
+            {form.additionalImages && form.additionalImages.length > 0 && (
+              <div className="mb-2">
+                <div className="text-sm font-medium mb-1">Additional Images:</div>
+                <div className="flex flex-wrap gap-2">
+                  {form.additionalImages.map((url, index) => (
+                    <div key={index} className="relative inline-block">
+                      <img src={url} alt={`Additional ${index + 1}`} className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index, false)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <small className="text-muted">
+              First uploaded image becomes the main image. Additional images will be shown in the product gallery.
+            </small>
+          </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input 
               type="checkbox" 
@@ -319,12 +507,6 @@ export default function AdminProducts(){
         >
           Create Product
         </button>
-        {form.image && (
-          <div className="mt-4">
-            <div className="text-sm text-gray-600 mb-2">Preview:</div>
-            <img src={form.image} alt="preview" className="w-40 h-40 object-cover rounded-lg border shadow-sm" />
-          </div>
-        )}
         {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
       </div>
 

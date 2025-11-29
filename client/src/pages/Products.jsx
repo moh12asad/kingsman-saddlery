@@ -198,7 +198,7 @@ export default function Products() {
             <div className="shop-section-title-wrapper">
               <h2 className="shop-section-title">{category}</h2>
             </div>
-            <ProductCarousel products={products} onAddToCart={handleAddToCart} />
+            <ProductGrid products={products} onAddToCart={handleAddToCart} />
           </section>
         ))}
 
@@ -289,7 +289,24 @@ export default function Products() {
   );
 }
 
-// Product Carousel Component
+// Product Grid Component (for regular products)
+function ProductGrid({ products, onAddToCart }) {
+  if (products.length === 0) return null;
+
+  return (
+    <div className="product-grid">
+      {products.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          onAddToCart={onAddToCart}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Product Carousel Component (for sale products)
 function ProductCarousel({ products, onAddToCart }) {
   const scrollRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -313,6 +330,43 @@ function ProductCarousel({ products, onAddToCart }) {
         scrollElement.removeEventListener('scroll', checkScroll);
         window.removeEventListener('resize', checkScroll);
       };
+    }
+  }, [products]);
+
+  // Center the carousel on initial load
+  useEffect(() => {
+    if (scrollRef.current && products.length > 0) {
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const centerCarousel = () => {
+        if (scrollRef.current && attempts < maxAttempts) {
+          const containerWidth = scrollRef.current.clientWidth;
+          const scrollWidth = scrollRef.current.scrollWidth;
+          
+          // Only center if we have valid dimensions
+          if (scrollWidth > 0 && containerWidth > 0 && scrollWidth > containerWidth) {
+            // Calculate center position to show middle products
+            const centerPosition = (scrollWidth - containerWidth) / 2;
+            scrollRef.current.scrollLeft = centerPosition;
+            checkScroll();
+            return true; // Successfully centered
+          } else if (scrollWidth === 0 || containerWidth === 0) {
+            // Layout not ready yet, try again
+            attempts++;
+            setTimeout(centerCarousel, 50);
+            return false;
+          }
+        }
+        return true;
+      };
+      
+      // Start centering after a short delay
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          centerCarousel();
+        });
+      }, 150);
     }
   }, [products]);
 
@@ -366,6 +420,7 @@ function ProductCarousel({ products, onAddToCart }) {
 
 // Product Card Component
 function ProductCard({ product, onAddToCart }) {
+  const navigate = useNavigate();
   const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
   const isFav = checkFavorite(product.id);
 
@@ -374,8 +429,17 @@ function ProductCard({ product, onAddToCart }) {
     toggleFavorite(product);
   };
 
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleAddToCartClick = (e) => {
+    e.stopPropagation();
+    onAddToCart(product);
+  };
+
   return (
-    <div className="card-product-carousel">
+    <div className="card-product-carousel" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
       <div className="card-product-image-wrapper">
         {product.image ? (
           <img
@@ -422,7 +486,7 @@ function ProductCard({ product, onAddToCart }) {
           )}
         </div>
         <button
-          onClick={() => onAddToCart(product)}
+          onClick={handleAddToCartClick}
           className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
           style={{ marginTop: '0.75rem' }}
         >

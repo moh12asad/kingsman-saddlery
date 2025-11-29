@@ -32,6 +32,12 @@ import AdminBrands from "./pages/Admin/Brands.jsx";
 import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
 import EditCategory from "./pages/Admin/EditCategory.jsx";
+import ProductDetail from "./pages/ProductDetail.jsx";
+import AboutUs from "./pages/AboutUs.jsx";
+import ContactUs from "./pages/ContactUs.jsx";
+import ShippingReturns from "./pages/ShippingReturns.jsx";
+import TermsConditions from "./pages/TermsConditions.jsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 
 import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
@@ -49,11 +55,17 @@ const router = createBrowserRouter([
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "shop", element: <Shop /> },
       { path: "products", element: <Products /> },
+      { path: "product/:id", element: <ProductDetail /> },
       { path: "subcategories/:categoryName", element: <SubCategories /> },
       { path: "cart", element: <Cart /> },
       { path: "checkout", element: <OrderConfirmation /> },
       { path: "favorites", element: <Favorites /> },
       { path: "profile", element: <Profile /> },
+      { path: "about", element: <AboutUs /> },
+      { path: "contact", element: <ContactUs /> },
+      { path: "shipping", element: <ShippingReturns /> },
+      { path: "terms", element: <TermsConditions /> },
+      { path: "privacy", element: <PrivacyPolicy /> },
 
       // ADMIN (nested under App layout)
       {

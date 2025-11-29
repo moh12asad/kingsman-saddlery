@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
@@ -127,8 +128,24 @@ export default function BestSellers() {
 }
 
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleAddToCartClick = (e) => {
+    e.stopPropagation();
+    onAddToCart();
+  };
+
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    onToggleFavorite();
+  };
+
   return (
-    <div className="card-product-carousel">
+    <div className="card-product-carousel" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
       <div className="card-product-image-wrapper">
         {product.image ? (
           <img
@@ -143,7 +160,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
         )}
         <button
           className={`card-product-favorite ${isFavorite ? 'active' : ''}`}
-          onClick={onToggleFavorite}
+          onClick={handleFavoriteClick}
           aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           <FaHeart />
@@ -175,7 +192,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           )}
         </div>
         <button
-          onClick={onAddToCart}
+          onClick={handleAddToCartClick}
           className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
           style={{ marginTop: '0.75rem' }}
         >
