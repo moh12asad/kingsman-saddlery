@@ -1,7 +1,7 @@
 import { useAuth } from "../context/AuthContext";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { signInWithGoogle, signOutUser } from "../lib/firebase";
-import { FaShoppingCart, FaCog, FaHeart, FaUser } from "react-icons/fa";
+import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useMemo } from "react";
@@ -10,8 +10,13 @@ export default function Navbar() {
   const { user } = useAuth();
   const { getTotalItems } = useCart();
   const { getFavoriteCount } = useFavorites();
+  const navigate = useNavigate();
   const cartCount = getTotalItems();
   const favoriteCount = getFavoriteCount();
+
+  const handleSearchClick = () => {
+    navigate("/products?search=true");
+  };
 
   // Check if user is admin
   const isAdmin = useMemo(() => {
@@ -45,6 +50,13 @@ export default function Navbar() {
           </div>
         </Link>
         <div className="navbar-links">
+          <button
+            onClick={handleSearchClick}
+            className="nav-link relative flex-row-center"
+            title="Search"
+          >
+            <FaSearch className="w-5 h-5" />
+          </button>
           <NavLink 
             to="/favorites" 
             className={({ isActive }) => `relative flex-row-center ${isActive ? "nav-link-active" : "nav-link"}`}
