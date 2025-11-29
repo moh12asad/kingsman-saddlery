@@ -19,6 +19,8 @@ export default function Products() {
 
   const categoryParam = searchParams.get("category");
   const subcategoryParam = searchParams.get("subcategory");
+  const shouldFocusSearch = searchParams.get("search") === "true";
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     async function loadProducts() {
@@ -46,6 +48,19 @@ export default function Products() {
 
     loadProducts();
   }, []);
+
+  // Focus search input when opened from navbar
+  useEffect(() => {
+    if (shouldFocusSearch && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+        // Remove the search parameter from URL
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete("search");
+        navigate(`/products?${newSearchParams.toString()}`, { replace: true });
+      }, 100);
+    }
+  }, [shouldFocusSearch, searchParams, navigate]);
 
   // Filter products based on search, category, and sub-category
   const filteredProducts = useMemo(() => {
@@ -163,6 +178,7 @@ export default function Products() {
           <div className="shop-search-wrapper">
             <FaSearch className="shop-search-icon" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search products..."
               value={searchQuery}
