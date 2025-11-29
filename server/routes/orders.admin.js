@@ -6,6 +6,55 @@ import { verifyFirebaseToken } from "../middlewares/auth.js";
 const db = admin.firestore();
 const router = Router();
 
+// Public endpoint to get best sellers (limited data)
+router.get("/best-sellers", async (_req, res) => {
+  try {
+    const snap = await db
+      .collection("orders")
+      .orderBy("createdAt", "desc")
+      .limit(100)
+      .get();
+
+    const orders = snap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        items: data.items || [],
+      };
+    });
+
+    // Calculate product sales
+    const productSales = {};
+    orders.forEach(order => {
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          const productId = item.productId;
+          if (productId) {
+            if (!productSales[productId]) {
+              productSales[productId] = {
+                productId,
+                totalQuantity: 0,
+              };
+            }
+            productSales[productId].totalQuantity += item.quantity || 1;
+          }
+        });
+      }
+    });
+
+    // Sort by total quantity sold and return top 20 product IDs
+    const bestSellerIds = Object.values(productSales)
+      .sort((a, b) => b.totalQuantity - a.totalQuantity)
+      .slice(0, 20)
+      .map(p => p.productId);
+
+    res.json({ productIds: bestSellerIds });
+  } catch (error) {
+    console.error("best-sellers error", error);
+    res.status(500).json({ error: "Failed to fetch best sellers" });
+  }
+});
+
 router.use(verifyFirebaseToken);
 
 // Get current user's orders
@@ -65,6 +114,55 @@ router.get("/my-orders", async (req, res) => {
   } catch (error) {
     console.error("orders.my-orders error", error);
     res.status(500).json({ error: "Failed to fetch orders", details: error.message });
+  }
+});
+
+// Public endpoint to get best sellers (limited data)
+router.get("/best-sellers", async (_req, res) => {
+  try {
+    const snap = await db
+      .collection("orders")
+      .orderBy("createdAt", "desc")
+      .limit(100)
+      .get();
+
+    const orders = snap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        items: data.items || [],
+      };
+    });
+
+    // Calculate product sales
+    const productSales = {};
+    orders.forEach(order => {
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          const productId = item.productId;
+          if (productId) {
+            if (!productSales[productId]) {
+              productSales[productId] = {
+                productId,
+                totalQuantity: 0,
+              };
+            }
+            productSales[productId].totalQuantity += item.quantity || 1;
+          }
+        });
+      }
+    });
+
+    // Sort by total quantity sold and return top 20 product IDs
+    const bestSellerIds = Object.values(productSales)
+      .sort((a, b) => b.totalQuantity - a.totalQuantity)
+      .slice(0, 20)
+      .map(p => p.productId);
+
+    res.json({ productIds: bestSellerIds });
+  } catch (error) {
+    console.error("best-sellers error", error);
+    res.status(500).json({ error: "Failed to fetch best sellers" });
   }
 });
 

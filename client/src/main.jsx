@@ -9,10 +9,12 @@ import Home from "./pages/Home.jsx"; // adjust to your actual landing page
 import SignIn from "./pages/SignIn.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import Shop from "./pages/Shop.jsx";
+import Products from "./pages/Products.jsx";
 import Cart from "./pages/Cart.jsx";
 import Favorites from "./pages/Favorites.jsx";
 import Profile from "./pages/Profile.jsx";
 import OrderConfirmation from "./pages/OrderConfirmation.jsx";
+import SubCategories from "./pages/SubCategories.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -26,6 +28,7 @@ import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
 import AdminCategories from "./pages/Admin/Categories.jsx";
 import AdminHeroSlides from "./pages/Admin/HeroSlides.jsx";
+import AdminBrands from "./pages/Admin/Brands.jsx";
 import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
 import EditCategory from "./pages/Admin/EditCategory.jsx";
@@ -45,6 +48,8 @@ const router = createBrowserRouter([
       { path: "signin", element: <SignIn /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "shop", element: <Shop /> },
+      { path: "products", element: <Products /> },
+      { path: "subcategories/:categoryName", element: <SubCategories /> },
       { path: "cart", element: <Cart /> },
       { path: "checkout", element: <OrderConfirmation /> },
       { path: "favorites", element: <Favorites /> },
@@ -64,6 +69,7 @@ const router = createBrowserRouter([
           { path: "categories", element: <AdminCategories /> },
           { path: "categories/edit/:id", element: <EditCategory /> },
           { path: "hero-slides", element: <AdminHeroSlides /> },
+          { path: "brands", element: <AdminBrands /> },
           { path: "settings", element: <AdminSettings /> },
         ],
       },

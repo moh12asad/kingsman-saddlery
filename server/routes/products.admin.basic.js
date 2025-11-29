@@ -11,7 +11,18 @@ const router = Router();
 router.get("/", async (_req, res) => {
   try {
     const snap = await db.collection("products").get();
-    res.json({ products: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    const products = snap.docs.map((d) => {
+      const data = d.data();
+      // Convert Firestore Timestamps to ISO strings for JSON serialization
+      if (data.createdAt && data.createdAt.toDate) {
+        data.createdAt = data.createdAt.toDate().toISOString();
+      }
+      if (data.updatedAt && data.updatedAt.toDate) {
+        data.updatedAt = data.updatedAt.toDate().toISOString();
+      }
+      return { id: d.id, ...data };
+    });
+    res.json({ products });
   } catch (error) {
     console.error("Error fetching products:", error);
     if (error.code === 7 || error.message?.includes("PERMISSION_DENIED") || error.message?.includes("invalid authentication credentials")) {

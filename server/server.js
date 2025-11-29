@@ -11,6 +11,7 @@ import productsAdmin from "./routes/products.admin.basic.js";
 import ordersAdmin from "./routes/orders.admin.js";
 import categoriesAdmin from "./routes/categories.admin.js";
 import heroSlidesAdmin from "./routes/hero-slides.admin.js";
+import brandsAdmin from "./routes/brands.admin.js";
 import emailRoutes from "./routes/email.js";
 import { verifyFirebaseToken } from "./middlewares/auth.js";
 
@@ -113,6 +114,7 @@ app.use("/api/products", productsAdmin);
 app.use("/api/orders", ordersAdmin);
 app.use("/api/categories", categoriesAdmin);
 app.use("/api/hero-slides", heroSlidesAdmin);
+app.use("/api/brands", brandsAdmin);
 app.use("/api/email", emailRoutes);
 
 // ---------- Fallback ----------

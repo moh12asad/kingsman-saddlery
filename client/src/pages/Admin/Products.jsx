@@ -22,6 +22,7 @@ export default function AdminProducts(){
     available: true,
     sale: false,
     sale_proce: 0,
+    featured: false,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
@@ -149,6 +150,7 @@ export default function AdminProducts(){
         available: form.available,
         sale: form.sale,
         sale_proce: Number(form.sale_proce) || 0,
+        featured: form.featured || false,
       };
 
       const res = await fetch(`${API}/api/products`, {
@@ -161,7 +163,7 @@ export default function AdminProducts(){
         throw new Error(data.error || "Failed to create product");
       }
 
-      setForm({ name:"", price:0, category:"", subCategory:"", image:"", description:"", available:true, sale:false, sale_proce:0 });
+      setForm({ name:"", price:0, category:"", subCategory:"", image:"", description:"", available:true, sale:false, sale_proce:0, featured:false });
       await load();
     } catch (err) {
       setError(err.message || "Unable to create product");
@@ -300,6 +302,15 @@ export default function AdminProducts(){
             value={form.sale_proce || ""} 
             onChange={e=>setForm({...form,sale_proce:Number(e.target.value)})}
           />
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={form.featured} 
+              onChange={e=>setForm({...form,featured:e.target.checked})}
+              className="w-4 h-4"
+            />
+            <span className="text-sm">Featured (for Suggested tab)</span>
+          </label>
         </div>
         <button 
           className="btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed" 
