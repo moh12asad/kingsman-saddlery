@@ -56,6 +56,16 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
     available = true,
     sale = false,
     sale_proce = 0,
+    featured = false,
+    sku = "",
+    brand = "",
+    specifications = {},
+    technicalDetails = "",
+    additionalDetails = "",
+    warranty = "",
+    shippingInfo = "",
+    videoUrl = "",
+    additionalImages = [],
   } = req.body;
 
   const productData = {
@@ -68,6 +78,16 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
     available,
     sale,
     sale_proce,
+    featured: featured || false,
+    sku: sku || "",
+    brand: brand || "",
+    specifications: specifications || {},
+    technicalDetails: technicalDetails || "",
+    additionalDetails: additionalDetails || "",
+    warranty: warranty || "",
+    shippingInfo: shippingInfo || "",
+    videoUrl: videoUrl || "",
+    additionalImages: Array.isArray(additionalImages) ? additionalImages : [],
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   };
 

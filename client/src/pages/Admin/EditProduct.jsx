@@ -13,6 +13,7 @@ export default function EditProduct() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -114,6 +115,71 @@ export default function EditProduct() {
     }
   }
 
+  async function handleMultipleImagesChange(event) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+    
+    // Check file sizes
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = files.filter(f => f.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      setError(`Some images exceed 5MB limit: ${oversizedFiles.map(f => f.name).join(", ")}`);
+      return;
+    }
+    
+    setUploadingImages(files.map((_, i) => i));
+    setError("");
+    
+    try {
+      const uploadedUrls = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const publicUrl = await uploadImage(file, `${id}-${Date.now()}-${i}`);
+        uploadedUrls.push(publicUrl);
+        setUploadingImages(prev => prev.filter(idx => idx !== i));
+      }
+      
+      // First image becomes main if no main exists, rest go to additional
+      if (!product.image && uploadedUrls.length > 0) {
+        setProduct(prev => ({ 
+          ...prev, 
+          image: uploadedUrls[0],
+          additionalImages: [...(prev.additionalImages || []), ...uploadedUrls.slice(1)]
+        }));
+      } else {
+        setProduct(prev => ({ 
+          ...prev, 
+          additionalImages: [...(prev.additionalImages || []), ...uploadedUrls]
+        }));
+      }
+    } catch (err) {
+      setError(err.message || "Failed to upload images");
+      console.error("Image upload error:", err);
+    } finally {
+      setUploadingImages([]);
+    }
+  }
+
+  function removeImage(index, isMain = false) {
+    if (isMain) {
+      // If removing main image, make first additional image the new main
+      const newMain = product.additionalImages?.[0] || "";
+      const newAdditional = product.additionalImages?.slice(1) || [];
+      setProduct(prev => ({ 
+        ...prev, 
+        image: newMain,
+        additionalImages: newAdditional
+      }));
+    } else {
+      // Remove from additional images
+      setProduct(prev => ({
+        ...prev,
+        additionalImages: prev.additionalImages?.filter((_, i) => i !== index) || []
+      }));
+    }
+  }
+
   async function handleSave() {
     try {
       setSaving(true);
@@ -132,6 +198,14 @@ export default function EditProduct() {
         sale: product.sale,
         sale_proce: Number(product.sale_proce) || 0,
         featured: product.featured || false,
+        sku: product.sku || "",
+        brand: product.brand || "",
+        technicalDetails: product.technicalDetails || "",
+        additionalDetails: product.additionalDetails || "",
+        warranty: product.warranty || "",
+        shippingInfo: product.shippingInfo || "",
+        videoUrl: product.videoUrl || "",
+        additionalImages: product.additionalImages || [],
       };
 
       const res = await fetch(`${API}/api/products/${id}`, {
@@ -270,9 +344,95 @@ export default function EditProduct() {
             </div>
           </div>
 
+          <div>
+            <div className="form-group">
+              <label className="form-label">SKU</label>
+              <input
+                className="input"
+                placeholder="Product SKU (optional)"
+                value={product.sku || ""}
+                onChange={e => setProduct({ ...product, sku: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="form-group">
+              <label className="form-label">Brand</label>
+              <input
+                className="input"
+                placeholder="Brand name (optional)"
+                value={product.brand || ""}
+                onChange={e => setProduct({ ...product, brand: e.target.value })}
+              />
+            </div>
+          </div>
+
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">
-              <label className="form-label">Image URL</label>
+              <label className="form-label">Technical Details</label>
+              <textarea
+                className="input"
+                placeholder="Technical details (optional, one per line)"
+                rows="4"
+                value={product.technicalDetails || ""}
+                onChange={e => setProduct({ ...product, technicalDetails: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Additional Details</label>
+              <textarea
+                className="input"
+                placeholder="Additional information (optional, one per line)"
+                rows="4"
+                value={product.additionalDetails || ""}
+                onChange={e => setProduct({ ...product, additionalDetails: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="form-group">
+              <label className="form-label">Warranty</label>
+              <input
+                className="input"
+                placeholder="Warranty information (optional)"
+                value={product.warranty || ""}
+                onChange={e => setProduct({ ...product, warranty: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="form-group">
+              <label className="form-label">Shipping Info</label>
+              <input
+                className="input"
+                placeholder="Shipping information (optional)"
+                value={product.shippingInfo || ""}
+                onChange={e => setProduct({ ...product, shippingInfo: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Video URL</label>
+              <input
+                className="input"
+                placeholder="Product video URL (optional)"
+                value={product.videoUrl || ""}
+                onChange={e => setProduct({ ...product, videoUrl: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Image URL (optional - or use upload below)</label>
               <input
                 className="input"
                 placeholder="Image URL (optional)"
@@ -284,7 +444,7 @@ export default function EditProduct() {
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">
-              <label className="form-label">Upload Image</label>
+              <label className="form-label">Upload Main Image</label>
               <label className="flex-row flex-gap-sm border rounded padding-x-md padding-y-sm cursor-pointer transition">
                 <span>Choose file</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
@@ -293,14 +453,63 @@ export default function EditProduct() {
             </div>
           </div>
 
-          {product.image && (
-            <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-              <div className="form-group">
-                <label className="form-label">Image Preview</label>
-                <img src={product.image} alt={product.name} className="w-40 h-40 object-cover rounded-lg border shadow-sm" />
-              </div>
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Upload Multiple Images</label>
+              <label className="flex-row flex-gap-sm border rounded padding-x-md padding-y-sm cursor-pointer transition">
+                <span>Choose files</span>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleMultipleImagesChange} />
+              </label>
+              {uploadingImages.length > 0 && (
+                <span className="text-small text-muted margin-top-sm">
+                  Uploading {uploadingImages.length} image(s)...
+                </span>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Product Images</label>
+              {product.image && (
+                <div className="mb-2">
+                  <div className="text-sm font-medium mb-1">Main Image:</div>
+                  <div className="relative inline-block">
+                    <img src={product.image} alt="Main" className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(0, true)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
+              {product.additionalImages && product.additionalImages.length > 0 && (
+                <div className="mb-2">
+                  <div className="text-sm font-medium mb-1">Additional Images:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {product.additionalImages.map((url, index) => (
+                      <div key={index} className="relative inline-block">
+                        <img src={url} alt={`Additional ${index + 1}`} className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index, false)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <small className="text-muted">
+                First uploaded image becomes the main image. Additional images will be shown in the product gallery.
+              </small>
+            </div>
+          </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3 flex-row flex-gap-xl">
             <label className="flex-row flex-gap-sm cursor-pointer">

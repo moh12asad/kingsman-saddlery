@@ -13,6 +13,7 @@ import categoriesAdmin from "./routes/categories.admin.js";
 import heroSlidesAdmin from "./routes/hero-slides.admin.js";
 import brandsAdmin from "./routes/brands.admin.js";
 import emailRoutes from "./routes/email.js";
+import settingsAdmin from "./routes/settings.admin.js";
 import { verifyFirebaseToken } from "./middlewares/auth.js";
 
 dotenv.config();
@@ -116,6 +117,7 @@ app.use("/api/categories", categoriesAdmin);
 app.use("/api/hero-slides", heroSlidesAdmin);
 app.use("/api/brands", brandsAdmin);
 app.use("/api/email", emailRoutes);
+app.use("/api/settings", settingsAdmin);
 
 // ---------- Fallback ----------
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
