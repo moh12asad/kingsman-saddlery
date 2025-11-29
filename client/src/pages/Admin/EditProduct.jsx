@@ -131,6 +131,7 @@ export default function EditProduct() {
         available: product.available,
         sale: product.sale,
         sale_proce: Number(product.sale_proce) || 0,
+        featured: product.featured || false,
       };
 
       const res = await fetch(`${API}/api/products/${id}`, {
@@ -320,6 +321,16 @@ export default function EditProduct() {
                 className="w-4 h-4"
               />
               <span className="text-small">On Sale</span>
+            </label>
+
+            <label className="flex-row flex-gap-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={product.featured || false}
+                onChange={e => setProduct({ ...product, featured: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <span className="text-small">Featured (for Suggested tab)</span>
             </label>
           </div>
 

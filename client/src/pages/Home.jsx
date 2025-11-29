@@ -1,10 +1,12 @@
 import Hero from "../components/Hero";
 import FeatureCards from "../components/FeatureCards";
+import CategoriesGrid from "../components/CategoriesGrid";
 
 export default function Home() {
   return (
     <main>
       <Hero />
+      <CategoriesGrid />
       <FeatureCards />
       <section className="max-w-6xl mx-auto px-4 pb-24">
         <div className="glass p-8">

@@ -1,0 +1,264 @@
+import { useState, useEffect, useRef } from "react";
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
+import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
+
+const API = import.meta.env.VITE_API_BASE_URL || "";
+
+export default function ProductsTabs() {
+  const [activeTab, setActiveTab] = useState("suggested");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API}/api/products`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch products");
+        }
+
+        const availableProducts = (data.products || []).filter(
+          (product) => product.available === true
+        );
+
+        setProducts(availableProducts);
+      } catch (err) {
+        console.error("Error loading products:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
+
+  const getFilteredProducts = () => {
+    const now = new Date();
+    const daysForNew = 30; // Products are considered "new" for 30 days
+    
+    switch (activeTab) {
+      case "sales":
+        return products.filter(p => p.sale === true);
+      case "new":
+        // Helper function to parse date from various formats
+        const parseDate = (product) => {
+          if (!product.createdAt) {
+            // If no createdAt, check updatedAt as fallback, or use a very old date
+            if (product.updatedAt) {
+              if (product.updatedAt.toDate && typeof product.updatedAt.toDate === 'function') {
+                return product.updatedAt.toDate();
+              } else if (product.updatedAt.seconds) {
+                return new Date(product.updatedAt.seconds * 1000);
+              } else if (typeof product.updatedAt === 'string') {
+                return new Date(product.updatedAt);
+              }
+            }
+            return null; // No date available
+          }
+          
+          if (product.createdAt.toDate && typeof product.createdAt.toDate === 'function') {
+            // Firestore Timestamp object
+            return product.createdAt.toDate();
+          } else if (product.createdAt.seconds) {
+            // Firestore Timestamp serialized as { seconds, nanoseconds }
+            return new Date(product.createdAt.seconds * 1000);
+          } else if (typeof product.createdAt === 'string') {
+            // ISO string
+            return new Date(product.createdAt);
+          } else if (product.createdAt instanceof Date) {
+            // Already a Date object
+            return product.createdAt;
+          }
+          // Try to parse as date
+          return new Date(product.createdAt);
+        };
+        
+        // Show products created within the last 30 days, sorted by newest first
+        return products
+          .map(p => ({ product: p, date: parseDate(p) }))
+          .filter(({ date }) => {
+            if (!date || isNaN(date.getTime())) return false;
+            const daysSinceCreation = (now - date) / (1000 * 60 * 60 * 24);
+            return daysSinceCreation <= daysForNew && daysSinceCreation >= 0;
+          })
+          .sort((a, b) => {
+            const dateA = a.date || new Date(0);
+            const dateB = b.date || new Date(0);
+            return dateB - dateA; // Newest first
+          })
+          .map(({ product }) => product)
+          .slice(0, 20); // Show up to 20 new products
+      case "suggested":
+      default:
+        // Suggested: Show ONLY featured products
+        return products
+          .filter(p => p.featured === true && p.available)
+          .sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+            return dateB - dateA; // Newest first
+          })
+          .slice(0, 20); // Show up to 20 featured products
+    }
+  };
+
+  const filteredProducts = getFilteredProducts();
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const cardWidth = 280;
+      const scrollAmount = cardWidth + 20;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="products-tabs-section">
+        <div className="text-center py-12">
+          <p className="text-gray-500">Loading products...</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="products-tabs-section">
+      <div className="products-tabs-header">
+        <div className="products-tabs-buttons">
+          <button
+            className={`products-tab-button ${activeTab === "suggested" ? "active" : ""}`}
+            onClick={() => setActiveTab("suggested")}
+          >
+            Suggested
+          </button>
+          <button
+            className={`products-tab-button ${activeTab === "sales" ? "active" : ""}`}
+            onClick={() => setActiveTab("sales")}
+          >
+            Sales
+          </button>
+          <button
+            className={`products-tab-button ${activeTab === "new" ? "active" : ""}`}
+            onClick={() => setActiveTab("new")}
+          >
+            New
+          </button>
+        </div>
+      </div>
+
+      <div className="products-tabs-content">
+        <div className="product-carousel-container">
+          {filteredProducts.length > 0 && (
+            <>
+              <button
+                className="product-carousel-arrow product-carousel-arrow-left"
+                onClick={() => scroll('left')}
+                aria-label="Scroll left"
+              >
+                <FaChevronLeft />
+              </button>
+              <button
+                className="product-carousel-arrow product-carousel-arrow-right"
+                onClick={() => scroll('right')}
+                aria-label="Scroll right"
+              >
+                <FaChevronRight />
+              </button>
+            </>
+          )}
+          <div className="product-carousel" ref={scrollRef}>
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-12 w-full">
+                <p className="text-gray-500">No products found</p>
+              </div>
+            ) : (
+              filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={() => addToCart(product)}
+                  isFavorite={isFavorite(product.id)}
+                  onToggleFavorite={() => toggleFavorite(product)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
+  return (
+    <div className="card-product-carousel">
+      <div className="card-product-image-wrapper">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="card-product-image"
+          />
+        ) : (
+          <div className="card-product-placeholder">
+            No image
+          </div>
+        )}
+        <button
+          className={`card-product-favorite ${isFavorite ? 'active' : ''}`}
+          onClick={onToggleFavorite}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <FaHeart />
+        </button>
+        {product.sale && (
+          <span className="card-product-badge">
+            SALE
+          </span>
+        )}
+      </div>
+      <div className="card-product-content">
+        <h3 className="card-product-title">
+          {product.name}
+        </h3>
+        <div className="card-product-price">
+          {product.sale && product.sale_proce > 0 ? (
+            <>
+              <span className="price-sale">
+                ${product.sale_proce.toFixed(2)}
+              </span>
+              <span className="price-original">
+                ${product.price.toFixed(2)}
+              </span>
+            </>
+          ) : (
+            <span className="price">
+              ${product.price.toFixed(2)}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onAddToCart}
+          className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
+          style={{ marginTop: '0.75rem' }}
+        >
+          <FaShoppingCart style={{ marginRight: '0.5rem' }} />
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  );
+}
+
+

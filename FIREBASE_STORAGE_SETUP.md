@@ -42,6 +42,17 @@ service firebase.storage {
       allow read: if true; // Anyone can read
       allow write: if request.auth != null; // Only authenticated users can write
     }
+    
+    // Allow only admins to upload to brands folder
+    // Note: Storage rules cannot directly check Firestore roles.
+    // Security is enforced through multiple layers:
+    // 1. Client-side: checkAdmin() verifies user has ADMIN role in Firestore
+    // 2. Backend: requireRole("ADMIN") middleware validates admin role
+    // 3. Storage rules: Allow authenticated writes (admin check happens before upload)
+    match /brands/{allPaths=**} {
+      allow read: if true; // Anyone can read
+      allow write: if request.auth != null; // Admin role verified by client and backend
+    }
   }
 }
 ```
