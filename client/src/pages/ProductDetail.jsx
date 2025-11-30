@@ -15,7 +15,9 @@ import {
   FaQuestionCircle,
   FaShieldAlt,
   FaTruck,
-  FaCertificate
+  FaCertificate,
+  FaChevronDown,
+  FaChevronUp
 } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -30,6 +32,8 @@ export default function ProductDetail() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showImageZoom, setShowImageZoom] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
 
@@ -265,20 +269,6 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* Action Links */}
-            <div className="product-action-links margin-top-md">
-              {product.technicalDetails && (
-                <button className="product-action-link">
-                  Technical Details
-                </button>
-              )}
-              {product.additionalDetails && (
-                <button className="product-action-link">
-                  Additional Details
-                </button>
-              )}
-            </div>
-
             {/* Pricing */}
             <div className="product-detail-pricing margin-top-lg">
               {product.sale && product.sale_proce > 0 ? (
@@ -342,33 +332,75 @@ export default function ProductDetail() {
               </button>
             </div>
 
-            {/* Technical Details */}
+            {/* Technical Details Section */}
             {product.technicalDetails && (
-              <div className="product-technical-details margin-top-lg">
-                <h3 className="product-section-title">Technical Details</h3>
-                <div className="product-details-text">
-                  {product.technicalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
-                    <p key={idx} className="product-detail-bullet">
-                      <span className="product-bullet">•</span>
-                      {line.trim()}
-                    </p>
-                  ))}
-                </div>
+              <div className="margin-top-lg">
+                <button
+                  onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+                  className="btn btn-outline btn-lg btn-full"
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <span>Technical Details</span>
+                  {showTechnicalDetails ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                {showTechnicalDetails && (
+                  <div className="product-technical-details margin-top-sm" style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '0.5rem',
+                    border: '1px solid #dee2e6'
+                  }}>
+                    <h3 className="product-section-title">Technical Details</h3>
+                    <div className="product-details-text">
+                      {product.technicalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
+                        <p key={idx} className="product-detail-bullet">
+                          <span className="product-bullet">•</span>
+                          {line.trim()}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Additional Details */}
+            {/* Additional Details Section */}
             {product.additionalDetails && (
-              <div className="product-additional-details margin-top-lg">
-                <h3 className="product-section-title">Additional Information</h3>
-                <div className="product-details-text">
-                  {product.additionalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
-                    <p key={idx} className="product-detail-bullet">
-                      <span className="product-bullet">•</span>
-                      {line.trim()}
-                    </p>
-                  ))}
-                </div>
+              <div className="margin-top-md">
+                <button
+                  onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
+                  className="btn btn-outline btn-lg btn-full"
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <span>Additional Details</span>
+                  {showAdditionalDetails ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                {showAdditionalDetails && (
+                  <div className="product-additional-details margin-top-sm" style={{ 
+                    padding: '1rem', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '0.5rem',
+                    border: '1px solid #dee2e6'
+                  }}>
+                    <h3 className="product-section-title">Additional Information</h3>
+                    <div className="product-details-text">
+                      {product.additionalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
+                        <p key={idx} className="product-detail-bullet">
+                          <span className="product-bullet">•</span>
+                          {line.trim()}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
