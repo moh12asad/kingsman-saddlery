@@ -1099,7 +1099,7 @@
 
 .subnavbar-dropdown-fixed {
   position: fixed;
-  margin-top: 0.25rem;
+  margin-top: 0;
   max-height: 80vh;
   overflow: hidden;
 }
@@ -1110,6 +1110,7 @@
   align-items: flex-start;
   gap: 0;
   max-height: 80vh;
+  padding: 0.5rem 0;
 }
 
 .subnavbar-dropdown-image {
