@@ -53,7 +53,7 @@ export default function EditProduct() {
     }
   }
 
-  async function uploadImage(file) {
+  async function uploadImage(file, customKey = "") {
     // Ensure user is authenticated
     if (!auth.currentUser) {
       throw new Error("You must be signed in to upload images");
@@ -65,7 +65,7 @@ export default function EditProduct() {
     }
     
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const path = `products/${id}-${Date.now()}-${safeName}`;
+    const path = `products/${customKey || id}-${Date.now()}-${safeName}`;
     const storageRef = ref(storage, path);
     
     try {
@@ -275,9 +275,9 @@ export default function EditProduct() {
 
           <div>
             <div className="form-group">
-              <label className="form-label form-label-required">Price</label>
+              <label className="form-label form-label-required">Price (₪ ILS)</label>
               <div className="input-group">
-                <span className="input-group-text">$</span>
+                <span className="input-group-text">₪</span>
                 <input
                   className="input"
                   type="number"
@@ -546,9 +546,9 @@ export default function EditProduct() {
           {product.sale && (
             <div>
               <div className="form-group">
-                <label className="form-label">Sale Price</label>
+                <label className="form-label">Sale Price (₪ ILS)</label>
                 <div className="input-group">
-                  <span className="input-group-text">$</span>
+                  <span className="input-group-text">₪</span>
                   <input
                     className="input"
                     type="number"

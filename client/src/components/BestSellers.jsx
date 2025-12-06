@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import { auth } from "../lib/firebase";
 
@@ -129,6 +130,7 @@ export default function BestSellers() {
 
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -179,15 +181,15 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           {product.sale && product.sale_proce > 0 ? (
             <>
               <span className="price-sale">
-                ${product.sale_proce.toFixed(2)}
+                {formatPrice(product.sale_proce)}
               </span>
               <span className="price-original">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price)}
               </span>
             </>
           ) : (
             <span className="price">
-              ${product.price.toFixed(2)}
+              {formatPrice(product.price)}
             </span>
           )}
         </div>

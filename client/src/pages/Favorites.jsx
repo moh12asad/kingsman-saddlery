@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -8,6 +9,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function Favorites() {
   const { favorites, removeFavorite, isLoaded: favoritesLoaded } = useFavorites();
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,15 +130,15 @@ export default function Favorites() {
                     {product.sale && product.sale_proce > 0 ? (
                       <>
                         <span className="price-sale">
-                          ${product.sale_proce.toFixed(2)}
+                          {formatPrice(product.sale_proce)}
                         </span>
                         <span className="price-original">
-                          ${product.price.toFixed(2)}
+                          {formatPrice(product.price)}
                         </span>
                       </>
                     ) : (
                       <span className="price">
-                        ${product.price.toFixed(2)}
+                        {formatPrice(product.price)}
                       </span>
                     )}
                   </div>
@@ -189,15 +191,15 @@ export default function Favorites() {
                   {confirmProduct.sale && confirmProduct.sale_proce > 0 ? (
                     <>
                       <span className="price-sale">
-                        ${confirmProduct.sale_proce.toFixed(2)}
+                        {formatPrice(confirmProduct.sale_proce)}
                       </span>
                       <span className="price-original margin-left-sm">
-                        ${confirmProduct.price.toFixed(2)}
+                        {formatPrice(confirmProduct.price)}
                       </span>
                     </>
                   ) : (
                     <span className="price">
-                      ${confirmProduct.price.toFixed(2)}
+                      {formatPrice(confirmProduct.price)}
                     </span>
                   )}
                 </div>

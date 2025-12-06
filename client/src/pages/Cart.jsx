@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 
 export default function Cart() {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart, isLoaded } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
 
   // Show loading state while cart is being loaded from localStorage
   if (!isLoaded) {
@@ -92,15 +94,15 @@ export default function Cart() {
                 {item.sale ? (
                   <>
                     <span className="price-sale text-small">
-                      ${item.price.toFixed(2)}
+                      {formatPrice(item.price)}
                     </span>
                     <span className="price-original text-xs">
-                      ${item.originalPrice.toFixed(2)}
+                      {formatPrice(item.originalPrice)}
                     </span>
                   </>
                 ) : (
                   <span className="price text-small">
-                    ${item.price.toFixed(2)}
+                    {formatPrice(item.price)}
                   </span>
                 )}
               </div>
@@ -125,7 +127,7 @@ export default function Cart() {
               </div>
               <div className="text-right" style={{ minWidth: '4rem' }}>
                 <p className="font-bold text-small">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  {formatPrice(item.price * item.quantity)}
                 </p>
               </div>
               <button
@@ -160,7 +162,7 @@ export default function Cart() {
           <div className="cart-total">
             <span className="cart-total-label">Total:</span>
             <span className="cart-total-amount">
-              ${total.toFixed(2)}
+              {formatPrice(total)}
             </span>
           </div>
           <div className="cart-actions">

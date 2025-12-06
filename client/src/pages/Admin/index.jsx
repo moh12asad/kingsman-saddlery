@@ -20,7 +20,7 @@ export default function AdminLayout(){
               <NavLink to="settings" className={({isActive})=>isActive?"active":""}>Settings</NavLink>
             </nav>
           </aside>
-          <main className="min-h-[50vh] pt-6">
+          <main className="min-h-[50vh]">
             <Outlet />
           </main>
         </div>
