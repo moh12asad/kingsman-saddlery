@@ -327,7 +327,7 @@ export default function AdminProducts(){
           <input 
             className="input" 
             type="number" 
-            placeholder="Price" 
+            placeholder="Price (₪ ILS)" 
             value={form.price || ""} 
             onChange={e=>setForm({...form,price:Number(e.target.value)})}
           />
@@ -486,7 +486,7 @@ export default function AdminProducts(){
           <input 
             className="input" 
             type="number" 
-            placeholder="Sale price" 
+            placeholder="Sale price (₪ ILS)" 
             value={form.sale_proce || ""} 
             onChange={e=>setForm({...form,sale_proce:Number(e.target.value)})}
           />
@@ -602,7 +602,7 @@ export default function AdminProducts(){
                       )}
                     </td>
                     <td className="font-medium">{p.name || "-"}</td>
-                    <td>${(p.price || 0).toFixed(2)}</td>
+                    <td>₪{(p.price || 0).toFixed(2)}</td>
                     <td>{p.category || "-"}</td>
                     <td>{p.subCategory || "-"}</td>
                     <td className="max-w-xs">
@@ -620,7 +620,7 @@ export default function AdminProducts(){
                         <div className="flex items-center gap-2">
                           <span className="badge badge-danger">On Sale</span>
                           {p.sale_proce > 0 && (
-                            <span className="text-sm text-red-600 font-semibold">${p.sale_proce.toFixed(2)}</span>
+                            <span className="text-sm text-red-600 font-semibold">₪{p.sale_proce.toFixed(2)}</span>
                           )}
                         </div>
                       ) : (

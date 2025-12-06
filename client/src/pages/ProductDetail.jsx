@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { 
   FaHeart, 
   FaShoppingCart, 
@@ -36,6 +37,7 @@ export default function ProductDetail() {
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     loadProduct();
@@ -274,15 +276,15 @@ export default function ProductDetail() {
               {product.sale && product.sale_proce > 0 ? (
                 <>
                   <span className="price-sale price-large">
-                    ${product.sale_proce.toFixed(2)}
+                    {formatPrice(product.sale_proce)}
                   </span>
                   <span className="price-original price-large margin-left-md">
-                    ${product.price.toFixed(2)}
+                    {formatPrice(product.price)}
                   </span>
                 </>
               ) : (
                 <span className="price price-large">
-                  ${product.price.toFixed(2)}
+                  {formatPrice(product.price)}
                 </span>
               )}
             </div>

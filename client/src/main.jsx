@@ -44,6 +44,7 @@ import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { FavoritesProvider } from "./context/FavoritesContext.jsx";
+import { CurrencyProvider } from "./context/CurrencyContext.jsx";
 
 const router = createBrowserRouter([
   {
@@ -96,12 +97,14 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthProvider>
-      <CartProvider>
-        <FavoritesProvider>
-          <RouterProvider router={router} />
-        </FavoritesProvider>
-      </CartProvider>
-    </AuthProvider>
+    <CurrencyProvider>
+      <AuthProvider>
+        <CartProvider>
+          <FavoritesProvider>
+            <RouterProvider router={router} />
+          </FavoritesProvider>
+        </CartProvider>
+      </AuthProvider>
+    </CurrencyProvider>
   </React.StrictMode>
 );

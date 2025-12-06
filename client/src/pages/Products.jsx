@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { FaSearch, FaTimes, FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -16,6 +17,7 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { formatPrice } = useCurrency();
 
   const categoryParam = searchParams.get("category");
   const subcategoryParam = searchParams.get("subcategory");
@@ -270,15 +272,15 @@ export default function Products() {
                   {confirmProduct.sale && confirmProduct.sale_proce > 0 ? (
                     <>
                       <span className="price-sale">
-                        ${confirmProduct.sale_proce.toFixed(2)}
+                        {formatPrice(confirmProduct.sale_proce)}
                       </span>
                       <span className="price-original margin-left-sm">
-                        ${confirmProduct.price.toFixed(2)}
+                        {formatPrice(confirmProduct.price)}
                       </span>
                     </>
                   ) : (
                     <span className="price">
-                      ${confirmProduct.price.toFixed(2)}
+                      {formatPrice(confirmProduct.price)}
                     </span>
                   )}
                 </div>
@@ -438,6 +440,7 @@ function ProductCarousel({ products, onAddToCart }) {
 function ProductCard({ product, onAddToCart }) {
   const navigate = useNavigate();
   const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
+  const { formatPrice } = useCurrency();
   const isFav = checkFavorite(product.id);
 
   const handleFavoriteClick = (e) => {
@@ -489,15 +492,15 @@ function ProductCard({ product, onAddToCart }) {
           {product.sale && product.sale_proce > 0 ? (
             <>
               <span className="price-sale">
-                ${product.sale_proce.toFixed(2)}
+                {formatPrice(product.sale_proce)}
               </span>
               <span className="price-original">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price)}
               </span>
             </>
           ) : (
             <span className="price">
-              ${product.price.toFixed(2)}
+              {formatPrice(product.price)}
             </span>
           )}
         </div>

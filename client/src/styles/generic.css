@@ -211,6 +211,7 @@
   display: grid;
   grid-template-columns: 16rem 1fr;
   gap: 1rem;
+  margin-top:5rem;
 }
 @media (max-width: 1024px) {
   .admin-shell {

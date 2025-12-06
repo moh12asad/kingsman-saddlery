@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
@@ -12,6 +13,7 @@ export default function OrderConfirmation() {
   const { cartItems, getTotalPrice, isLoaded } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
   
   const [profileData, setProfileData] = useState({
     displayName: "",
@@ -280,7 +282,7 @@ export default function OrderConfirmation() {
                         <div className="flex items-center gap-2 margin-top-xs">
                           <span className="text-sm text-muted">Qty: {item.quantity}</span>
                           <span className="text-sm font-semibold">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            {formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
                       </div>
@@ -290,7 +292,7 @@ export default function OrderConfirmation() {
                 <div className="margin-top-md padding-top-md border-top">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Total:</span>
-                    <span className="text-lg font-bold">${total.toFixed(2)}</span>
+                    <span className="text-lg font-bold">{formatPrice(total)}</span>
                   </div>
                 </div>
               </div>
