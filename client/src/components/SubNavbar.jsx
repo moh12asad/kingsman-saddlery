@@ -13,6 +13,7 @@ export default function SubNavbar() {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [navbarHeight, setNavbarHeight] = useState(96); // Default 6rem
   const itemRefs = useRef({});
+  const hoverTimeoutRef = useRef(null);
   const navigate = useNavigate();
 
   // Calculate navbar height dynamically
@@ -97,6 +98,15 @@ export default function SubNavbar() {
     };
   }, [hoveredCategory]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleCategoryClick = (category) => {
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     const hasProducts = products.some(p => p.category === category.name && p.available);
@@ -170,6 +180,12 @@ export default function SubNavbar() {
                     if (el) itemRefs.current[categoryKey] = el;
                   }}
                   onMouseEnter={() => {
+                    // Clear any pending close timeout
+                    if (hoverTimeoutRef.current) {
+                      clearTimeout(hoverTimeoutRef.current);
+                      hoverTimeoutRef.current = null;
+                    }
+                    
                     const element = itemRefs.current[categoryKey];
                     if (element) {
                       const rect = element.getBoundingClientRect();
@@ -179,12 +195,17 @@ export default function SubNavbar() {
                         width: rect.width
                       });
                     }
-                    // Show dropdown if category has image or subcategories
-                    if (category.image || (hasSubCategories && visibleSubCategories.length > 0)) {
+                    // Show dropdown if category has subcategories
+                    if (hasSubCategories && visibleSubCategories.length > 0) {
                       setHoveredCategory(categoryKey);
                     }
                   }}
-                  onMouseLeave={() => setHoveredCategory(null)}
+                  onMouseLeave={() => {
+                    // Add a small delay before closing to make it easier to catch
+                    hoverTimeoutRef.current = setTimeout(() => {
+                      setHoveredCategory(null);
+                    }, 150);
+                  }}
                 >
                   <button
                     onClick={() => handleCategoryClick(category)}
@@ -198,27 +219,30 @@ export default function SubNavbar() {
           </ul>
         </div>
       </nav>
-      {hoveredCategory && hoveredCategoryData && (hoveredCategoryData.image || hoveredSubCategories.length > 0) && createPortal(
+      {hoveredCategory && hoveredCategoryData && hoveredSubCategories.length > 0 && createPortal(
         <div 
           className="subnavbar-dropdown subnavbar-dropdown-fixed"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            minWidth: `${Math.max(600, dropdownPosition.width)}px`
+            minWidth: `${Math.max(300, dropdownPosition.width)}px`
           }}
-          onMouseEnter={() => setHoveredCategory(hoveredCategory)}
-          onMouseLeave={() => setHoveredCategory(null)}
+          onMouseEnter={() => {
+            // Clear any pending close timeout
+            if (hoverTimeoutRef.current) {
+              clearTimeout(hoverTimeoutRef.current);
+              hoverTimeoutRef.current = null;
+            }
+            setHoveredCategory(hoveredCategory);
+          }}
+          onMouseLeave={() => {
+            // Add a small delay before closing to make it easier to catch
+            hoverTimeoutRef.current = setTimeout(() => {
+              setHoveredCategory(null);
+            }, 150);
+          }}
         >
           <div className="subnavbar-dropdown-content">
-            {hoveredCategoryData?.image && (
-              <div className="subnavbar-dropdown-image">
-                <img 
-                  src={hoveredCategoryData.image} 
-                  alt={hoveredCategoryData.name}
-                  className="subnavbar-dropdown-img"
-                />
-              </div>
-            )}
             {hoveredSubCategories.length > 0 && (
               <ul className="subnavbar-dropdown-list">
                 {hoveredSubCategories.map((subCategory, index) => (
