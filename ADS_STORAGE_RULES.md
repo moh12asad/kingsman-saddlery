@@ -97,3 +97,4 @@ After applying the rules:
 - **CORS errors**: See `FIREBASE_STORAGE_SETUP.md` for CORS configuration
 - **Upload fails**: Check browser console for specific error messages
 
+
