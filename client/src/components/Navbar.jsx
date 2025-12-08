@@ -4,12 +4,15 @@ import { signInWithGoogle, signOutUser } from "../lib/firebase";
 import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useLanguage } from "../context/LanguageContext";
+import LanguageSelector from "./LanguageSelector";
 import { useMemo } from "react";
 
 export default function Navbar() {
   const { user } = useAuth();
   const { getTotalItems } = useCart();
   const { getFavoriteCount } = useFavorites();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const cartCount = getTotalItems();
   const favoriteCount = getFavoriteCount();
@@ -44,23 +47,24 @@ export default function Navbar() {
               }}
             />
             <div className="navbar-brand-text">
-              <h1 className="navbar-brand-title">KingsmanSaddlery</h1>
-              <p className="navbar-brand-subtitle">Saddles & Tack</p>
+              <h1 className="navbar-brand-title">{t("navbar.title")}</h1>
+              <p className="navbar-brand-subtitle">{t("navbar.subtitle")}</p>
             </div>
           </div>
         </Link>
         <div className="navbar-links">
+          <LanguageSelector />
           <button
             onClick={handleSearchClick}
             className="nav-link relative flex-row-center"
-            title="Search"
+            title={t("common.search")}
           >
             <FaSearch className="w-5 h-5" />
           </button>
           <NavLink 
             to="/favorites" 
             className={({ isActive }) => `relative flex-row-center ${isActive ? "nav-link-active" : "nav-link"}`}
-            title="Favorites"
+            title={t("common.favorites")}
           >
             <FaHeart className="w-5 h-5" />
             {favoriteCount > 0 && (
@@ -72,6 +76,7 @@ export default function Navbar() {
           <NavLink 
             to="/cart" 
             className={({ isActive }) => `relative flex-row-center ${isActive ? "nav-link-active" : "nav-link"}`}
+            title={t("common.cart")}
           >
             <FaShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
@@ -88,10 +93,10 @@ export default function Navbar() {
                   ? "btn-primary" 
                   : "btn-secondary"
               }`}
-              title="Admin Panel"
+              title={t("common.adminPanel")}
             >
               <FaCog className="w-4 h-4" />
-              <span className="text-small font-medium sm:inline hidden">Admin</span>
+              <span className="text-small font-medium sm:inline hidden">{t("common.admin")}</span>
             </NavLink>
           )}
             {!user ? (
@@ -99,7 +104,7 @@ export default function Navbar() {
                     to="/signin"
                     className="btn-link"
                 >
-                    Sign in
+                    {t("common.signIn")}
                 </NavLink>
             ) : (
                 <div className="flex-row flex-gap-md">
@@ -113,7 +118,7 @@ export default function Navbar() {
                     <NavLink
                         to="/profile"
                         className={({ isActive }) => `flex-row flex-gap-sm ${isActive ? "nav-link-active" : "nav-link"}`}
-                        title="Profile"
+                        title={t("common.profile")}
                     >
                         <FaUser className="w-4 h-4" />
                         <span className="text-small sm:inline hidden">{user.displayName || user.email}</span>
@@ -122,7 +127,7 @@ export default function Navbar() {
                         onClick={signOutUser}
                         className="btn-secondary padding-x-md padding-y-sm"
                     >
-                        Sign out
+                        {t("common.signOut")}
                     </button>
                 </div>
             )}

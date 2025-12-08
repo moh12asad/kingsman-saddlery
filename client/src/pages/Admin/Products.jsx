@@ -2,10 +2,30 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useLanguage } from "../../context/LanguageContext";
+import { useTranslatedContent } from "../../hooks/useTranslatedContent";
+import MultilingualInput from "../../components/MultilingualInput";
+import ProductTableCell from "../../components/ProductTableCell";
+import { getTranslatedContent } from "../../utils/getTranslatedContent";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
+// Helper component for category option
+function CategoryOption({ category, value }) {
+  const { language } = useLanguage();
+  const displayName = getTranslatedContent(category.name, language);
+  return <option value={value}>{displayName}</option>;
+}
+
+// Helper component for subcategory option
+function SubCategoryOption({ subCategory, value }) {
+  const { language } = useLanguage();
+  const displayName = getTranslatedContent(subCategory.name, language);
+  return <option value={value}>{displayName}</option>;
+}
+
 export default function AdminProducts(){
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [allRows, setAllRows] = useState([]); // Store all products
@@ -13,22 +33,22 @@ export default function AdminProducts(){
   const [selectedCategory, setSelectedCategory] = useState("all"); // Filter by category
   const [searchQuery, setSearchQuery] = useState(""); // Search query
   const [form, setForm] = useState({
-    name: "",
+    name: { en: "", ar: "", he: "" },
     price: 0,
-    category: "",
-    subCategory: "",
+    category: { en: "", ar: "", he: "" },
+    subCategory: { en: "", ar: "", he: "" },
     image: "",
-    description: "",
+    description: { en: "", ar: "", he: "" },
     available: true,
     sale: false,
     sale_proce: 0,
     featured: false,
     sku: "",
     brand: "",
-    technicalDetails: "",
-    additionalDetails: "",
-    warranty: "",
-    shippingInfo: "",
+    technicalDetails: { en: "", ar: "", he: "" },
+    additionalDetails: { en: "", ar: "", he: "" },
+    warranty: { en: "", ar: "", he: "" },
+    shippingInfo: { en: "", ar: "", he: "" },
     videoUrl: "",
     additionalImages: [],
   });
@@ -65,11 +85,20 @@ export default function AdminProducts(){
     loadCategories();
   },[]);
 
-  const canSubmit = useMemo(() => form.name && form.price > 0 && form.category, [form]);
+  const canSubmit = useMemo(() => {
+    const name = typeof form.name === 'object' ? form.name.en : form.name;
+    const category = typeof form.category === 'object' ? form.category.en : form.category;
+    return name && name.trim() && form.price > 0 && category && category.trim();
+  }, [form]);
 
   // Get selected category object and its sub-categories
   const selectedCategoryObj = useMemo(() => {
-    return categories.find(cat => cat.name === form.category);
+    const categoryName = typeof form.category === 'object' ? form.category.en : form.category;
+    if (!categoryName) return null;
+    return categories.find(cat => {
+      const catName = typeof cat.name === 'object' ? cat.name.en : cat.name;
+      return catName === categoryName;
+    });
   }, [categories, form.category]);
 
   const availableSubCategories = useMemo(() => {
@@ -80,20 +109,39 @@ export default function AdminProducts(){
   const filteredRows = useMemo(() => {
     let filtered = allRows;
 
+    // Helper to get text from multilingual or string
+    const getText = (field) => {
+      if (!field) return "";
+      if (typeof field === 'string') return field.toLowerCase();
+      if (typeof field === 'object') {
+        return (field.en || field.ar || field.he || "").toLowerCase();
+      }
+      return "";
+    };
+    
     // Filter by category
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(p => p.category === selectedCategory);
+      filtered = filtered.filter(p => {
+        const pCategory = getText(p.category);
+        return pCategory === selectedCategory.toLowerCase() || 
+               (typeof p.category === 'object' && p.category.en === selectedCategory);
+      });
     }
 
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(p => 
-        (p.name && p.name.toLowerCase().includes(query)) ||
-        (p.category && p.category.toLowerCase().includes(query)) ||
-        (p.subCategory && p.subCategory.toLowerCase().includes(query)) ||
-        (p.description && p.description.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(p => {
+        const nameText = getText(p.name);
+        const categoryText = getText(p.category);
+        const subCategoryText = getText(p.subCategory);
+        const descriptionText = getText(p.description);
+        
+        return nameText.includes(query) ||
+               categoryText.includes(query) ||
+               subCategoryText.includes(query) ||
+               descriptionText.includes(query);
+      });
     }
 
     return filtered;
@@ -101,7 +149,13 @@ export default function AdminProducts(){
 
   // Get unique categories from products for filter dropdown
   const productCategories = useMemo(() => {
-    const cats = new Set(allRows.map(p => p.category).filter(Boolean));
+    const cats = new Set();
+    allRows.forEach(p => {
+      if (p.category) {
+        const catName = typeof p.category === 'object' ? p.category.en : p.category;
+        if (catName) cats.add(catName);
+      }
+    });
     return Array.from(cats).sort();
   }, [allRows]);
 
@@ -149,23 +203,33 @@ export default function AdminProducts(){
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
+      // Helper to clean multilingual object (remove empty strings, keep structure)
+      const cleanMultilingual = (obj) => {
+        if (!obj || typeof obj !== 'object') return { en: "", ar: "", he: "" };
+        return {
+          en: (obj.en || "").trim(),
+          ar: (obj.ar || "").trim(),
+          he: (obj.he || "").trim()
+        };
+      };
+      
       const payload = {
-        name: form.name,
+        name: cleanMultilingual(form.name),
         price: Number(form.price) || 0,
-        category: form.category,
-        subCategory: form.subCategory || "",
+        category: cleanMultilingual(form.category),
+        subCategory: cleanMultilingual(form.subCategory),
         image: form.image,
-        description: form.description ? form.description.trim() : "",
+        description: cleanMultilingual(form.description),
         available: form.available,
         sale: form.sale,
         sale_proce: Number(form.sale_proce) || 0,
         featured: form.featured || false,
         sku: form.sku || "",
         brand: form.brand || "",
-        technicalDetails: form.technicalDetails || "",
-        additionalDetails: form.additionalDetails || "",
-        warranty: form.warranty || "",
-        shippingInfo: form.shippingInfo || "",
+        technicalDetails: cleanMultilingual(form.technicalDetails),
+        additionalDetails: cleanMultilingual(form.additionalDetails),
+        warranty: cleanMultilingual(form.warranty),
+        shippingInfo: cleanMultilingual(form.shippingInfo),
         videoUrl: form.videoUrl || "",
         additionalImages: form.additionalImages || [],
       };
@@ -181,10 +245,24 @@ export default function AdminProducts(){
       }
 
       setForm({ 
-        name:"", price:0, category:"", subCategory:"", image:"", description:"", 
-        available:true, sale:false, sale_proce:0, featured:false,
-        sku:"", brand:"", technicalDetails:"", additionalDetails:"",
-        warranty:"", shippingInfo:"", videoUrl:"", additionalImages:[]
+        name: { en: "", ar: "", he: "" },
+        price: 0,
+        category: { en: "", ar: "", he: "" },
+        subCategory: { en: "", ar: "", he: "" },
+        image: "",
+        description: { en: "", ar: "", he: "" },
+        available: true,
+        sale: false,
+        sale_proce: 0,
+        featured: false,
+        sku: "",
+        brand: "",
+        technicalDetails: { en: "", ar: "", he: "" },
+        additionalDetails: { en: "", ar: "", he: "" },
+        warranty: { en: "", ar: "", he: "" },
+        shippingInfo: { en: "", ar: "", he: "" },
+        videoUrl: "",
+        additionalImages: []
       });
       await load();
     } catch (err) {
@@ -316,14 +394,17 @@ export default function AdminProducts(){
     <div className="space-y-6">
       {/* Create Product Form */}
       <div className="card">
-        <h2 className="section-title">Create Product</h2>
+        <h2 className="section-title">{t("admin.createProduct")}</h2>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 mb-3">
-          <input 
-            className="input" 
-            placeholder="Product name" 
-            value={form.name} 
-            onChange={e=>setForm({...form,name:e.target.value})}
-          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultilingualInput
+              label={t("admin.name")}
+              value={form.name}
+              onChange={(value) => setForm({...form, name: value})}
+              placeholder={t("admin.productDescription")}
+              required
+            />
+          </div>
           <input 
             className="input" 
             type="number" 
@@ -333,25 +414,44 @@ export default function AdminProducts(){
           />
           <select 
             className="select" 
-            value={form.category} 
-            onChange={e=>setForm({...form, category: e.target.value, subCategory: ""})}
+            value={typeof form.category === 'object' ? form.category.en : form.category} 
+            onChange={e=>{
+              const selectedCategory = categories.find(cat => {
+                const catName = typeof cat.name === 'object' ? cat.name.en : cat.name;
+                return catName === e.target.value;
+              });
+              // If category has multilingual name, use it; otherwise create from selected name
+              const categoryValue = selectedCategory?.name && typeof selectedCategory.name === 'object'
+                ? selectedCategory.name
+                : { en: e.target.value, ar: "", he: "" };
+              setForm({...form, category: categoryValue, subCategory: { en: "", ar: "", he: "" }});
+            }}
             required
           >
             <option value="">Select category...</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.name}>{cat.name}</option>
-            ))}
+            {categories.map(cat => {
+              const catName = typeof cat.name === 'object' ? cat.name.en : cat.name;
+              return (
+                <CategoryOption key={cat.id} category={cat} value={catName} />
+              );
+            })}
           </select>
           {availableSubCategories.length > 0 && (
             <select 
               className="select" 
-              value={form.subCategory} 
-              onChange={e=>setForm({...form, subCategory: e.target.value})}
+              value={typeof form.subCategory === 'object' ? form.subCategory.en : form.subCategory} 
+              onChange={e=>{
+                const subValue = { en: e.target.value, ar: "", he: "" };
+                setForm({...form, subCategory: subValue});
+              }}
             >
               <option value="">Select sub-category (optional)...</option>
-              {availableSubCategories.map((sub, idx) => (
-                <option key={idx} value={sub.name}>{sub.name}</option>
-              ))}
+              {availableSubCategories.map((sub, idx) => {
+                const subName = typeof sub.name === 'object' ? sub.name.en : sub.name;
+                return (
+                  <SubCategoryOption key={idx} subCategory={sub} value={subName} />
+                );
+              })}
             </select>
           )}
           <input 
@@ -374,13 +474,15 @@ export default function AdminProducts(){
               Uploading {uploadingImages.length} image(s)...
             </span>
           )}
-          <textarea
-            className="input md:col-span-2 lg:col-span-3"
-            placeholder="Product description (optional)"
-            rows="3"
-            value={form.description}
-            onChange={e=>setForm({...form,description:e.target.value})}
-          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultilingualInput
+              label={t("admin.description")}
+              value={form.description}
+              onChange={(value) => setForm({...form, description: value})}
+              placeholder={t("admin.productDescription")}
+              rows={3}
+            />
+          </div>
           <input 
             className="input" 
             placeholder="SKU (optional)" 
@@ -393,32 +495,40 @@ export default function AdminProducts(){
             value={form.brand} 
             onChange={e=>setForm({...form,brand:e.target.value})}
           />
-          <textarea
-            className="input md:col-span-2 lg:col-span-3"
-            placeholder="Technical Details (optional, one per line)"
-            rows="3"
-            value={form.technicalDetails}
-            onChange={e=>setForm({...form,technicalDetails:e.target.value})}
-          />
-          <textarea
-            className="input md:col-span-2 lg:col-span-3"
-            placeholder="Additional Details (optional, one per line)"
-            rows="3"
-            value={form.additionalDetails}
-            onChange={e=>setForm({...form,additionalDetails:e.target.value})}
-          />
-          <input 
-            className="input" 
-            placeholder="Warranty (optional)" 
-            value={form.warranty} 
-            onChange={e=>setForm({...form,warranty:e.target.value})}
-          />
-          <input 
-            className="input" 
-            placeholder="Shipping Info (optional)" 
-            value={form.shippingInfo} 
-            onChange={e=>setForm({...form,shippingInfo:e.target.value})}
-          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultilingualInput
+              label={t("admin.technicalDetails")}
+              value={form.technicalDetails}
+              onChange={(value) => setForm({...form, technicalDetails: value})}
+              placeholder={t("admin.technicalDetailsPlaceholder")}
+              rows={3}
+            />
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultilingualInput
+              label={t("admin.additionalDetails")}
+              value={form.additionalDetails}
+              onChange={(value) => setForm({...form, additionalDetails: value})}
+              placeholder={t("admin.additionalDetailsPlaceholder")}
+              rows={3}
+            />
+          </div>
+          <div>
+            <MultilingualInput
+              label={t("admin.warranty")}
+              value={form.warranty}
+              onChange={(value) => setForm({...form, warranty: value})}
+              placeholder={t("admin.warrantyPlaceholder")}
+            />
+          </div>
+          <div>
+            <MultilingualInput
+              label={t("admin.shippingInfo")}
+              value={form.shippingInfo}
+              onChange={(value) => setForm({...form, shippingInfo: value})}
+              placeholder={t("admin.shippingInfoPlaceholder")}
+            />
+          </div>
           <input 
             className="input md:col-span-2 lg:col-span-3" 
             placeholder="Video URL (optional)" 
@@ -472,7 +582,7 @@ export default function AdminProducts(){
               onChange={e=>setForm({...form,available:e.target.checked})}
               className="w-4 h-4"
             />
-            <span className="text-sm">Available</span>
+            <span className="text-sm">{t("admin.available")}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input 
@@ -481,7 +591,7 @@ export default function AdminProducts(){
               onChange={e=>setForm({...form,sale:e.target.checked})}
               className="w-4 h-4"
             />
-            <span className="text-sm">On Sale</span>
+            <span className="text-sm">{t("admin.onSale")}</span>
           </label>
           <input 
             className="input" 
@@ -505,7 +615,7 @@ export default function AdminProducts(){
           disabled={!canSubmit} 
           onClick={create}
         >
-          Create Product
+          {t("admin.createProduct")}
         </button>
         {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
       </div>
@@ -519,7 +629,7 @@ export default function AdminProducts(){
             <div className="relative flex-1 min-w-[200px] max-w-[300px]">
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder={t("admin.searchProducts")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="input w-full pl-10"
@@ -571,15 +681,15 @@ export default function AdminProducts(){
           <table className="table admin-products-table">
             <thead>
               <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Category</th>
-                <th>Sub-Category</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Sale</th>
-                <th>Actions</th>
+                <th>{t("admin.image")}</th>
+                <th>{t("admin.name")}</th>
+                <th>{t("admin.price")}</th>
+                <th>{t("admin.category")}</th>
+                <th>{t("admin.subCategory")}</th>
+                <th>{t("admin.description")}</th>
+                <th>{t("admin.status")}</th>
+                <th>{t("admin.sale")}</th>
+                <th>{t("admin.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -587,8 +697,8 @@ export default function AdminProducts(){
                 <tr>
                   <td colSpan="9" className="text-center py-8 text-gray-500">
                     {selectedCategory === "all" 
-                      ? "No products yet. Create your first product above!"
-                      : `No products found in category "${selectedCategory}".`}
+                      ? t("admin.noProducts")
+                      : `${t("admin.noProductsInCategory")} "${selectedCategory}".`}
                   </td>
                 </tr>
               ) : (
@@ -601,24 +711,30 @@ export default function AdminProducts(){
                         <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">No image</div>
                       )}
                     </td>
-                    <td className="font-medium">{p.name || "-"}</td>
+                    <td className="font-medium">
+                      <ProductTableCell content={p.name} />
+                    </td>
                     <td>₪{(p.price || 0).toFixed(2)}</td>
-                    <td>{p.category || "-"}</td>
-                    <td>{p.subCategory || "-"}</td>
+                    <td>
+                      <ProductTableCell content={p.category} />
+                    </td>
+                    <td>
+                      <ProductTableCell content={p.subCategory} />
+                    </td>
                     <td className="max-w-xs">
-                      <p className="text-sm text-gray-600 truncate" title={p.description || ""}>
-                        {p.description || "-"}
+                      <p className="text-sm text-gray-600 truncate">
+                        <ProductTableCell content={p.description} />
                       </p>
                     </td>
                     <td>
                       <span className={p.available ? "badge badge-success" : "badge badge-danger"}>
-                        {p.available ? "Available" : "Unavailable"}
+                        {p.available ? t("admin.available") : t("admin.unavailable")}
                       </span>
                     </td>
                     <td>
                       {p.sale ? (
                         <div className="flex items-center gap-2">
-                          <span className="badge badge-danger">On Sale</span>
+                          <span className="badge badge-danger">{t("admin.onSale")}</span>
                           {p.sale_proce > 0 && (
                             <span className="text-sm text-red-600 font-semibold">₪{p.sale_proce.toFixed(2)}</span>
                           )}
@@ -633,7 +749,7 @@ export default function AdminProducts(){
                           className="btn btn-primary btn-sm" 
                           onClick={() => navigate(`/admin/products/edit/${p.id}`)}
                         >
-                          Edit
+                          {t("common.edit")}
                         </button>
                         {confirmDelete === p.id ? (
                           <div className="flex gap-1">
@@ -642,13 +758,13 @@ export default function AdminProducts(){
                               onClick={()=>deleteProduct(p.id)}
                               disabled={deletingId === p.id}
                             >
-                              {deletingId === p.id ? "..." : "Confirm"}
+                              {deletingId === p.id ? "..." : t("common.confirm")}
                             </button>
                             <button 
                               className="btn btn-sm" 
                               onClick={()=>setConfirmDelete(null)}
                             >
-                              Cancel
+                              {t("common.cancel")}
                             </button>
                           </div>
                         ) : (
@@ -657,7 +773,7 @@ export default function AdminProducts(){
                             onClick={()=>setConfirmDelete(p.id)}
                             disabled={deletingId === p.id}
                           >
-                            Delete
+                            {t("common.delete")}
                           </button>
                         )}
                       </div>

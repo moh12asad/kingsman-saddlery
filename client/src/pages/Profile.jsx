@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
+import { getTranslatedContent } from "../utils/getTranslatedContent";
 import { auth } from "../lib/firebase";
 import { 
   updatePassword, 
@@ -16,6 +18,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function Profile() {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -550,7 +553,7 @@ export default function Profile() {
                         <td>
                           <ul className="text-sm">
                             {(order.items || []).slice(0, 2).map((item, idx) => (
-                              <li key={idx}>{item.quantity} × {item.name}</li>
+                              <li key={idx}>{item.quantity} × {getTranslatedContent(item.name, language)}</li>
                             ))}
                             {(order.items || []).length > 2 && (
                               <li className="text-muted">+{(order.items || []).length - 2} more</li>

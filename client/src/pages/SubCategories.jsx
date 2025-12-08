@@ -1,12 +1,48 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
+import { useLanguage } from "../context/LanguageContext";
+import { useTranslatedContent } from "../hooks/useTranslatedContent";
+import { getTranslatedContent } from "../utils/getTranslatedContent";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
+
+// Helper component for subcategory card
+function SubCategoryCard({ subCategory, subCategoryName, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      className="relative group cursor-pointer overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+    >
+      <div className="aspect-square relative">
+        {subCategory.image ? (
+          <img
+            src={subCategory.image}
+            alt={subCategoryName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white text-4xl">📦</span>
+          </div>
+        )}
+        {/* Overlay with subcategory name */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
+          <div className="w-full p-4">
+            <h3 className="text-white font-bold text-lg md:text-xl text-center">
+              {subCategoryName}
+            </h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SubCategories() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +69,10 @@ export default function SubCategories() {
 
         const categoriesData = await categoriesRes.json();
         const foundCategory = (categoriesData.categories || []).find(
-          (cat) => cat.name === decodedCategoryName
+          (cat) => {
+            const catName = getTranslatedContent(cat.name, language);
+            return catName === decodedCategoryName;
+          }
         );
 
         if (!foundCategory) {
@@ -65,7 +104,8 @@ export default function SubCategories() {
   }, [categoryName]);
 
   const handleSubCategoryClick = (subCategoryName) => {
-    navigate(`/products?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(subCategoryName)}`);
+    const translatedCategoryName = getTranslatedContent(category.name, language);
+    navigate(`/products?category=${encodeURIComponent(translatedCategoryName)}&subcategory=${encodeURIComponent(subCategoryName)}`);
   };
 
   if (loading) {
@@ -100,10 +140,12 @@ export default function SubCategories() {
   }
 
   const subCategories = category.subCategories || [];
+  const translatedCategoryName = useTranslatedContent(category.name);
+  const categoryDescription = useTranslatedContent(category.description);
 
   if (subCategories.length === 0) {
     // If no subcategories, redirect to products page with category filter
-    navigate(`/products?category=${encodeURIComponent(category.name)}`);
+    navigate(`/products?category=${encodeURIComponent(translatedCategoryName)}`);
     return null;
   }
 
@@ -117,16 +159,25 @@ export default function SubCategories() {
           >
             ← Back to Home
           </button>
-          <h1 className="text-4xl font-bold mb-2">{category.name}</h1>
-          {category.description && (
-            <p className="text-gray-600 text-lg">{category.description}</p>
+          <h1 className="text-4xl font-bold mb-2">{translatedCategoryName}</h1>
+          {categoryDescription && (
+            <p className="text-gray-600 text-lg">{categoryDescription}</p>
           )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {subCategories.map((subCategory, index) => {
+            const subCategoryName = getTranslatedContent(subCategory.name, language);
+            // For matching, use English names to ensure compatibility with old string format products
+            const categoryNameEn = getTranslatedContent(category.name, 'en');
+            const subCategoryNameEn = getTranslatedContent(subCategory.name, 'en');
             const hasProducts = products.some(
-              (p) => p.category === category.name && p.subCategory === subCategory.name && p.available
+              (p) => {
+                // Get English names for comparison (products may still have old string format)
+                const pCategoryEn = getTranslatedContent(p.category, 'en');
+                const pSubCategoryEn = getTranslatedContent(p.subCategory, 'en');
+                return pCategoryEn === categoryNameEn && pSubCategoryEn === subCategoryNameEn && p.available;
+              }
             );
 
             // Only show subcategories that have products
@@ -135,40 +186,27 @@ export default function SubCategories() {
             }
 
             return (
-              <div
+              <SubCategoryCard
                 key={index}
-                onClick={() => handleSubCategoryClick(subCategory.name)}
-                className="relative group cursor-pointer overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                <div className="aspect-square relative">
-                  {subCategory.image ? (
-                    <img
-                      src={subCategory.image}
-                      alt={subCategory.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      <span className="text-white text-4xl">📦</span>
-                    </div>
-                  )}
-                  {/* Overlay with subcategory name */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-                    <div className="w-full p-4">
-                      <h3 className="text-white font-bold text-lg md:text-xl text-center">
-                        {subCategory.name}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                subCategory={subCategory}
+                subCategoryName={subCategoryName}
+                onClick={() => handleSubCategoryClick(subCategoryName)}
+              />
             );
           })}
         </div>
 
-        {subCategories.filter((sub) => 
-          products.some(p => p.category === category.name && p.subCategory === sub.name && p.available)
-        ).length === 0 && (
+        {subCategories.filter((sub) => {
+          // For matching, use English names to ensure compatibility with old string format products
+          const categoryNameEn = getTranslatedContent(category.name, 'en');
+          const subNameEn = getTranslatedContent(sub.name, 'en');
+          return products.some(p => {
+            // Get English names for comparison (products may still have old string format)
+            const pCategoryEn = getTranslatedContent(p.category, 'en');
+            const pSubCategoryEn = getTranslatedContent(p.subCategory, 'en');
+            return pCategoryEn === categoryNameEn && pSubCategoryEn === subNameEn && p.available;
+          });
+        }).length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-4">No subcategories with products available</p>
             <button

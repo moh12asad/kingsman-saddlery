@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
+import { useTranslatedContent } from "../hooks/useTranslatedContent";
 import { 
   FaHeart, 
   FaShoppingCart, 
@@ -38,6 +40,17 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
+  const { t, language } = useLanguage();
+  
+  // Get translated product content
+  const productName = useTranslatedContent(product?.name);
+  const productDescription = useTranslatedContent(product?.description);
+  const productCategory = useTranslatedContent(product?.category);
+  const productSubCategory = useTranslatedContent(product?.subCategory);
+  const productTechnicalDetails = useTranslatedContent(product?.technicalDetails);
+  const productAdditionalDetails = useTranslatedContent(product?.additionalDetails);
+  const productWarranty = useTranslatedContent(product?.warranty);
+  const productShippingInfo = useTranslatedContent(product?.shippingInfo);
 
   useEffect(() => {
     loadProduct();
@@ -111,7 +124,7 @@ export default function ProductDetail() {
         <div className="container-main padding-y-xl">
           <div className="text-center">
             <div className="loading-spinner mx-auto"></div>
-            <p className="margin-top-md text-muted">Loading product...</p>
+            <p className="margin-top-md text-muted">{t("product.loadingProduct")}</p>
           </div>
         </div>
       </main>
@@ -123,12 +136,12 @@ export default function ProductDetail() {
       <main className="min-h-screen bg-gray-50">
         <div className="container-main padding-y-xl">
           <div className="text-center">
-            <p className="text-error heading-3">{error || "Product not found"}</p>
+            <p className="text-error heading-3">{error || t("product.productNotFound")}</p>
             <button
               onClick={() => navigate("/shop")}
               className="btn btn-primary margin-top-md"
             >
-              Back to Shop
+              {t("product.backToShop")}
             </button>
           </div>
         </div>
@@ -144,30 +157,30 @@ export default function ProductDetail() {
           <Link to="/" className="breadcrumb-link">Home</Link>
           <span className="breadcrumb-separator">/</span>
           <Link to="/shop" className="breadcrumb-link">Shop</Link>
-          {product.category && (
+          {productCategory && (
             <>
               <span className="breadcrumb-separator">/</span>
               <Link 
-                to={`/products?category=${encodeURIComponent(product.category)}`} 
+                to={`/products?category=${encodeURIComponent(productCategory)}`} 
                 className="breadcrumb-link"
               >
-                {product.category}
+                {productCategory}
               </Link>
             </>
           )}
-          {product.subCategory && (
+          {productSubCategory && (
             <>
               <span className="breadcrumb-separator">/</span>
               <Link 
-                to={`/products?category=${encodeURIComponent(product.category)}&subcategory=${encodeURIComponent(product.subCategory)}`} 
+                to={`/products?category=${encodeURIComponent(productCategory)}&subcategory=${encodeURIComponent(productSubCategory)}`} 
                 className="breadcrumb-link"
               >
-                {product.subCategory}
+                {productSubCategory}
               </Link>
             </>
           )}
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-text">{product.name}</span>
+          <span className="breadcrumb-text">{productName}</span>
         </nav>
 
         <div className="product-detail-grid">
@@ -178,7 +191,7 @@ export default function ProductDetail() {
                 <div className="product-main-image-wrapper">
                   <img
                     src={images[selectedImageIndex]}
-                    alt={product.name}
+                    alt={productName}
                     className="product-main-image"
                   />
                   {images.length > 1 && (
@@ -230,7 +243,7 @@ export default function ProductDetail() {
                         className={`product-thumbnail ${selectedImageIndex === idx ? 'active' : ''}`}
                         onClick={() => setSelectedImageIndex(idx)}
                       >
-                        <img src={img} alt={`${product.name} view ${idx + 1}`} />
+                        <img src={img} alt={`${productName} view ${idx + 1}`} />
                       </button>
                     ))}
                   </div>
@@ -238,7 +251,7 @@ export default function ProductDetail() {
               </>
             ) : (
               <div className="product-image-placeholder">
-                No image available
+                {t("product.noImageAvailable")}
               </div>
             )}
 
@@ -248,26 +261,26 @@ export default function ProductDetail() {
               className={`product-favorite-btn ${isFav ? 'active' : ''} margin-top-lg`}
             >
               <FaHeart />
-              <span>Add to Favorites</span>
+              <span>{t("product.addToFavorites")}</span>
             </button>
 
             {/* Description */}
-            {product.description && (
+            {productDescription && (
               <div className="product-description margin-top-lg">
-                <h3 className="product-section-title">Description</h3>
-                <p className="product-description-text">{product.description}</p>
+                <h3 className="product-section-title">{t("product.description")}</h3>
+                <p className="product-description-text">{productDescription}</p>
               </div>
             )}
           </div>
 
           {/* Center Column - Product Info */}
           <div className="product-detail-info">
-            <h1 className="product-detail-title">{product.name}</h1>
+            <h1 className="product-detail-title">{productName}</h1>
 
             {/* SKU */}
             {product.sku && (
               <div className="product-sku margin-top-sm">
-                <span className="text-muted">SKU:</span> {product.sku}
+                <span className="text-muted">{t("product.sku")}</span> {product.sku}
               </div>
             )}
 
@@ -291,7 +304,7 @@ export default function ProductDetail() {
 
             {/* Quantity Selector */}
             <div className="product-quantity-selector margin-top-lg">
-              <label className="product-quantity-label">Quantity:</label>
+              <label className="product-quantity-label">{t("product.quantity")}:</label>
               <div className="product-quantity-controls">
                 <button
                   className="product-quantity-btn"
@@ -324,18 +337,18 @@ export default function ProductDetail() {
                 className="btn btn-primary btn-lg btn-full"
               >
                 <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-                Add to Cart
+                {t("product.addToCart")}
               </button>
               <button
                 onClick={handleBuyNow}
                 className="btn btn-secondary btn-lg btn-full margin-top-sm"
               >
-                Buy Now
+                {t("product.buyNow")}
               </button>
             </div>
 
             {/* Technical Details Section */}
-            {product.technicalDetails && (
+            {productTechnicalDetails && (
               <div className="margin-top-lg">
                 <button
                   onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
@@ -346,7 +359,7 @@ export default function ProductDetail() {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <span>Technical Details</span>
+                  <span>{t("product.technicalDetails")}</span>
                   {showTechnicalDetails ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                 {showTechnicalDetails && (
@@ -356,9 +369,9 @@ export default function ProductDetail() {
                     borderRadius: '0.5rem',
                     border: '1px solid #dee2e6'
                   }}>
-                    <h3 className="product-section-title">Technical Details</h3>
+                    <h3 className="product-section-title">{t("product.technicalDetails")}</h3>
                     <div className="product-details-text">
-                      {product.technicalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
+                      {productTechnicalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
                         <p key={idx} className="product-detail-bullet">
                           <span className="product-bullet">•</span>
                           {line.trim()}
@@ -371,7 +384,7 @@ export default function ProductDetail() {
             )}
 
             {/* Additional Details Section */}
-            {product.additionalDetails && (
+            {productAdditionalDetails && (
               <div className="margin-top-md">
                 <button
                   onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
@@ -382,7 +395,7 @@ export default function ProductDetail() {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <span>Additional Details</span>
+                  <span>{t("product.additionalDetails")}</span>
                   {showAdditionalDetails ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                 {showAdditionalDetails && (
@@ -392,9 +405,9 @@ export default function ProductDetail() {
                     borderRadius: '0.5rem',
                     border: '1px solid #dee2e6'
                   }}>
-                    <h3 className="product-section-title">Additional Information</h3>
+                    <h3 className="product-section-title">{t("product.additionalInformation")}</h3>
                     <div className="product-details-text">
-                      {product.additionalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
+                      {productAdditionalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
                         <p key={idx} className="product-detail-bullet">
                           <span className="product-bullet">•</span>
                           {line.trim()}
@@ -411,43 +424,43 @@ export default function ProductDetail() {
           <div className="product-detail-sidebar">
             {/* Customer Benefits */}
             <div className="product-benefits-card">
-              <h3 className="product-benefits-title">Why customers buy from us:</h3>
+              <h3 className="product-benefits-title">{t("product.whyCustomersBuy")}</h3>
               <ul className="product-benefits-list">
-                {product.warranty && (
+                {productWarranty && (
                   <li className="product-benefit-item">
                     <FaCertificate className="product-benefit-icon" />
-                    <span>Warranty: {product.warranty}</span>
+                    <span>{t("admin.warranty")}: {productWarranty}</span>
                   </li>
                 )}
                 <li className="product-benefit-item">
                   <FaShieldAlt className="product-benefit-icon" />
-                  <span>Secure payment options</span>
+                  <span>{t("product.securePayment")}</span>
                 </li>
                 <li className="product-benefit-item">
                   <FaTruck className="product-benefit-icon" />
-                  <span>Fast shipping available</span>
+                  <span>{t("product.fastShipping")}</span>
                 </li>
                 <li className="product-benefit-item">
                   <FaCertificate className="product-benefit-icon" />
-                  <span>Products with warranty</span>
+                  <span>{t("product.productsWithWarranty")}</span>
                 </li>
               </ul>
             </div>
 
             {/* Shipping & Warranty */}
             <div className="product-info-card margin-top-md">
-              {product.shippingInfo && (
+              {productShippingInfo && (
                 <div className="product-info-item">
-                  <strong>Shipping:</strong> {product.shippingInfo}
+                  <strong>{t("admin.shippingInfo")}:</strong> {productShippingInfo}
                 </div>
               )}
-              {product.warranty && (
+              {productWarranty && (
                 <div className="product-info-item">
-                  <strong>Warranty:</strong> {product.warranty}
+                  <strong>{t("admin.warranty")}:</strong> {productWarranty}
                 </div>
               )}
               <div className="product-info-item">
-                <strong>Delivery time:</strong> 7 days, self-pickup option available
+                <strong>{t("product.deliveryTime")}</strong> {t("product.daysSelfPickup")}
               </div>
             </div>
 
@@ -455,11 +468,11 @@ export default function ProductDetail() {
             <div className="product-service-links margin-top-md">
               <button className="product-service-link">
                 <FaQuestionCircle />
-                <span>Ask us about this product</span>
+                <span>{t("product.askAboutProduct")}</span>
               </button>
               <a
                 href={whatsappNumber 
-                  ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`I'm interested in: ${product.name}`)}`
+                  ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`I'm interested in: ${productName}`)}`
                   : "#"
                 }
                 target="_blank"
@@ -473,7 +486,7 @@ export default function ProductDetail() {
                 }}
               >
                 <FaWhatsapp />
-                <span>Ask us on WhatsApp</span>
+                <span>{t("product.askOnWhatsApp")}</span>
               </a>
             </div>
 
@@ -481,11 +494,11 @@ export default function ProductDetail() {
             <div className="product-social-share margin-top-md">
               <button className="product-social-btn">
                 <FaFacebook />
-                <span>Like</span>
+                <span>{t("product.like")}</span>
               </button>
               <button className="product-social-btn">
                 <FaShare />
-                <span>Share</span>
+                <span>{t("product.share")}</span>
               </button>
             </div>
           </div>
@@ -508,7 +521,7 @@ export default function ProductDetail() {
             </button>
             <img
               src={images[selectedImageIndex]}
-              alt={product.name}
+              alt={productName}
               className="image-zoom-img"
             />
           </div>

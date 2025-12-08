@@ -3,12 +3,42 @@ import { useParams, useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import { useLanguage } from "../../context/LanguageContext";
+import { useTranslatedContent } from "../../hooks/useTranslatedContent";
+import MultilingualInput from "../../components/MultilingualInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
+
+// Helper component for subcategory image alt text
+function SubCategoryImage({ name, src }) {
+  const altText = useTranslatedContent(name);
+  return <img src={src} alt={altText} className="w-24 h-24 object-cover rounded-lg border shadow-sm" />;
+}
+
+// Helper component for category image display
+function CategoryImageDisplay({ image, name }) {
+  const altText = useTranslatedContent(name);
+  return <img src={image} alt={altText} className="w-32 h-32 object-cover rounded-lg border shadow-sm" />;
+}
+
+// Helper to convert string to multilingual object (for backward compatibility)
+const toMultilingual = (value) => {
+  if (!value) return { en: "", ar: "", he: "" };
+  if (typeof value === 'string') return { en: value, ar: "", he: "" };
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return {
+      en: value.en || "",
+      ar: value.ar || "",
+      he: value.he || ""
+    };
+  }
+  return { en: "", ar: "", he: "" };
+};
 
 export default function EditCategory() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,11 +64,17 @@ export default function EditCategory() {
         setError("Category not found");
         return;
       }
-      // Ensure subCategories is an array
-      setCategory({
+      // Convert old string format to multilingual format if needed
+      const categoryData = {
         ...found,
-        subCategories: found.subCategories || []
-      });
+        name: toMultilingual(found.name),
+        description: toMultilingual(found.description),
+        subCategories: (found.subCategories || []).map(sub => ({
+          ...sub,
+          name: toMultilingual(sub.name)
+        }))
+      };
+      setCategory(categoryData);
     } catch (err) {
       setError(err.message || "Failed to load category");
     } finally {
@@ -137,7 +173,7 @@ export default function EditCategory() {
   function addSubCategory() {
     setCategory(prev => ({
       ...prev,
-      subCategories: [...(prev.subCategories || []), { name: "", image: "" }]
+      subCategories: [...(prev.subCategories || []), { name: { en: "", ar: "", he: "" }, image: "" }]
     }));
   }
 
@@ -164,15 +200,29 @@ export default function EditCategory() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
-      if (!category.name || category.name.trim() === "") {
+      // Helper to clean multilingual object
+      const cleanMultilingual = (obj) => {
+        if (!obj || typeof obj !== 'object') return { en: "", ar: "", he: "" };
+        return {
+          en: (obj.en || "").trim(),
+          ar: (obj.ar || "").trim(),
+          he: (obj.he || "").trim()
+        };
+      };
+
+      const categoryName = cleanMultilingual(category.name);
+      if (!categoryName.en || categoryName.en.trim() === "") {
         throw new Error("Category name is required");
       }
 
       const payload = {
-        name: category.name.trim(),
-        description: category.description || "",
+        name: categoryName,
+        description: cleanMultilingual(category.description),
         image: category.image || "",
-        subCategories: (category.subCategories || []).filter(sub => sub.name && sub.name.trim()),
+        subCategories: (category.subCategories || []).map(sub => ({
+          name: cleanMultilingual(sub.name),
+          image: sub.image || ""
+        })).filter(sub => sub.name.en && sub.name.en.trim()),
       };
 
       const res = await fetch(`${API}/api/categories/${id}`, {
@@ -228,29 +278,24 @@ export default function EditCategory() {
 
       <div className="card">
         <div className="grid-form">
-          <div>
-            <div className="form-group">
-              <label className="form-label form-label-required">Category Name</label>
-              <input
-                className="input"
-                placeholder="Category name"
-                value={category.name || ""}
-                onChange={e => setCategory({ ...category, name: e.target.value })}
-                required
-              />
-            </div>
+          <div className="grid-col-span-full">
+            <MultilingualInput
+              label={t("admin.name")}
+              value={category.name}
+              onChange={(value) => setCategory({ ...category, name: value })}
+              placeholder="Category name"
+              required
+            />
           </div>
 
-          <div>
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <input
-                className="input"
-                placeholder="Description (optional)"
-                value={category.description || ""}
-                onChange={e => setCategory({ ...category, description: e.target.value })}
-              />
-            </div>
+          <div className="grid-col-span-full">
+            <MultilingualInput
+              label={t("admin.description")}
+              value={category.description}
+              onChange={(value) => setCategory({ ...category, description: value })}
+              placeholder="Description (optional)"
+              rows={2}
+            />
           </div>
 
           <div className="grid-col-span-full">
@@ -271,7 +316,7 @@ export default function EditCategory() {
               {uploadingImage && <span className="text-small text-muted margin-top-sm">Uploading...</span>}
               {category.image && (
                 <div className="margin-top-sm">
-                  <img src={category.image} alt={category.name} className="w-32 h-32 object-cover rounded-lg border shadow-sm" />
+                  <CategoryImageDisplay image={category.image} name={category.name} />
                 </div>
               )}
             </div>
@@ -292,47 +337,46 @@ export default function EditCategory() {
               {category.subCategories && category.subCategories.length > 0 && (
                 <div className="space-y-3 border rounded padding-md">
                   {category.subCategories.map((sub, index) => (
-                    <div key={index} className="grid-form grid-form-2 padding-md bg-gray-50 rounded">
-                      <div>
-                        <label className="form-label">Sub-Category Name</label>
-                        <input
-                          className="input"
-                          placeholder="Sub-category name"
-                          value={sub.name || ""}
-                          onChange={e => updateSubCategory(index, "name", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="form-label">Sub-Category Image</label>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            className="input"
-                            placeholder="Image URL (optional)"
-                            value={sub.image || ""}
-                            onChange={e => updateSubCategory(index, "image", e.target.value)}
-                          />
-                          <label className="flex-row flex-gap-sm border rounded padding-x-sm padding-y-xs cursor-pointer transition text-sm">
-                            <span>Upload</span>
+                    <div key={index} className="space-y-3 padding-md bg-gray-50 rounded">
+                      <MultilingualInput
+                        label={t("admin.subCategory")}
+                        value={sub.name}
+                        onChange={(value) => updateSubCategory(index, "name", value)}
+                        placeholder="Sub-category name"
+                      />
+                      <div className="grid-form grid-form-2">
+                        <div>
+                          <label className="form-label">Sub-Category Image</label>
+                          <div className="flex gap-2 items-center">
                             <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => handleSubCategoryImageChange(index, e)}
+                              className="input"
+                              placeholder="Image URL (optional)"
+                              value={sub.image || ""}
+                              onChange={e => updateSubCategory(index, "image", e.target.value)}
                             />
-                          </label>
-                          <button
-                            type="button"
-                            className="btn btn-danger btn-sm"
-                            onClick={() => removeSubCategory(index)}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        {sub.image && (
-                          <div className="margin-top-sm">
-                            <img src={sub.image} alt={sub.name} className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                            <label className="flex-row flex-gap-sm border rounded padding-x-sm padding-y-xs cursor-pointer transition text-sm">
+                              <span>Upload</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleSubCategoryImageChange(index, e)}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              onClick={() => removeSubCategory(index)}
+                            >
+                              {t("common.remove")}
+                            </button>
                           </div>
-                        )}
+                          {sub.image && (
+                            <div className="margin-top-sm">
+                              <SubCategoryImage alt={sub.name} src={sub.image} />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -348,7 +392,7 @@ export default function EditCategory() {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || uploadingImage || !category.name || category.name.trim() === ""}
+            disabled={saving || uploadingImage || !category.name || !category.name.en || category.name.en.trim() === ""}
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

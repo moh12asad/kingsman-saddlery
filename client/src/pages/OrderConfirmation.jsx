@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
+import { getTranslatedContent } from "../utils/getTranslatedContent";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
@@ -14,6 +16,7 @@ export default function OrderConfirmation() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const { t, language } = useLanguage();
   
   const [profileData, setProfileData] = useState({
     displayName: "",
@@ -195,7 +198,7 @@ export default function OrderConfirmation() {
       const data = await res.json();
 
       if (res.ok) {
-        setEmailSuccess(`Order confirmation email sent to ${orderData.customerEmail}`);
+        setEmailSuccess(`${t("orderConfirmation.orderConfirmationEmailSent")} ${orderData.customerEmail}`);
         // TODO: After Tranzilla integration, redirect to payment gateway here
         // For now, just show success message
         console.log("Order prepared. Ready for Tranzilla payment integration.");
@@ -217,7 +220,7 @@ export default function OrderConfirmation() {
         <div className="container-main padding-y-xl">
           <div className="text-center padding-y-lg">
             <div className="loading-spinner mx-auto"></div>
-            <p className="margin-top-md text-muted">Loading order details...</p>
+            <p className="margin-top-md text-muted">{t("orderConfirmation.loadingOrderDetails")}</p>
           </div>
         </div>
       </main>
@@ -232,7 +235,7 @@ export default function OrderConfirmation() {
     <AuthRoute>
       <main className="page-with-navbar">
         <div className="container-main padding-y-xl">
-          <h1 className="heading-1 margin-bottom-lg">Order Confirmation</h1>
+          <h1 className="heading-1 margin-bottom-lg">{t("orderConfirmation.title")}</h1>
 
           {error && (
             <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
@@ -244,7 +247,7 @@ export default function OrderConfirmation() {
             <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
               <p style={{ color: "#16a34a" }}>{emailSuccess}</p>
               <p style={{ color: "#16a34a", fontSize: "0.875rem", marginTop: "0.5rem" }}>
-                Payment integration with Tranzilla will be implemented next. Your order details have been saved.
+                {t("orderConfirmation.paymentIntegrationImplementedNext")}
               </p>
             </div>
           )}
@@ -257,7 +260,7 @@ export default function OrderConfirmation() {
                 <div className="flex items-center justify-between margin-bottom-md">
                   <h2 className="section-title flex items-center gap-2">
                     <FaShoppingBag />
-                    Order Items ({cartItems.length})
+                    {t("orderConfirmation.orderItems")} ({cartItems.length})
                   </h2>
                 </div>
                 <div className="space-y-3">
@@ -266,21 +269,21 @@ export default function OrderConfirmation() {
                       {item.image ? (
                         <img
                           src={item.image}
-                          alt={item.name}
+                          alt={getTranslatedContent(item.name, language)}
                           className="w-20 h-20 object-cover rounded-lg border"
                         />
                       ) : (
                         <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">
-                          No image
+                          {t("orderConfirmation.noImage")}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-small">{item.name}</h3>
+                        <h3 className="font-semibold text-small">{getTranslatedContent(item.name, language)}</h3>
                         {item.category && (
-                          <p className="text-xs text-muted">{item.category}</p>
+                          <p className="text-xs text-muted">{getTranslatedContent(item.category, language)}</p>
                         )}
                         <div className="flex items-center gap-2 margin-top-xs">
-                          <span className="text-sm text-muted">Qty: {item.quantity}</span>
+                          <span className="text-sm text-muted">{t("orderConfirmation.qty")} {item.quantity}</span>
                           <span className="text-sm font-semibold">
                             {formatPrice(item.price * item.quantity)}
                           </span>
@@ -291,7 +294,7 @@ export default function OrderConfirmation() {
                 </div>
                 <div className="margin-top-md padding-top-md border-top">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold">{t("orderConfirmation.total")}</span>
                     <span className="text-lg font-bold">{formatPrice(total)}</span>
                   </div>
                 </div>
@@ -305,13 +308,13 @@ export default function OrderConfirmation() {
                 <div className="flex items-center justify-between margin-bottom-md">
                   <h2 className="section-title flex items-center gap-2">
                     <FaMapMarkerAlt />
-                    Shipping Address
+                    {t("orderConfirmation.shippingAddress")}
                   </h2>
                   {!isEditingAddress && (
                     <div className="flex gap-2">
                       {isAddressChanged && (
                         <span className="text-xs text-muted flex items-center">
-                          (Custom for this order)
+                          {t("orderConfirmation.customForThisOrder")}
                         </span>
                       )}
                       <button
@@ -319,7 +322,7 @@ export default function OrderConfirmation() {
                         className="btn btn-sm flex items-center gap-1"
                       >
                         <FaEdit />
-                        {isAddressChanged ? "Change" : "Use Different"}
+                        {isAddressChanged ? t("orderConfirmation.change") : t("orderConfirmation.useDifferent")}
                       </button>
                     </div>
                   )}
@@ -328,44 +331,44 @@ export default function OrderConfirmation() {
                 {isEditingAddress ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs text-muted block margin-bottom-xs">Street Address</label>
+                      <label className="text-xs text-muted block margin-bottom-xs">{t("orderConfirmation.streetAddress")}</label>
                       <input
                         type="text"
                         className="input"
                         value={orderAddress.street}
                         onChange={(e) => handleAddressChange("street", e.target.value)}
-                        placeholder="Street address"
+                        placeholder={t("orderConfirmation.streetAddress")}
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted block margin-bottom-xs">City</label>
+                      <label className="text-xs text-muted block margin-bottom-xs">{t("orderConfirmation.city")}</label>
                       <input
                         type="text"
                         className="input"
                         value={orderAddress.city}
                         onChange={(e) => handleAddressChange("city", e.target.value)}
-                        placeholder="City"
+                        placeholder={t("orderConfirmation.city")}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-muted block margin-bottom-xs">ZIP Code</label>
+                        <label className="text-xs text-muted block margin-bottom-xs">{t("orderConfirmation.zipCode")}</label>
                         <input
                           type="text"
                           className="input"
                           value={orderAddress.zipCode}
                           onChange={(e) => handleAddressChange("zipCode", e.target.value)}
-                          placeholder="ZIP Code"
+                          placeholder={t("orderConfirmation.zipCode")}
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-muted block margin-bottom-xs">Country</label>
+                        <label className="text-xs text-muted block margin-bottom-xs">{t("orderConfirmation.country")}</label>
                         <input
                           type="text"
                           className="input"
                           value={orderAddress.country}
                           onChange={(e) => handleAddressChange("country", e.target.value)}
-                          placeholder="Country"
+                          placeholder={t("orderConfirmation.country")}
                         />
                       </div>
                     </div>
@@ -375,14 +378,14 @@ export default function OrderConfirmation() {
                         className="btn-primary btn-sm flex items-center gap-1"
                       >
                         <FaCheck />
-                        Save Address
+                        {t("orderConfirmation.saveAddress")}
                       </button>
                       <button
                         onClick={handleCancelEdit}
                         className="btn btn-sm flex items-center gap-1"
                       >
                         <FaTimes />
-                        Cancel
+                        {t("orderConfirmation.cancel")}
                       </button>
                     </div>
                   </div>
@@ -398,7 +401,7 @@ export default function OrderConfirmation() {
                     )}
                     {isAddressChanged && (
                       <p className="text-xs text-muted margin-top-sm">
-                        This address is different from your profile address and will only be used for this order.
+                        {t("orderConfirmation.thisAddressDifferentFromProfile")}
                       </p>
                     )}
                     <div className="margin-top-sm">
@@ -406,24 +409,24 @@ export default function OrderConfirmation() {
                         to="/profile"
                         className="text-xs text-muted underline"
                       >
-                        Update default address in profile
+                        {t("orderConfirmation.updateDefaultAddressInProfile")}
                       </Link>
                     </div>
                   </div>
                 ) : (
                   <div className="padding-y-md">
                     <p className="text-muted text-sm margin-bottom-md">
-                      Please complete your shipping address.
+                      {t("orderConfirmation.pleaseCompleteShippingAddress")}
                     </p>
                     <button
                       onClick={handleUseDifferentAddress}
                       className="btn-primary btn-sm margin-bottom-sm"
                     >
-                      Add Address for This Order
+                      {t("orderConfirmation.addAddressForThisOrder")}
                     </button>
                     <div className="margin-top-sm">
                       <Link to="/profile" className="text-xs text-muted underline">
-                        Or update your default address in profile
+                        {t("orderConfirmation.orUpdateDefaultAddressInProfile")}
                       </Link>
                     </div>
                   </div>
@@ -432,23 +435,23 @@ export default function OrderConfirmation() {
 
               {/* Contact Information */}
               <div className="card">
-                <h2 className="section-title margin-bottom-md">Contact Information</h2>
+                <h2 className="section-title margin-bottom-md">{t("orderConfirmation.contactInformation")}</h2>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <FaUser className="text-muted" />
-                    <span>{profileData.displayName || "Not set"}</span>
+                    <span>{profileData.displayName || t("orderConfirmation.notSet")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FaEnvelope className="text-muted" />
-                    <span>{profileData.email || "Not set"}</span>
+                    <span>{profileData.email || t("orderConfirmation.notSet")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FaPhone className="text-muted" />
-                    <span>{profileData.phone || "Not set"}</span>
+                    <span>{profileData.phone || t("orderConfirmation.notSet")}</span>
                   </div>
                   {!profileData.phone && (
                     <Link to="/profile" className="btn btn-sm margin-top-sm">
-                      Add Phone Number
+                      {t("orderConfirmation.addPhoneNumber")}
                     </Link>
                   )}
                 </div>
@@ -456,14 +459,14 @@ export default function OrderConfirmation() {
 
               {/* Payment Section - Placeholder for Tranzilla */}
               <div className="card">
-                <h2 className="section-title margin-bottom-md">Payment</h2>
+                <h2 className="section-title margin-bottom-md">{t("orderConfirmation.payment")}</h2>
                 <div className="padding-y-md">
                   <p className="text-muted text-sm margin-bottom-md">
-                    Payment integration will be configured with Tranzilla.
+                    {t("orderConfirmation.paymentIntegrationTranzilla")}
                   </p>
                   <div className="card padding-md" style={{ background: "#f3f4f6", borderColor: "#d1d5db" }}>
                     <p className="text-sm text-muted text-center">
-                      Payment gateway coming soon
+                      {t("orderConfirmation.paymentGatewayComingSoon")}
                     </p>
                   </div>
                 </div>
@@ -474,7 +477,7 @@ export default function OrderConfirmation() {
           {/* Action Buttons */}
           <div className="flex gap-4 margin-top-lg">
             <Link to="/cart" className="btn btn-secondary">
-              Back to Cart
+              {t("orderConfirmation.backToCart")}
             </Link>
             <button
               className="btn-primary"
@@ -482,35 +485,35 @@ export default function OrderConfirmation() {
               onClick={handleProceedToPayment}
             >
               {sendingEmail 
-                ? "Sending Email..."
+                ? t("orderConfirmation.sendingEmail")
                 : !hasCompleteAddress || !profileData.phone
-                ? "Complete Information to Continue"
-                : "Proceed to Payment"}
+                ? t("orderConfirmation.completeInformationToContinue")
+                : t("orderConfirmation.proceedToPayment")}
             </button>
           </div>
 
           {(!hasCompleteAddress || !profileData.phone) && (
             <div className="card padding-md margin-top-md" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
               <p className="text-sm" style={{ color: "#92400e" }}>
-                <strong>Please complete the following:</strong>{" "}
+                <strong>{t("orderConfirmation.pleaseCompleteFollowing")}</strong>{" "}
                 {!hasCompleteAddress && (
                   <>
                     {isEditingAddress 
-                      ? "Complete the shipping address fields above. "
-                      : "Add a complete shipping address. "}
+                      ? t("orderConfirmation.completeShippingAddressFields")
+                      : t("orderConfirmation.addCompleteShippingAddress")}
                   </>
                 )}
-                {!profileData.phone && "Add a phone number. "}
+                {!profileData.phone && t("orderConfirmation.addPhoneNumberText")}
                 {!hasCompleteAddress && !isEditingAddress && (
                   <button onClick={handleUseDifferentAddress} className="underline">
-                    Add Address for This Order
+                    {t("orderConfirmation.addAddressForThisOrder")}
                   </button>
                 )}
                 {!profileData.phone && (
                   <>
-                    {" "}or{" "}
+                    {" "}{language === 'ar' ? 'أو' : language === 'he' ? 'או' : 'or'}{" "}
                     <Link to="/profile" className="underline">
-                      Update Profile
+                      {t("orderConfirmation.updateProfile")}
                     </Link>
                   </>
                 )}

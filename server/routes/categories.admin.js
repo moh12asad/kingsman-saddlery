@@ -29,28 +29,61 @@ router.get("/", async (_req, res) => {
 // Require authentication for mutating routes
 router.use(verifyFirebaseToken);
 
+// Helper to clean multilingual object
+const cleanMultilingual = (obj) => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return { en: "", ar: "", he: "" };
+  }
+  // Ensure all values are strings before calling trim
+  const en = obj.en != null ? String(obj.en) : "";
+  const ar = obj.ar != null ? String(obj.ar) : "";
+  const he = obj.he != null ? String(obj.he) : "";
+  return {
+    en: en.trim(),
+    ar: ar.trim(),
+    he: he.trim()
+  };
+};
+
 // Create category (ADMIN only)
 router.post("/", requireRole("ADMIN"), async (req, res) => {
   try {
     const { name = "", description = "", image = "", subCategories = [] } = req.body;
 
-    if (!name || name.trim() === "") {
+    // Handle both old format (string) and new format (multilingual object)
+    const nameObj = (typeof name === 'string' && name !== null && name !== undefined)
+      ? { en: name.trim(), ar: "", he: "" }
+      : cleanMultilingual(name || {});
+    
+    if (!nameObj.en || nameObj.en.trim() === "") {
       return res.status(400).json({ error: "Category name is required" });
     }
 
+    const descriptionObj = (typeof description === 'string' && description !== null && description !== undefined)
+      ? { en: description.trim(), ar: "", he: "" }
+      : cleanMultilingual(description || {});
+
     // Validate subCategories structure
     const validSubCategories = Array.isArray(subCategories) 
-      ? subCategories.filter(sub => sub && typeof sub === 'object' && sub.name && sub.name.trim())
+      ? subCategories
+          .filter(sub => sub && typeof sub === 'object' && sub.name)
+          .map(sub => {
+            const subName = (typeof sub.name === 'string' && sub.name !== null && sub.name !== undefined)
+              ? { en: sub.name.trim(), ar: "", he: "" }
+              : cleanMultilingual(sub.name || {});
+            return {
+              name: subName,
+              image: sub.image || "",
+            };
+          })
+          .filter(sub => sub.name.en && sub.name.en.trim())
       : [];
 
     const docRef = await db.collection("categories").add({
-      name: name.trim(),
-      description: description.trim() || "",
+      name: nameObj,
+      description: descriptionObj,
       image: image || "",
-      subCategories: validSubCategories.map(sub => ({
-        name: sub.name.trim(),
-        image: sub.image || "",
-      })),
+      subCategories: validSubCategories,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -71,19 +104,37 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    if (name !== undefined) updateData.name = name.trim();
-    if (description !== undefined) updateData.description = description.trim() || "";
+    if (name !== undefined) {
+      updateData.name = (typeof name === 'string' && name !== null)
+        ? { en: name.trim(), ar: "", he: "" }
+        : cleanMultilingual(name || {});
+    }
+    
+    if (description !== undefined) {
+      updateData.description = (typeof description === 'string' && description !== null)
+        ? { en: description.trim(), ar: "", he: "" }
+        : cleanMultilingual(description || {});
+    }
+    
     if (image !== undefined) updateData.image = image || "";
     
     if (subCategories !== undefined) {
       // Validate subCategories structure
       const validSubCategories = Array.isArray(subCategories) 
-        ? subCategories.filter(sub => sub && typeof sub === 'object' && sub.name && sub.name.trim())
+        ? subCategories
+            .filter(sub => sub && typeof sub === 'object' && sub.name)
+            .map(sub => {
+              const subName = (typeof sub.name === 'string' && sub.name !== null)
+                ? { en: sub.name.trim(), ar: "", he: "" }
+                : cleanMultilingual(sub.name || {});
+              return {
+                name: subName,
+                image: sub.image || "",
+              };
+            })
+            .filter(sub => sub.name.en && sub.name.en.trim())
         : [];
-      updateData.subCategories = validSubCategories.map(sub => ({
-        name: sub.name.trim(),
-        image: sub.image || "",
-      }));
+      updateData.subCategories = validSubCategories;
     }
 
     await db.collection("categories").doc(req.params.id).set(updateData, { merge: true });

@@ -41,6 +41,7 @@ import TermsConditions from "./pages/TermsConditions.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
 
 import "./lib/firebase"; // make sure Firebase init runs
+import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { FavoritesProvider } from "./context/FavoritesContext.jsx";
@@ -97,14 +98,16 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <CurrencyProvider>
-      <AuthProvider>
-        <CartProvider>
-          <FavoritesProvider>
-            <RouterProvider router={router} />
-          </FavoritesProvider>
-        </CartProvider>
-      </AuthProvider>
-    </CurrencyProvider>
+    <LanguageProvider>
+      <CurrencyProvider>
+        <AuthProvider>
+          <CartProvider>
+            <FavoritesProvider>
+              <RouterProvider router={router} />
+            </FavoritesProvider>
+          </CartProvider>
+        </AuthProvider>
+      </CurrencyProvider>
+    </LanguageProvider>
   </React.StrictMode>
 );

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
+import { getTranslatedContent } from "../utils/getTranslatedContent";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -10,6 +12,7 @@ export default function Favorites() {
   const { favorites, removeFavorite, isLoaded: favoritesLoaded } = useFavorites();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const { t, language } = useLanguage();
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +66,7 @@ export default function Favorites() {
       <main className="min-h-screen bg-gray-50 loading-container">
         <div className="text-center">
           <div className="loading-spinner mx-auto"></div>
-          <p className="margin-top-md text-muted">Loading favorites...</p>
+          <p className="margin-top-md text-muted">{t("favorites.loadingFavorites")}</p>
         </div>
       </main>
     );
@@ -74,32 +77,35 @@ export default function Favorites() {
       <div className="container-main padding-y-xl">
         <div className="flex-row flex-gap-md margin-bottom-lg" style={{ alignItems: 'center' }}>
           <FaHeart className="text-red-500" style={{ fontSize: '1.5rem' }} />
-          <h1 className="heading-1">My Favorites</h1>
+          <h1 className="heading-1">{t("favorites.myFavorites")}</h1>
           {favoriteProducts.length > 0 && (
-            <span className="text-muted">({favoriteProducts.length} items)</span>
+            <span className="text-muted">({favoriteProducts.length} {t("favorites.items")})</span>
           )}
         </div>
 
         {favoriteProducts.length === 0 ? (
           <div className="card-empty">
             <FaHeart className="text-muted" style={{ fontSize: '3rem', marginBottom: '1rem' }} />
-            <h2 className="heading-3 margin-bottom-sm">No favorites yet</h2>
+            <h2 className="heading-3 margin-bottom-sm">{t("favorites.noFavoritesYet")}</h2>
             <p className="text-muted margin-bottom-md">
-              Start adding products to your favorites by clicking the heart icon on any product.
+              {t("favorites.startAddingProducts")}
             </p>
             <a href="/shop" className="btn-primary">
-              Browse Products
+              {t("favorites.browseProducts")}
             </a>
           </div>
         ) : (
           <div className="grid-products">
-            {favoriteProducts.map((product) => (
-              <div key={product.id} className="card-product">
+            {favoriteProducts.map((product) => {
+              const productName = getTranslatedContent(product.name, language);
+              const productCategory = getTranslatedContent(product.category, language);
+              return (
+                <div key={product.id} className="card-product">
                 <div className="relative">
                   {product.image ? (
                     <img
                       src={product.image}
-                      alt={product.name}
+                      alt={productName}
                       className="img-product"
                     />
                   ) : (
@@ -108,7 +114,7 @@ export default function Favorites() {
                   <button
                     className="card-product-favorite active"
                     onClick={() => removeFavorite(product.id)}
-                    aria-label="Remove from favorites"
+                    aria-label={t("favorites.removeFromFavorites")}
                     style={{ position: 'absolute', top: '0.75rem', right: '0.75rem' }}
                   >
                     <FaHeart />
@@ -121,10 +127,10 @@ export default function Favorites() {
                 </div>
                 <div className="padding-sm flex-col flex-1">
                   <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm">
-                    {product.name}
+                    {productName}
                   </h3>
                   {product.category && (
-                    <p className="text-xs text-muted margin-bottom-sm">{product.category}</p>
+                    <p className="text-xs text-muted margin-bottom-sm">{productCategory}</p>
                   )}
                   <div className="flex-row flex-gap-sm margin-bottom-md">
                     {product.sale && product.sale_proce > 0 ? (
@@ -147,11 +153,12 @@ export default function Favorites() {
                     className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
                   >
                     <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-                    Add to Cart
+                    {t("product.addToCart")}
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
@@ -166,12 +173,12 @@ export default function Favorites() {
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="heading-3 margin-bottom-md">Add to Cart?</h2>
+            <h2 className="heading-3 margin-bottom-md">{t("favorites.addToCartQuestion")}</h2>
             <div className="flex-row flex-gap-md margin-bottom-lg">
               {confirmProduct.image ? (
                 <img
                   src={confirmProduct.image}
-                  alt={confirmProduct.name}
+                  alt={getTranslatedContent(confirmProduct.name, language)}
                   className="img-cart"
                 />
               ) : (
@@ -180,12 +187,12 @@ export default function Favorites() {
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="font-semibold heading-3">{confirmProduct.name}</h3>
+                <h3 className="font-semibold heading-3">{getTranslatedContent(confirmProduct.name, language)}</h3>
                 {confirmProduct.category && (
-                  <p className="text-small text-muted">{confirmProduct.category}</p>
+                  <p className="text-small text-muted">{getTranslatedContent(confirmProduct.category, language)}</p>
                 )}
                 {confirmProduct.description && (
-                  <p className="text-small text-muted margin-top-sm">{confirmProduct.description}</p>
+                  <p className="text-small text-muted margin-top-sm">{getTranslatedContent(confirmProduct.description, language)}</p>
                 )}
                 <div className="margin-top-sm">
                   {confirmProduct.sale && confirmProduct.sale_proce > 0 ? (
@@ -206,17 +213,17 @@ export default function Favorites() {
               </div>
             </div>
             <div className="flex-row flex-gap-md">
-              <button
+                <button
                 onClick={cancelAddToCart}
                 className="btn-secondary btn-full"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={confirmAddToCart}
                 className="btn-primary btn-full"
               >
-                Add to Cart
+                {t("product.addToCart")}
               </button>
             </div>
           </div>

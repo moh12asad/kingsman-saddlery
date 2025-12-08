@@ -2,10 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { createPortal } from "react-dom";
+import { useLanguage } from "../context/LanguageContext";
+import { getTranslatedContent } from "../utils/getTranslatedContent";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function SubNavbar() {
+  const { language } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -109,19 +112,28 @@ export default function SubNavbar() {
 
   const handleCategoryClick = (category) => {
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
-    const hasProducts = products.some(p => p.category === category.name && p.available);
+    const categoryName = getTranslatedContent(category.name, language);
+    // For matching, use English names to ensure compatibility with old string format products
+    const categoryNameEn = getTranslatedContent(category.name, 'en');
+    const hasProducts = products.some(p => {
+      // Get English name for comparison (products may still have old string format)
+      const pCategoryEn = getTranslatedContent(p.category, 'en');
+      return pCategoryEn === categoryNameEn && p.available;
+    });
     
     if (hasSubCategories) {
       // Navigate to subcategories page
-      navigate(`/subcategories/${encodeURIComponent(category.name)}`);
+      navigate(`/subcategories/${encodeURIComponent(categoryName)}`);
     } else if (hasProducts) {
       // Navigate directly to products page with category filter
-      navigate(`/products?category=${encodeURIComponent(category.name)}`);
+      navigate(`/products?category=${encodeURIComponent(categoryName)}`);
     }
   };
 
   const handleSubCategoryClick = (category, subCategory) => {
-    navigate(`/products?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(subCategory.name)}`);
+    const categoryName = getTranslatedContent(category.name, language);
+    const subCategoryName = getTranslatedContent(subCategory.name, language);
+    navigate(`/products?category=${encodeURIComponent(categoryName)}&subcategory=${encodeURIComponent(subCategoryName)}`);
   };
 
   if (loading) {
@@ -130,7 +142,13 @@ export default function SubNavbar() {
 
   // Filter categories that have products or subcategories
   const visibleCategories = categories.filter((category) => {
-    const hasProducts = products.some(p => p.category === category.name && p.available);
+    // For matching, use English names to ensure compatibility with old string format products
+    const categoryNameEn = getTranslatedContent(category.name, 'en');
+    const hasProducts = products.some(p => {
+      // Get English name for comparison (products may still have old string format)
+      const pCategoryEn = getTranslatedContent(p.category, 'en');
+      return pCategoryEn === categoryNameEn && p.available;
+    });
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     return hasProducts || hasSubCategories;
   });
@@ -141,15 +159,22 @@ export default function SubNavbar() {
 
   // Find the hovered category data
   const hoveredCategoryData = visibleCategories.find(
-    (cat) => (cat.id || cat.name) === hoveredCategory
+    (cat) => {
+      const catName = getTranslatedContent(cat.name, language);
+      return (cat.id || catName) === hoveredCategory;
+    }
   );
   const hoveredSubCategories = hoveredCategoryData
     ? (hoveredCategoryData.subCategories || []).filter((subCat) => {
-        return products.some(
-          p => p.category === hoveredCategoryData.name && 
-               p.subCategory === subCat.name && 
-               p.available
-        );
+        // For matching, use English names to ensure compatibility with old string format products
+        const catNameEn = getTranslatedContent(hoveredCategoryData.name, 'en');
+        const subCatNameEn = getTranslatedContent(subCat.name, 'en');
+        return products.some(p => {
+          // Get English names for comparison (products may still have old string format)
+          const pCategoryEn = getTranslatedContent(p.category, 'en');
+          const pSubCategoryEn = getTranslatedContent(p.subCategory, 'en');
+          return pCategoryEn === catNameEn && pSubCategoryEn === subCatNameEn && p.available;
+        });
       })
     : [];
 
@@ -159,17 +184,22 @@ export default function SubNavbar() {
         <div className="subnavbar-content">
           <ul className="subnavbar-list">
             {visibleCategories.map((category) => {
+              const categoryName = getTranslatedContent(category.name, language);
               const hasSubCategories = category.subCategories && category.subCategories.length > 0;
               const subCategories = category.subCategories || [];
+              // For matching, use English names to ensure compatibility with old string format products
+              const categoryNameEn = getTranslatedContent(category.name, 'en');
               const visibleSubCategories = subCategories.filter((subCat) => {
-                return products.some(
-                  p => p.category === category.name && 
-                       p.subCategory === subCat.name && 
-                       p.available
-                );
+                const subCatNameEn = getTranslatedContent(subCat.name, 'en');
+                return products.some(p => {
+                  // Get English names for comparison (products may still have old string format)
+                  const pCategoryEn = getTranslatedContent(p.category, 'en');
+                  const pSubCategoryEn = getTranslatedContent(p.subCategory, 'en');
+                  return pCategoryEn === categoryNameEn && pSubCategoryEn === subCatNameEn && p.available;
+                });
               });
 
-              const categoryKey = category.id || category.name;
+              const categoryKey = category.id || categoryName;
               const isHovered = hoveredCategory === categoryKey;
 
               return (
@@ -211,7 +241,7 @@ export default function SubNavbar() {
                     onClick={() => handleCategoryClick(category)}
                     className="subnavbar-link"
                   >
-                    {category.name}
+                    {categoryName}
                   </button>
                 </li>
               );
@@ -245,16 +275,19 @@ export default function SubNavbar() {
           <div className="subnavbar-dropdown-content">
             {hoveredSubCategories.length > 0 && (
               <ul className="subnavbar-dropdown-list">
-                {hoveredSubCategories.map((subCategory, index) => (
-                  <li key={index} className="subnavbar-dropdown-item">
-                    <button
-                      onClick={() => handleSubCategoryClick(hoveredCategoryData, subCategory)}
-                      className="subnavbar-dropdown-link"
-                    >
-                      {subCategory.name}
-                    </button>
-                  </li>
-                ))}
+                {hoveredSubCategories.map((subCategory, index) => {
+                  const subCategoryName = getTranslatedContent(subCategory.name, language);
+                  return (
+                    <li key={index} className="subnavbar-dropdown-item">
+                      <button
+                        onClick={() => handleSubCategoryClick(hoveredCategoryData, subCategory)}
+                        className="subnavbar-dropdown-link"
+                      >
+                        {subCategoryName}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

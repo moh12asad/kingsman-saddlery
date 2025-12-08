@@ -7,6 +7,65 @@
   --glass-border: rgba(255, 255, 255, 0.25);
 }
 
+/* RTL Support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* RTL-specific adjustments for flexbox */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* Ensure proper text alignment in RTL */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Language Selector Styles */
+.language-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.language-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  font-weight: 500;
+  transition: color 0.2s, font-weight 0.2s;
+  font-size: 0.875rem;
+}
+
+.language-btn:hover {
+  color: #374151;
+}
+
+.language-btn.active {
+  color: var(--brand, #4f46e5);
+  font-weight: 700;
+}
+
+.language-separator {
+  color: #d1d5db;
+  user-select: none;
+  font-weight: 300;
+}
+
 .glass {
   background: var(--glass-bg);
   backdrop-filter: blur(12px);

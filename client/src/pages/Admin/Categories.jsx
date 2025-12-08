@@ -3,17 +3,48 @@ import { useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import { useLanguage } from "../../context/LanguageContext";
+import { useTranslatedContent } from "../../hooks/useTranslatedContent";
+import { getTranslatedContent } from "../../utils/getTranslatedContent";
+import MultilingualInput from "../../components/MultilingualInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
+// Helper components for displaying translated category names
+function CategoryNameCell({ name }) {
+  const translatedName = useTranslatedContent(name);
+  return <span>{translatedName || "-"}</span>;
+}
+
+function CategoryDescriptionCell({ description }) {
+  const translatedDesc = useTranslatedContent(description);
+  return <span>{translatedDesc || "-"}</span>;
+}
+
+function SubCategoryNameCell({ name }) {
+  const translatedName = useTranslatedContent(name);
+  return <span>{translatedName || "-"}</span>;
+}
+
+function CategoryImageCell({ image, name }) {
+  const altText = useTranslatedContent(name);
+  return <img src={image} alt={altText} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />;
+}
+
 export default function AdminCategories() {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", description: "", image: "", subCategories: [] });
+  const [form, setForm] = useState({ 
+    name: { en: "", ar: "", he: "" }, 
+    description: { en: "", ar: "", he: "" }, 
+    image: "", 
+    subCategories: [] 
+  });
 
   useEffect(() => {
     loadCategories();
@@ -107,7 +138,7 @@ export default function AdminCategories() {
   function addSubCategory() {
     setForm(prev => ({
       ...prev,
-      subCategories: [...(prev.subCategories || []), { name: "", image: "" }]
+      subCategories: [...(prev.subCategories || []), { name: { en: "", ar: "", he: "" }, image: "" }]
     }));
   }
 
@@ -157,13 +188,33 @@ export default function AdminCategories() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
+      // Helper to clean multilingual object
+      const cleanMultilingual = (obj) => {
+        if (!obj || typeof obj !== 'object') return { en: "", ar: "", he: "" };
+        return {
+          en: (obj.en || "").trim(),
+          ar: (obj.ar || "").trim(),
+          he: (obj.he || "").trim()
+        };
+      };
+
+      const payload = {
+        name: cleanMultilingual(form.name),
+        description: cleanMultilingual(form.description),
+        image: form.image || "",
+        subCategories: (form.subCategories || []).map(sub => ({
+          name: cleanMultilingual(sub.name),
+          image: sub.image || ""
+        }))
+      };
+
       const res = await fetch(`${API}/api/categories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -171,7 +222,7 @@ export default function AdminCategories() {
         throw new Error(body.error || "Failed to create category");
       }
 
-      setForm({ name: "", description: "", image: "", subCategories: [] });
+      setForm({ name: { en: "", ar: "", he: "" }, description: { en: "", ar: "", he: "" }, image: "", subCategories: [] });
       await loadCategories();
     } catch (err) {
       setError(err.message || "Unable to create category");
@@ -212,21 +263,26 @@ export default function AdminCategories() {
   return (
     <div className="space-y-6">
       <form className="card space-y-4" onSubmit={createCategory}>
-        <div className="section-title">Create Category</div>
+        <div className="section-title">{t("admin.categories")}</div>
         <div className="grid md:grid-cols-2 gap-4">
-          <input
-            className="input"
-            placeholder="Category name *"
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            required
-          />
-          <input
-            className="input"
-            placeholder="Description (optional)"
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-          />
+          <div className="md:col-span-2">
+            <MultilingualInput
+              label={t("admin.name")}
+              value={form.name}
+              onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}
+              placeholder="Category name"
+              required
+            />
+          </div>
+          <div className="md:col-span-2">
+            <MultilingualInput
+              label={t("admin.description")}
+              value={form.description}
+              onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
+              placeholder="Description (optional)"
+              rows={2}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -263,43 +319,45 @@ export default function AdminCategories() {
           {form.subCategories && form.subCategories.length > 0 && (
             <div className="space-y-3 border rounded p-3">
               {form.subCategories.map((sub, index) => (
-                <div key={index} className="grid md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded">
-                  <input
-                    className="input"
-                    placeholder="Sub-category name *"
+                <div key={index} className="space-y-3 p-3 bg-gray-50 rounded">
+                  <MultilingualInput
+                    label={t("admin.subCategory")}
                     value={sub.name}
-                    onChange={(e) => updateSubCategory(index, "name", e.target.value)}
+                    onChange={(value) => updateSubCategory(index, "name", value)}
+                    placeholder="Sub-category name"
                     required
                   />
-                  <div className="flex gap-2 items-center">
-                    <input
-                      className="input"
-                      placeholder="Image URL (optional)"
-                      value={sub.image}
-                      onChange={(e) => updateSubCategory(index, "image", e.target.value)}
-                    />
-                    <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-100 transition text-sm">
-                      <span>Upload</span>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="flex gap-2 items-center">
                       <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleSubCategoryImageChange(index, e)}
+                        className="input"
+                        placeholder="Image URL (optional)"
+                        value={sub.image}
+                        onChange={(e) => updateSubCategory(index, "image", e.target.value)}
                       />
-                    </label>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() => removeSubCategory(index)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  {sub.image && (
-                    <div className="md:col-span-2">
-                      <img src={sub.image} alt="Sub-category preview" className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                      <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-100 transition text-sm">
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleSubCategoryImageChange(index, e)}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removeSubCategory(index)}
+                      >
+                        {t("common.remove")}
+                      </button>
                     </div>
-                  )}
+                    {sub.image && (
+                      <div className="md:col-span-2">
+                        <img src={sub.image} alt="Sub-category preview" className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -337,31 +395,40 @@ export default function AdminCategories() {
                 <tr key={category.id}>
                   <td style={{ textAlign: 'left' }}>
                     {category.image ? (
-                      <img src={category.image} alt={category.name} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
+                      <CategoryImageCell image={category.image} name={category.name} />
                     ) : (
                       <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">No image</div>
                     )}
                   </td>
-                  <td className="font-semibold" style={{ textAlign: 'left' }}>{category.name}</td>
-                  <td className="text-gray-600" style={{ textAlign: 'left' }}>{category.description || "-"}</td>
+                  <td className="font-semibold" style={{ textAlign: 'left' }}>
+                    <CategoryNameCell name={category.name} />
+                  </td>
+                  <td className="text-gray-600" style={{ textAlign: 'left' }}>
+                    <CategoryDescriptionCell description={category.description} />
+                  </td>
                   <td style={{ textAlign: 'left' }}>
                     {category.subCategories && category.subCategories.length > 0 ? (
                       <div className="text-sm space-y-1">
                         <div className="font-medium text-gray-700 mb-2">
                           {category.subCategories.length} sub-categor{category.subCategories.length === 1 ? 'y' : 'ies'}
                         </div>
-                        {category.subCategories.map((sub, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-1.5 bg-gray-50 rounded border border-gray-200">
-                            {sub.image ? (
-                              <img src={sub.image} alt={sub.name} className="w-8 h-8 object-cover rounded border" />
-                            ) : (
-                              <div className="w-8 h-8 bg-gray-200 rounded border flex items-center justify-center text-gray-400 text-xs">
-                                No img
-                              </div>
-                            )}
-                            <span className="font-medium">{sub.name}</span>
-                          </div>
-                        ))}
+                        {category.subCategories.map((sub, idx) => {
+                          const subNameForAlt = getTranslatedContent(sub.name, language);
+                          return (
+                            <div key={idx} className="flex items-center gap-2 p-1.5 bg-gray-50 rounded border border-gray-200">
+                              {sub.image ? (
+                                <img src={sub.image} alt={subNameForAlt} className="w-8 h-8 object-cover rounded border" />
+                              ) : (
+                                <div className="w-8 h-8 bg-gray-200 rounded border flex items-center justify-center text-gray-400 text-xs">
+                                  No img
+                                </div>
+                              )}
+                              <span className="font-medium">
+                                <SubCategoryNameCell name={sub.name} />
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <span className="text-gray-400 text-sm">No sub-categories</span>

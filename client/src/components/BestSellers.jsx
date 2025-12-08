@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useTranslatedContent } from "../hooks/useTranslatedContent";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import { auth } from "../lib/firebase";
 
@@ -131,6 +132,7 @@ export default function BestSellers() {
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const productName = useTranslatedContent(product.name);
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -152,7 +154,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name}
+            alt={productName}
             className="card-product-image"
           />
         ) : (
@@ -175,7 +177,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
       </div>
       <div className="card-product-content">
         <h3 className="card-product-title">
-          {product.name}
+          {productName}
         </h3>
         <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (

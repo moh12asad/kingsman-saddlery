@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { auth } from "../../lib/firebase";
+import { useLanguage } from "../../context/LanguageContext";
+import { getTranslatedContent } from "../../utils/getTranslatedContent";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 const emptyItem = () => ({ productId: "", name: "", quantity: 1, price: 0 });
 
 export default function AdminOrders(){
+  const { language } = useLanguage();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -192,9 +195,12 @@ export default function AdminOrders(){
                   <td>${Number(order.total || 0).toFixed(2)}</td>
                   <td>
                     <ul className="text-gray-600 space-y-1">
-                      {(order.items || []).map((item, idx) => (
-                        <li key={idx}>{item.quantity} × {item.name}</li>
-                      ))}
+                      {(order.items || []).map((item, idx) => {
+                        const itemName = typeof item.name === 'object' 
+                          ? getTranslatedContent(item.name, language) 
+                          : item.name;
+                        return <li key={idx}>{item.quantity} × {itemName}</li>;
+                      })}
                     </ul>
                   </td>
                   <td>{order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</td>

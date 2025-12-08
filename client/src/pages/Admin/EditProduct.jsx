@@ -2,12 +2,15 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useLanguage } from "../../context/LanguageContext";
+import MultilingualInput from "../../components/MultilingualInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function EditProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +24,21 @@ export default function EditProduct() {
     loadCategories();
   }, [id]);
 
+  // Helper to convert string to multilingual object (for backward compatibility)
+  const toMultilingual = (value) => {
+    if (!value) return { en: "", ar: "", he: "" };
+    if (typeof value === 'string') return { en: value, ar: "", he: "" };
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      // Ensure all language keys exist
+      return {
+        en: value.en || "",
+        ar: value.ar || "",
+        he: value.he || ""
+      };
+    }
+    return { en: "", ar: "", he: "" };
+  };
+
   async function loadProduct() {
     try {
       setLoading(true);
@@ -31,7 +49,19 @@ export default function EditProduct() {
         setError("Product not found");
         return;
       }
-      setProduct(found);
+      // Convert old string format to multilingual format if needed
+      const product = {
+        ...found,
+        name: toMultilingual(found.name),
+        description: toMultilingual(found.description),
+        category: toMultilingual(found.category),
+        subCategory: toMultilingual(found.subCategory),
+        technicalDetails: toMultilingual(found.technicalDetails),
+        additionalDetails: toMultilingual(found.additionalDetails),
+        warranty: toMultilingual(found.warranty),
+        shippingInfo: toMultilingual(found.shippingInfo),
+      };
+      setProduct(product);
     } catch (err) {
       setError(err.message || "Failed to load product");
     } finally {
@@ -187,23 +217,33 @@ export default function EditProduct() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
+      // Helper to clean multilingual object
+      const cleanMultilingual = (obj) => {
+        if (!obj || typeof obj !== 'object') return { en: "", ar: "", he: "" };
+        return {
+          en: (obj.en || "").trim(),
+          ar: (obj.ar || "").trim(),
+          he: (obj.he || "").trim()
+        };
+      };
+
       const payload = {
-        name: product.name,
+        name: cleanMultilingual(product.name),
         price: Number(product.price) || 0,
-        category: product.category || "",
-        subCategory: product.subCategory || "",
+        category: cleanMultilingual(product.category),
+        subCategory: cleanMultilingual(product.subCategory),
         image: product.image || "",
-        description: product.description ? product.description.trim() : "",
+        description: cleanMultilingual(product.description),
         available: product.available,
         sale: product.sale,
         sale_proce: Number(product.sale_proce) || 0,
         featured: product.featured || false,
         sku: product.sku || "",
         brand: product.brand || "",
-        technicalDetails: product.technicalDetails || "",
-        additionalDetails: product.additionalDetails || "",
-        warranty: product.warranty || "",
-        shippingInfo: product.shippingInfo || "",
+        technicalDetails: cleanMultilingual(product.technicalDetails),
+        additionalDetails: cleanMultilingual(product.additionalDetails),
+        warranty: cleanMultilingual(product.warranty),
+        shippingInfo: cleanMultilingual(product.shippingInfo),
         videoUrl: product.videoUrl || "",
         additionalImages: product.additionalImages || [],
       };
@@ -262,15 +302,13 @@ export default function EditProduct() {
       <div className="card">
         <div className="grid-form grid-form-3">
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label form-label-required">Product Name</label>
-              <input
-                className="input"
-                placeholder="Product name"
-                value={product.name || ""}
-                onChange={e => setProduct({ ...product, name: e.target.value })}
-              />
-            </div>
+            <MultilingualInput
+              label={t("admin.name")}
+              value={product.name}
+              onChange={(value) => setProduct({ ...product, name: value })}
+              placeholder={t("admin.productDescription")}
+              required
+            />
           </div>
 
           <div>
@@ -294,19 +332,32 @@ export default function EditProduct() {
               <label className="form-label">Category</label>
               <select
                 className="select"
-                value={product.category || ""}
-                onChange={e => setProduct({ ...product, category: e.target.value, subCategory: "" })}
+                value={typeof product.category === 'object' ? product.category.en : (product.category || "")}
+                onChange={e => {
+                  const selectedCategory = categories.find(cat => cat.name === e.target.value);
+                  const categoryValue = selectedCategory?.name && typeof selectedCategory.name === 'object'
+                    ? selectedCategory.name
+                    : { en: e.target.value, ar: "", he: "" };
+                  setProduct({ ...product, category: categoryValue, subCategory: { en: "", ar: "", he: "" } });
+                }}
               >
                 <option value="">Select category...</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
+                {categories.map(cat => {
+                  const catName = typeof cat.name === 'object' ? cat.name.en : cat.name;
+                  return (
+                    <option key={cat.id} value={catName}>{catName}</option>
+                  );
+                })}
               </select>
             </div>
           </div>
 
           {(() => {
-            const selectedCategoryObj = categories.find(cat => cat.name === product.category);
+            const categoryName = typeof product.category === 'object' ? product.category.en : product.category;
+            const selectedCategoryObj = categories.find(cat => {
+              const catName = typeof cat.name === 'object' ? cat.name.en : cat.name;
+              return catName === categoryName;
+            });
             const availableSubCategories = selectedCategoryObj?.subCategories || [];
             
             if (availableSubCategories.length > 0) {
@@ -316,13 +367,19 @@ export default function EditProduct() {
                     <label className="form-label">Sub-Category</label>
                     <select
                       className="select"
-                      value={product.subCategory || ""}
-                      onChange={e => setProduct({ ...product, subCategory: e.target.value })}
+                      value={typeof product.subCategory === 'object' ? product.subCategory.en : (product.subCategory || "")}
+                      onChange={e => {
+                        const subValue = { en: e.target.value, ar: "", he: "" };
+                        setProduct({ ...product, subCategory: subValue });
+                      }}
                     >
                       <option value="">Select sub-category (optional)...</option>
-                      {availableSubCategories.map((sub, idx) => (
-                        <option key={idx} value={sub.name}>{sub.name}</option>
-                      ))}
+                      {availableSubCategories.map((sub, idx) => {
+                        const subName = typeof sub.name === 'object' ? sub.name.en : sub.name;
+                        return (
+                          <option key={idx} value={subName}>{subName}</option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -332,16 +389,13 @@ export default function EditProduct() {
           })()}
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea
-                className="input"
-                placeholder="Product description (optional)"
-                rows="4"
-                value={product.description || ""}
-                onChange={e => setProduct({ ...product, description: e.target.value })}
-              />
-            </div>
+            <MultilingualInput
+              label={t("admin.description")}
+              value={product.description}
+              onChange={(value) => setProduct({ ...product, description: value })}
+              placeholder={t("admin.productDescription")}
+              rows={4}
+            />
           </div>
 
           <div>
@@ -369,53 +423,41 @@ export default function EditProduct() {
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label">Technical Details</label>
-              <textarea
-                className="input"
-                placeholder="Technical details (optional, one per line)"
-                rows="4"
-                value={product.technicalDetails || ""}
-                onChange={e => setProduct({ ...product, technicalDetails: e.target.value })}
-              />
-            </div>
+            <MultilingualInput
+              label={t("admin.technicalDetails")}
+              value={product.technicalDetails}
+              onChange={(value) => setProduct({ ...product, technicalDetails: value })}
+              placeholder={t("admin.technicalDetailsPlaceholder")}
+              rows={4}
+            />
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label">Additional Details</label>
-              <textarea
-                className="input"
-                placeholder="Additional information (optional, one per line)"
-                rows="4"
-                value={product.additionalDetails || ""}
-                onChange={e => setProduct({ ...product, additionalDetails: e.target.value })}
-              />
-            </div>
+            <MultilingualInput
+              label={t("admin.additionalDetails")}
+              value={product.additionalDetails}
+              onChange={(value) => setProduct({ ...product, additionalDetails: value })}
+              placeholder={t("admin.additionalDetailsPlaceholder")}
+              rows={4}
+            />
           </div>
 
           <div>
-            <div className="form-group">
-              <label className="form-label">Warranty</label>
-              <input
-                className="input"
-                placeholder="Warranty information (optional)"
-                value={product.warranty || ""}
-                onChange={e => setProduct({ ...product, warranty: e.target.value })}
-              />
-            </div>
+            <MultilingualInput
+              label={t("admin.warranty")}
+              value={product.warranty}
+              onChange={(value) => setProduct({ ...product, warranty: value })}
+              placeholder={t("admin.warrantyPlaceholder")}
+            />
           </div>
 
           <div>
-            <div className="form-group">
-              <label className="form-label">Shipping Info</label>
-              <input
-                className="input"
-                placeholder="Shipping information (optional)"
-                value={product.shippingInfo || ""}
-                onChange={e => setProduct({ ...product, shippingInfo: e.target.value })}
-              />
-            </div>
+            <MultilingualInput
+              label={t("admin.shippingInfo")}
+              value={product.shippingInfo}
+              onChange={(value) => setProduct({ ...product, shippingInfo: value })}
+              placeholder={t("admin.shippingInfoPlaceholder")}
+            />
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">

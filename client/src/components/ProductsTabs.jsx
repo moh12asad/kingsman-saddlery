@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
+import { useTranslatedContent } from "../hooks/useTranslatedContent";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function ProductsTabs() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("suggested");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +131,7 @@ export default function ProductsTabs() {
     return (
       <section className="products-tabs-section">
         <div className="text-center py-12">
-          <p className="text-gray-500">Loading products...</p>
+          <p className="text-gray-500">{t("shop.loadingProducts")}</p>
         </div>
       </section>
     );
@@ -142,19 +145,19 @@ export default function ProductsTabs() {
             className={`products-tab-button ${activeTab === "suggested" ? "active" : ""}`}
             onClick={() => setActiveTab("suggested")}
           >
-            Suggested
+            {t("shop.suggested")}
           </button>
           <button
             className={`products-tab-button ${activeTab === "sales" ? "active" : ""}`}
             onClick={() => setActiveTab("sales")}
           >
-            Sales
+            {t("shop.sales")}
           </button>
           <button
             className={`products-tab-button ${activeTab === "new" ? "active" : ""}`}
             onClick={() => setActiveTab("new")}
           >
-            New
+            {t("shop.new")}
           </button>
         </div>
       </div>
@@ -182,7 +185,7 @@ export default function ProductsTabs() {
           <div className="product-carousel" ref={scrollRef}>
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12 w-full">
-                <p className="text-gray-500">No products found</p>
+                <p className="text-gray-500">{t("shop.noProductsFound")}</p>
               </div>
             ) : (
               filteredProducts.map((product) => (
@@ -203,8 +206,10 @@ export default function ProductsTabs() {
 }
 
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const productName = useTranslatedContent(product.name);
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -226,7 +231,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name}
+            alt={productName}
             className="card-product-image"
           />
         ) : (
@@ -249,7 +254,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
       </div>
       <div className="card-product-content">
         <h3 className="card-product-title">
-          {product.name}
+          {productName}
         </h3>
         <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (
@@ -273,7 +278,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           style={{ marginTop: '0.75rem' }}
         >
           <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-          Add to Cart
+          {t("product.addToCart")}
         </button>
       </div>
     </div>
