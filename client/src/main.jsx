@@ -23,6 +23,7 @@ import "./styles/generic.css";
 import AdminLayout from "./pages/Admin/index.jsx";
 import AdminUsers from "./pages/Admin/Users.jsx";
 import AdminProducts from "./pages/Admin/Products.jsx";
+import CreateProduct from "./pages/Admin/CreateProduct.jsx";
 import AdminDashboard from "./pages/Admin/Dashboard.jsx";
 import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
@@ -79,6 +80,7 @@ const router = createBrowserRouter([
           { path: "users", element: <AdminUsers /> },
           { path: "users/edit/:id", element: <EditUser /> },
           { path: "products", element: <AdminProducts /> },
+          { path: "products/create", element: <CreateProduct /> },
           { path: "products/edit/:id", element: <EditProduct /> },
           { path: "categories", element: <AdminCategories /> },
           { path: "categories/edit/:id", element: <EditCategory /> },
