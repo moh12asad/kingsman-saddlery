@@ -1,0 +1,44 @@
+/* Form Classes */
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.form-label-required::after {
+  content: " *";
+  color: #dc2626;
+}
+
+.form-help {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.form-error {
+  font-size: 0.875rem;
+  color: #dc2626;
+  margin-top: 0.5rem;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.input-group-text {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+

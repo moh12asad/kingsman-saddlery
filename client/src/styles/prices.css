@@ -1,0 +1,26 @@
+/* Price Classes */
+
+.price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.price-sale {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.price-original {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.price-total {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+

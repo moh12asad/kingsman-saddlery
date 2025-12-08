@@ -1,0 +1,175 @@
+
+/* Products Tabs Section */
+.products-tabs-section {
+  max-width: 1400px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.products-tabs-header {
+  margin-bottom: 2rem;
+}
+
+.products-tabs-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.products-tab-button {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.products-tab-button:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.products-tab-button.active {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.products-tabs-content {
+  margin-top: 2rem;
+}
+
+/* Brands Carousel Section */
+.brands-carousel-section {
+  max-width: 1000px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.brands-carousel-container {
+  position: relative;
+  padding: 2rem 0;
+}
+
+.brands-carousel {
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 1rem 0;
+  /* Add padding on both sides to allow centering and smooth scrolling */
+  padding-left: calc(50% - 100px);
+  padding-right: calc(50% - 100px);
+  justify-content: flex-start;
+}
+
+.brands-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-card {
+  flex: 0 0 180px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.brand-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.brand-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.brand-placeholder {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.brands-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.brands-carousel-arrow:hover {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.brands-carousel-arrow-left {
+  left: 10px;
+}
+
+.brands-carousel-arrow-right {
+  right: 10px;
+}
+
+@media (max-width: 768px) {
+  .brands-carousel-arrow {
+    display: none;
+  }
+  
+  .brand-card {
+    flex: 0 0 140px;
+    height: 100px;
+  }
+}
+
+/* Best Sellers Section */
+.best-sellers-section {
+  max-width: 1400px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.best-sellers-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.best-sellers-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+@media (max-width: 768px) {
+  .best-sellers-title {
+    font-size: 1.5rem;
+  }
+}

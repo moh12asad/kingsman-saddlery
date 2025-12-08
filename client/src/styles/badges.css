@@ -1,0 +1,90 @@
+/* Badge Classes */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-sale {
+  background: #dc2626;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.badge-count {
+  position: absolute;
+  top: -0.125rem;
+  right: -0.125rem;
+  background: #dc2626;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  min-width: 0.875rem;
+  height: 0.875rem;
+  padding: 0 0.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Clean Sale Section Header (EQUIPORT style) */
+.sale-section-header-clean {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.heading-section {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.link-shop-all {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.link-shop-all:hover {
+  color: var(--brand);
+}
+
+.link-shop-all span {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
