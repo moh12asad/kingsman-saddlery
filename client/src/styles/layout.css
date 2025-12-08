@@ -1,0 +1,164 @@
+/* Layout Classes */
+
+/* Container patterns */
+.container-main {
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.container-content {
+  max-width: 64rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.container-narrow {
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Spacing utilities */
+.spacing-y-sm { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+.spacing-y-md { margin-top: 1rem; margin-bottom: 1rem; }
+.spacing-y-lg { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+.spacing-y-xl { margin-top: 2rem; margin-bottom: 2rem; }
+
+.spacing-x-sm { margin-left: 0.5rem; margin-right: 0.5rem; }
+.spacing-x-md { margin-left: 1rem; margin-right: 1rem; }
+.spacing-x-lg { margin-left: 1.5rem; margin-right: 1.5rem; }
+
+.padding-sm { padding: 0.5rem; }
+.padding-md { padding: 1rem; }
+.padding-lg { padding: 1.5rem; }
+.padding-xl { padding: 2rem; }
+
+.padding-y-sm { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.padding-y-md { padding-top: 1rem; padding-bottom: 1rem; }
+.padding-y-lg { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.padding-y-xl { padding-top: 2rem; padding-bottom: 2rem; }
+
+.padding-x-sm { padding-left: 0.5rem; padding-right: 0.5rem; }
+.padding-x-md { padding-left: 1rem; padding-right: 1rem; }
+.padding-x-lg { padding-left: 1.5rem; padding-right: 1.5rem; }
+
+.margin-bottom-sm { margin-bottom: 0.5rem; }
+.margin-bottom-md { margin-bottom: 1rem; }
+.margin-bottom-lg { margin-bottom: 1.5rem; }
+.margin-bottom-xl { margin-bottom: 2rem; }
+
+.margin-top-sm { margin-top: 0.5rem; }
+.margin-top-md { margin-top: 1rem; }
+.margin-top-lg { margin-top: 1.5rem; }
+.margin-top-xl { margin-top: 2rem; }
+
+.margin-left-sm { margin-left: 0.5rem; }
+.margin-left-md { margin-left: 1rem; }
+.margin-left-lg { margin-left: 1.5rem; }
+
+/* Flex patterns */
+.flex-row {
+  display: flex;
+  align-items: center;
+}
+
+.flex-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-row-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-row-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-gap-sm { gap: 0.5rem; }
+.flex-gap-md { gap: 1rem; }
+.flex-gap-lg { gap: 1.5rem; }
+.flex-gap-xl { gap: 2rem; }
+
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1 1 0%; }
+
+/* Grid patterns */
+.grid-form {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-form-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Grid column spans for responsive layouts */
+.grid-col-span-full {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 768px) {
+  .md\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:col-span-3 {
+    grid-column: span 3 / span 3;
+  }
+}
+
+.grid-products {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .grid-products {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-products {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-products {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
