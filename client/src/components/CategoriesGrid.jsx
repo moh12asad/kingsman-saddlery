@@ -96,7 +96,7 @@ export default function CategoriesGrid() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, var(--brand), var(--brand-dark))' }}>
                     <span className="text-white text-4xl">📦</span>
                   </div>
                 )}

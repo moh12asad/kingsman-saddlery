@@ -15,13 +15,13 @@
 }
 
 .breadcrumb-link {
-  color: #4f46e5;
+  color: var(--brand);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .breadcrumb-link:hover {
-  color: #4338ca;
+  color: var(--brand-dark);
   text-decoration: underline;
 }
 
@@ -178,12 +178,12 @@
 }
 
 .product-thumbnail:hover {
-  border-color: #4f46e5;
+  border-color: var(--brand);
 }
 
 .product-thumbnail.active {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
 .product-thumbnail img {
@@ -263,7 +263,7 @@
 .product-action-link {
   background: none;
   border: none;
-  color: #4f46e5;
+  color: var(--brand);
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.875rem;
@@ -272,7 +272,7 @@
 }
 
 .product-action-link:hover {
-  color: #4338ca;
+  color: var(--brand-dark);
 }
 
 .product-detail-pricing {
@@ -402,7 +402,7 @@
 }
 
 .product-bullet {
-  color: #4f46e5;
+  color: var(--brand);
   font-weight: bold;
   font-size: 1.2em;
   line-height: 1.4;
@@ -449,7 +449,7 @@
 }
 
 .product-benefit-icon {
-  color: #4f46e5;
+  color: var(--brand);
   font-size: 1.125rem;
   flex-shrink: 0;
 }
@@ -498,7 +498,7 @@
 }
 
 .product-service-link svg {
-  color: #4f46e5;
+  color: var(--brand);
   font-size: 1.125rem;
 }
 

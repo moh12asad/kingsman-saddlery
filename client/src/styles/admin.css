@@ -43,14 +43,25 @@
   transition: all 0.2s ease;
 }
 
+.sidebar {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.sidebar a {
+  color: var(--text);
+}
+
 .sidebar a:hover {
-  background: rgba(79,70,229,0.05);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--brand);
 }
 
 .sidebar a.active {
-  background: rgba(79,70,229,0.08);
+  background: rgba(251, 191, 36, 0.15);
   color: var(--brand);
   font-weight: 700;
+  border-left: 3px solid var(--brand);
 }
 
 /* Mobile menu toggle */

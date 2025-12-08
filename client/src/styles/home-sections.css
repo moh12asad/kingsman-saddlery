@@ -30,14 +30,15 @@
 }
 
 .products-tab-button:hover {
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: var(--brand);
+  color: var(--brand);
 }
 
 .products-tab-button.active {
-  background: #6366f1;
-  color: white;
-  border-color: #6366f1;
+  background: var(--brand);
+  color: #000000;
+  border: 2px solid var(--brand);
+  font-weight: 700;
 }
 
 .products-tabs-content {
@@ -126,9 +127,9 @@
 }
 
 .brands-carousel-arrow:hover {
-  background: #6366f1;
-  color: white;
-  border-color: #6366f1;
+  background: transparent;
+  color: var(--brand);
+  border-color: var(--brand);
 }
 
 .brands-carousel-arrow-left {

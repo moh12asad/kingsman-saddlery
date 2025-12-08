@@ -136,7 +136,24 @@ export default function SignIn() {
                 </div>
 
                 <button
-                    className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-60"
+                    className="w-full px-4 py-2 rounded-lg disabled:opacity-60 transition-all"
+                    style={{ 
+                        background: loading ? 'transparent' : 'transparent',
+                        border: '2px solid var(--brand)',
+                        color: 'var(--text)'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!loading) {
+                            e.target.style.background = 'var(--brand)';
+                            e.target.style.color = '#000000';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!loading) {
+                            e.target.style.background = 'transparent';
+                            e.target.style.color = 'var(--text)';
+                        }
+                    }}
                     disabled={loading}
                 >
                     {loading ? "Signing in..." : "Sign in"}
@@ -149,7 +166,16 @@ export default function SignIn() {
                 <div>
                     <button
                         onClick={onGoogle}
-                        className="margin-text--google-button flex items-center justify-center gap-3 w-full border border-gray-300 rounded-md bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transition"
+                        className="margin-text--google-button flex items-center justify-center gap-3 w-full border border-gray-300 rounded-md bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:bg-gray-100 focus:outline-none transition"
+                        style={{ 
+                            '--tw-ring-color': 'var(--brand)',
+                        }}
+                        onFocus={(e) => {
+                            e.target.style.boxShadow = '0 0 0 2px var(--brand)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.boxShadow = '';
+                        }}
                         disabled={loading}
                     >
                         <FcGoogle className="text-xl" />
@@ -157,7 +183,7 @@ export default function SignIn() {
                     </button>
                 </div>
                 <div className="mt-4 text-sm">
-                    <Link to="/forgot-password" className="text-indigo-600 hover:underline">
+                    <Link to="/forgot-password" style={{ color: 'var(--brand)' }} className="hover:underline">
                         Forgot password?
                     </Link>
                 </div>

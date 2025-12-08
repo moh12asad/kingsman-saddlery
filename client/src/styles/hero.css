@@ -3,8 +3,8 @@
    ============================================ */
 
 .header-hero {
-  background: linear-gradient(to right, #4f46e5, #9333ea);
-  color: white;
+  background: linear-gradient(to right, var(--brand), var(--brand-dark));
+  color: #000000;
   padding-top: 2rem;
   padding-bottom: 2rem;
 }
@@ -146,14 +146,16 @@
 }
 
 .btn-hero-primary {
-  background: #4f46e5;
-  color: white;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--brand);
 }
 
 .btn-hero-primary:hover {
-  background: #4f46e5;
+  background: var(--brand);
+  color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
 
 .btn-hero-secondary {

@@ -1,13 +1,21 @@
 /* Button Classes */
 
 .btn-primary {
-  background: var(--brand);
-  color: #fff;
-  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--brand);
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--brand);
+  color: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .btn-ghost {
@@ -43,30 +51,37 @@
 .btn-link {
   display: inline-block;
   padding: 0.5rem 1rem;
-  background: var(--brand);
-  color: white;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--brand);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .btn-link:hover {
-  opacity: 0.9;
+  background: var(--brand);
+  color: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .btn-secondary {
   padding: 0.5rem 1rem;
-  background: white;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background: #f9fafb;
+  background: var(--surface);
+  border-color: var(--brand);
+  color: var(--brand);
 }
 
 .btn-full {

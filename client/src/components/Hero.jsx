@@ -6,14 +6,14 @@ export default function Hero() {
           <div>
             <h1 className="text-4xl md:text-6xl font-black tracking-tight">
               Premium Horse Tack & Equipment
-              <span className="block text-indigo-600">Kingsman Saddlery</span>
+              <span className="block" style={{ color: 'var(--brand)' }}>Kingsman Saddlery</span>
             </h1>
             <p className="mt-5 text-gray-600 text-lg leading-relaxed">
               Shop quality saddles, bridles, blankets, and grooming essentials. Built for
               comfort, durability, and performance in the arena and on the trail.
             </p>
             <div className="mt-8 flex gap-3">
-              <a href="#shop" className="px-5 py-3 rounded-xl bg-indigo-600 text-white hover:opacity-90">Shop Saddles</a>
+              <a href="#shop" className="px-5 py-3 rounded-xl border-2" style={{ borderColor: 'var(--brand)', color: 'var(--text)', background: 'transparent' }} onMouseEnter={(e) => { e.target.style.background = 'var(--brand)'; e.target.style.color = '#000000'; }} onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--text)'; }}>Shop Saddles</a>
               <a href="/signin" className="px-5 py-3 rounded-xl border hover:bg-gray-50">Sign in</a>
             </div>
           </div>
@@ -23,7 +23,7 @@ export default function Hero() {
                 {[
                   "🐴","🪶","🪙","🧽","🧼","🧵"
                 ].map((icon, i) => (
-                  <div key={i} className="h-24 rounded-xl bg-gradient-to-br from-indigo-500/30 to-emerald-500/30 border border-white/20 grid place-items-center text-3xl">
+                  <div key={i} className="h-24 rounded-xl border border-white/20 grid place-items-center text-3xl" style={{ background: 'linear-gradient(to bottom right, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.3))' }}>
                     <span aria-hidden>{icon}</span>
                   </div>
                 ))}

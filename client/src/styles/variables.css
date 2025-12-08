@@ -1,9 +1,18 @@
-/* CSS Variables */
+/* CSS Variables - Black, Yellow, White Theme */
 :root {
-  --brand: #4f46e5; /* indigo-600 */
-  --text: #111827; /* gray-900 */
-  --muted: #6b7280; /* gray-500 */
-  --border: #e5e7eb; /* gray-200 */
-  --surface: #ffffff;
+  --brand: #FCD34D; /* yellow-300 - lighter, softer yellow */
+  --brand-dark: #FBBF24; /* yellow-400 - slightly darker for hover */
+  --brand-light: #FDE68A; /* yellow-200 - very light yellow */
+  --text: #000000; /* black text on white backgrounds */
+  --text-dark: #000000; /* black text */
+  --text-light: #FFFFFF; /* white text on dark backgrounds */
+  --muted: #6B7280; /* gray-500 - muted text */
+  --border: #E5E7EB; /* gray-200 - light borders */
+  --border-light: #FCD34D; /* lighter yellow borders for accents */
+  --surface: #FFFFFF; /* white surface */
+  --surface-dark: #000000; /* pure black for dark elements */
+  --surface-light: #F9FAFB; /* gray-50 - very light surface */
+  --bg-primary: #FFFFFF; /* white background */
+  --bg-secondary: #FFFFFF; /* white background */
 }
 
