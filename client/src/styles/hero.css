@@ -35,7 +35,7 @@
   height: 300px;
   overflow: hidden;
   background: #000;
-  z-index: 0;
+  z-index: 1;
   margin-bottom: 0;
   margin-left: 0;
   width: 100%;
@@ -83,7 +83,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 0;
+  z-index: 2;
 }
 
 .hero-content {
@@ -91,6 +91,8 @@
   color: white;
   max-width: 800px;
   padding: 2rem;
+  position: relative;
+  z-index: 3;
 }
 
 .hero-title {

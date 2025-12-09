@@ -348,8 +348,8 @@
 .subnavbar-dropdown-fixed {
   position: fixed;
   margin-top: 0;
-  max-height: 80vh;
-  overflow: hidden;
+  max-height: calc(100vh - 200px);
+  overflow: visible;
 }
 
 .subnavbar-dropdown-content {
@@ -357,8 +357,9 @@
   flex-direction: row;
   align-items: flex-start;
   gap: 0;
-  max-height: 80vh;
+  max-height: calc(100vh - 200px);
   padding: 0.5rem 0;
+  overflow: visible;
 }
 
 .subnavbar-dropdown-image {
@@ -384,11 +385,31 @@
 .subnavbar-dropdown-list {
   list-style: none;
   margin: 0;
-  padding: 1rem 0;
+  padding: 0.5rem 0 1rem 0;
   flex: 1;
   min-width: 300px;
-  max-height: 80vh;
+  max-height: calc(100vh - 200px);
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.subnavbar-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.subnavbar-dropdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subnavbar-dropdown-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.subnavbar-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .subnavbar-dropdown-item {
@@ -409,6 +430,8 @@
   cursor: pointer;
   transition: color 0.2s, background-color 0.2s;
   line-height: 1.5;
+  position: relative;
+  z-index: 1;
 }
 
 .subnavbar-dropdown-link:hover {
