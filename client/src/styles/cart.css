@@ -101,7 +101,7 @@
 .cart-total-amount {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--brand);
+  color: #000000;
 }
 
 .cart-actions {
