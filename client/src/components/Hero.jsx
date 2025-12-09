@@ -13,8 +13,8 @@ export default function Hero() {
               comfort, durability, and performance in the arena and on the trail.
             </p>
             <div className="mt-8 flex gap-3">
-              <a href="#shop" className="px-5 py-3 rounded-xl border-2" style={{ borderColor: 'var(--brand)', color: 'var(--text)', background: 'transparent' }} onMouseEnter={(e) => { e.target.style.background = 'var(--brand)'; e.target.style.color = '#000000'; }} onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--text)'; }}>Shop Saddles</a>
-              <a href="/signin" className="px-5 py-3 rounded-xl border hover:bg-gray-50">Sign in</a>
+              <a href="#shop" className="px-5 py-3 rounded-xl border-2 font-bold transition-all" style={{ borderColor: '#000000', color: '#000000', background: '#ffffff' }} onMouseEnter={(e) => { e.target.style.color = 'var(--brand)'; e.target.style.borderColor = 'var(--brand)'; }} onMouseLeave={(e) => { e.target.style.color = '#000000'; e.target.style.borderColor = '#000000'; }}>Shop Saddles</a>
+              <a href="/signin" className="px-5 py-3 rounded-xl border-2 font-bold transition-all" style={{ borderColor: '#000000', color: '#000000', background: '#ffffff' }} onMouseEnter={(e) => { e.target.style.color = 'var(--brand)'; e.target.style.borderColor = 'var(--brand)'; }} onMouseLeave={(e) => { e.target.style.color = '#000000'; e.target.style.borderColor = '#000000'; }}>Sign in</a>
             </div>
           </div>
           <div>

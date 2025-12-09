@@ -76,13 +76,8 @@ export default function PromotionalBanner() {
             <div
               key={ad.id}
               className={`promotional-banner-slide ${isActive ? "active" : ""}`}
+              style={ad.image ? { backgroundImage: `url(${ad.image})` } : {}}
             >
-              {ad.image && (
-                <div 
-                  className="promotional-banner-image"
-                  style={{ backgroundImage: `url(${ad.image})` }}
-                />
-              )}
               <div className="promotional-banner-overlay"></div>
               <div className="promotional-banner-content">
                 {ad.title && <h2 className="promotional-banner-title">{ad.title}</h2>}

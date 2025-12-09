@@ -99,10 +99,10 @@ export default function CategoriesGrid() {
                     <span className="text-white text-4xl">📦</span>
                   </div>
                 )}
-                {/* Overlay with category name */}
+                {/* Overlay with category name - bottom center */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-                  <div className="w-full p-4">
-                    <h3 className="text-white font-bold text-lg md:text-xl text-center">
+                  <div className="w-full p-4 flex items-center justify-center">
+                    <h3 className="category-card-title text-white font-bold text-lg md:text-xl text-center px-4 py-2">
                       {category.name}
                     </h3>
                   </div>

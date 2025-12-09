@@ -51,8 +51,8 @@ html {
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  background: var(--surface);
-  border: 2px solid var(--border);
+  background: #000000;
+  border: 2px solid #000000;
   border-radius: 50%;
   width: 3.5rem;
   height: 3.5rem;
@@ -62,13 +62,13 @@ html {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
-  color: var(--text);
+  color: #ffffff;
   font-size: 1.25rem;
 }
 
 .product-carousel-arrow:hover:not(:disabled):not(.disabled) {
-  background: transparent;
-  color: var(--brand);
+  background: var(--brand);
+  color: #000000;
   border-color: var(--brand);
   box-shadow: 0 6px 16px rgba(251, 191, 36, 0.3);
   transform: translateY(-50%) scale(1.1);
@@ -78,15 +78,17 @@ html {
 .product-carousel-arrow.disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  background: var(--surface-light);
-  border-color: var(--border);
+  background: #666666;
+  border-color: #666666;
+  color: #ffffff;
 }
 
 .product-carousel-arrow:disabled:hover,
 .product-carousel-arrow.disabled:hover {
   transform: translateY(-50%);
-  background: var(--surface-light);
-  color: var(--text);
+  background: #666666;
+  color: #ffffff;
+  border-color: #666666;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -270,8 +272,8 @@ html {
 
 .card-product-title {
   font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--text);
+  font-weight: 700;
+  color: #000000;
   margin: 0;
   line-height: 1.4;
   display: -webkit-box;

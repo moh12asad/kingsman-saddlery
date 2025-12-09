@@ -206,6 +206,15 @@ export default function AdminAds() {
           <div className="grid gap-3 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Image *</label>
+              <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 font-medium mb-1">📐 Recommended Image Size:</p>
+                <p className="text-xs text-blue-700">
+                  <strong>2000 × 800 pixels</strong> (2.5:1 aspect ratio)
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  💡 <strong>Tip:</strong> Fill the background with black for best results
+                </p>
+              </div>
               <div className="flex gap-2">
                 <input
                   className="input flex-1"

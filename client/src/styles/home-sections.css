@@ -20,25 +20,32 @@
 .products-tab-button {
   padding: 0.75rem 2rem;
   font-size: 1rem;
-  font-weight: 600;
-  border: 2px solid #e5e7eb;
-  background: white;
-  color: #374151;
+  font-weight: 700;
+  border: 2px solid #000000;
+  background: #000000;
+  color: #ffffff;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .products-tab-button:hover {
+  background: var(--brand);
+  color: #000000;
   border-color: var(--brand);
-  color: var(--brand);
 }
 
 .products-tab-button.active {
   background: var(--brand);
   color: #000000;
   border: 2px solid var(--brand);
-  font-weight: 700;
+  font-weight: 900;
+}
+
+.products-tab-button.active:hover {
+  background: var(--brand);
+  color: #000000;
+  border-color: var(--brand);
 }
 
 .products-tabs-content {
@@ -112,8 +119,8 @@
   transform: translateY(-50%);
   width: 40px;
   height: 40px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: #000000;
+  border: 2px solid #000000;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -124,11 +131,12 @@
   transition: all 0.3s ease;
   pointer-events: auto;
   user-select: none;
+  color: #ffffff;
 }
 
 .brands-carousel-arrow:hover {
-  background: transparent;
-  color: var(--brand);
+  background: var(--brand);
+  color: #000000;
   border-color: var(--brand);
 }
 
@@ -165,12 +173,31 @@
 
 .best-sellers-title {
   font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-weight: 900;
+  color: #000000;
+  position: relative;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-top: 3px solid #000000;
+  border-bottom: 3px solid #000000;
 }
 
 @media (max-width: 768px) {
   .best-sellers-title {
     font-size: 1.5rem;
   }
+}
+
+/* Category Card Title */
+.category-card-title {
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  transition: all 0.3s ease;
+  display: inline-block;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.group:hover .category-card-title {
+  color: var(--brand);
 }

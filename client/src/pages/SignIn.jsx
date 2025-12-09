@@ -136,22 +136,22 @@ export default function SignIn() {
                 </div>
 
                 <button
-                    className="w-full px-4 py-2 rounded-lg disabled:opacity-60 transition-all"
+                    className="w-full px-4 py-2 rounded-lg disabled:opacity-60 transition-all font-bold"
                     style={{ 
-                        background: loading ? 'transparent' : 'transparent',
-                        border: '2px solid var(--brand)',
-                        color: 'var(--text)'
+                        background: loading ? '#f0f0f0' : '#ffffff',
+                        border: '2px solid #000000',
+                        color: '#000000'
                     }}
                     onMouseEnter={(e) => {
                         if (!loading) {
-                            e.target.style.background = 'var(--brand)';
-                            e.target.style.color = '#000000';
+                            e.target.style.color = 'var(--brand)';
+                            e.target.style.borderColor = 'var(--brand)';
                         }
                     }}
                     onMouseLeave={(e) => {
                         if (!loading) {
-                            e.target.style.background = 'transparent';
-                            e.target.style.color = 'var(--text)';
+                            e.target.style.color = '#000000';
+                            e.target.style.borderColor = '#000000';
                         }
                     }}
                     disabled={loading}
