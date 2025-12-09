@@ -21,19 +21,60 @@ export default function SubNavbar() {
     const updateNavbarHeight = () => {
       const navbar = document.querySelector('.navbar');
       if (navbar) {
-        setNavbarHeight(navbar.offsetHeight);
+        const height = navbar.offsetHeight;
+        setNavbarHeight(height);
       }
     };
 
+    // Initial calculation
     updateNavbarHeight();
+
+    // Use requestAnimationFrame for better timing
+    const rafId = requestAnimationFrame(() => {
+      updateNavbarHeight();
+    });
+
+    // Update after DOM is fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', updateNavbarHeight);
+    } else {
+      // DOM is already loaded, update immediately
+      updateNavbarHeight();
+    }
+
+    // Update after images load (navbar might contain images)
+    window.addEventListener('load', updateNavbarHeight);
+
+    // Update on resize
     window.addEventListener('resize', updateNavbarHeight);
-    
-    // Also update after a short delay to account for any dynamic content
-    const timeout = setTimeout(updateNavbarHeight, 100);
+
+    // Use ResizeObserver to watch for navbar size changes
+    const navbar = document.querySelector('.navbar');
+    let resizeObserver = null;
+    if (navbar && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        updateNavbarHeight();
+      });
+      resizeObserver.observe(navbar);
+    }
+
+    // Also update after multiple delays to account for any dynamic content
+    const timeouts = [
+      setTimeout(updateNavbarHeight, 100),
+      setTimeout(updateNavbarHeight, 300),
+      setTimeout(updateNavbarHeight, 500),
+    ];
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('resize', updateNavbarHeight);
-      clearTimeout(timeout);
+      window.removeEventListener('load', updateNavbarHeight);
+      document.removeEventListener('DOMContentLoaded', updateNavbarHeight);
+      if (resizeObserver && navbar) {
+        resizeObserver.unobserve(navbar);
+        resizeObserver.disconnect();
+      }
+      timeouts.forEach(timeout => clearTimeout(timeout));
     };
   }, []);
 
