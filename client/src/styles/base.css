@@ -10,6 +10,11 @@ html {
   background-color: var(--bg-primary);
 }
 
+/* Padding top for max-w-7xl containers with py-12 */
+.max-w-7xl[class*="py-12"] {
+  padding-top: 9rem;
+}
+
 .container-page {
   max-width: 72rem;
   margin-left: auto;

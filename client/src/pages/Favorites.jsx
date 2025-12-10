@@ -3,6 +3,7 @@ import { useFavorites } from "../context/FavoritesContext";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
+import FlyToCartAnimation from "../components/FlyToCartAnimation";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -13,6 +14,7 @@ export default function Favorites() {
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [animationTrigger, setAnimationTrigger] = useState(null);
 
   useEffect(() => {
     async function loadProducts() {
@@ -46,9 +48,23 @@ export default function Favorites() {
     setConfirmProduct(product);
   };
 
-  const confirmAddToCart = () => {
+  const confirmAddToCart = (e) => {
     if (confirmProduct) {
       addToCart(confirmProduct);
+      
+      // Trigger animation if button was clicked
+      if (e && e.currentTarget) {
+        const buttonRect = e.currentTarget.getBoundingClientRect();
+        const position = {
+          x: buttonRect.left + buttonRect.width / 2 - 30,
+          y: buttonRect.top + buttonRect.height / 2 - 30
+        };
+        setAnimationTrigger({
+          productImage: confirmProduct.image,
+          startPosition: position
+        });
+      }
+      
       setConfirmProduct(null);
     }
   };
@@ -221,6 +237,15 @@ export default function Favorites() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Fly to Cart Animation */}
+      {animationTrigger && (
+        <FlyToCartAnimation
+          productImage={animationTrigger.productImage}
+          startPosition={animationTrigger.startPosition}
+          onComplete={() => setAnimationTrigger(null)}
+        />
       )}
     </main>
   );
