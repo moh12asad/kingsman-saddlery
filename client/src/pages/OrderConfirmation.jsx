@@ -166,11 +166,14 @@ export default function OrderConfirmation() {
         return;
       }
 
-      // Prepare order data for email
+      // Prepare order data
       const orderData = {
         customerName: profileData.displayName || user?.displayName || "Customer",
         customerEmail: profileData.email || user?.email,
+        phone: profileData.phone || "",
         items: cartItems.map(item => ({
+          id: item.id,
+          productId: item.id || item.productId || "",
           name: item.name,
           image: item.image || "",
           quantity: item.quantity,
@@ -178,12 +181,13 @@ export default function OrderConfirmation() {
         })),
         shippingAddress: currentAddress,
         total: total,
-        orderDate: new Date().toLocaleDateString(),
+        subtotal: total,
+        tax: 0,
         status: "pending" // Will be updated to "paid" after Tranzilla payment
       };
 
-      // Send order confirmation email
-      const res = await fetch(`${API}/api/email/order-confirmation`, {
+      // First, save the order to the database
+      const orderRes = await fetch(`${API}/api/orders/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -192,16 +196,39 @@ export default function OrderConfirmation() {
         body: JSON.stringify(orderData)
       });
 
-      const data = await res.json();
+      const orderResult = await orderRes.json();
 
-      if (res.ok) {
-        setEmailSuccess(`Order confirmation email sent to ${orderData.customerEmail}`);
+      if (!orderRes.ok) {
+        setError(orderResult.error || "Failed to create order");
+        return;
+      }
+
+      // Order saved successfully, now send confirmation email
+      const emailRes = await fetch(`${API}/api/email/order-confirmation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...orderData,
+          orderNumber: orderResult.id,
+          orderDate: new Date().toLocaleDateString(),
+        })
+      });
+
+      const emailResult = await emailRes.json();
+
+      if (emailRes.ok) {
+        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created successfully! Confirmation email sent to ${orderData.customerEmail}`);
         // TODO: After Tranzilla integration, redirect to payment gateway here
         // For now, just show success message
-        console.log("Order prepared. Ready for Tranzilla payment integration.");
-        console.log("Order data:", orderData);
+        console.log("Order created and email sent. Ready for Tranzilla payment integration.");
+        console.log("Order ID:", orderResult.id);
       } else {
-        setError(data.error || "Failed to send order confirmation email");
+        // Order was saved but email failed - still show success for order creation
+        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created successfully! However, the confirmation email could not be sent.`);
+        console.warn("Order created but email failed:", emailResult.error);
       }
     } catch (err) {
       console.error("Error proceeding to payment:", err);

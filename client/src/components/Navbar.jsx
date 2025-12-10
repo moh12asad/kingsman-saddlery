@@ -1,10 +1,10 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { signInWithGoogle, signOutUser } from "../lib/firebase";
-import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch } from "react-icons/fa";
+import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch, FaShoppingBag, FaChevronDown } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { useMemo } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -13,6 +13,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const cartCount = getTotalItems();
   const favoriteCount = getFavoriteCount();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const handleSearchClick = () => {
     navigate("/products?search=true");
@@ -27,6 +29,27 @@ export default function Navbar() {
       .filter(Boolean);
     return adminEmails.length === 0 || adminEmails.includes(user.email.toLowerCase());
   }, [user]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    }
+
+    if (showProfileMenu) {
+      // Small delay to prevent immediate closure
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+      }, 10);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showProfileMenu]);
 
   return (
     <header className="navbar">
@@ -91,28 +114,64 @@ export default function Navbar() {
                     Sign in
                 </NavLink>
             ) : (
-                <div className="flex-row flex-gap-md">
+                <div className="flex-row flex-gap-md profile-menu-container" ref={profileMenuRef}>
                     {user.photoURL && (
                         <img
                             src={user.photoURL}
                             className="img-avatar"
                             alt="avatar"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setShowProfileMenu(!showProfileMenu)}
                         />
                     )}
-                    <NavLink
-                        to="/profile"
-                        className={({ isActive }) => `flex-row flex-gap-sm ${isActive ? "nav-link-active" : "nav-link"}`}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowProfileMenu(!showProfileMenu);
+                        }}
+                        className={`flex-row flex-gap-sm nav-link ${showProfileMenu ? "nav-link-active" : ""}`}
                         title="Profile"
+                        style={{ background: "none", border: "none", cursor: "pointer" }}
                     >
                         <FaUser className="w-4 h-4" />
                         <span className="text-small sm:inline hidden">{user.displayName || user.email}</span>
-                    </NavLink>
-                    <button
-                        onClick={signOutUser}
-                        className="btn-secondary padding-x-md padding-y-sm"
-                    >
-                        Sign out
+                        <FaChevronDown className="w-3 h-3" style={{ transition: "transform 0.2s", transform: showProfileMenu ? "rotate(180deg)" : "rotate(0deg)" }} />
                     </button>
+                    
+                    {showProfileMenu && (
+                        <div 
+                            className="profile-dropdown"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <NavLink
+                                to="/profile"
+                                className="profile-dropdown-item"
+                                onClick={() => setShowProfileMenu(false)}
+                            >
+                                <FaUser className="w-4 h-4" />
+                                <span>Profile</span>
+                            </NavLink>
+                            <NavLink
+                                to="/orders"
+                                className="profile-dropdown-item"
+                                onClick={() => setShowProfileMenu(false)}
+                            >
+                                <FaShoppingBag className="w-4 h-4" />
+                                <span>My Orders</span>
+                            </NavLink>
+                            <div className="profile-dropdown-divider"></div>
+                            <button
+                                onClick={() => {
+                                    setShowProfileMenu(false);
+                                    signOutUser();
+                                }}
+                                className="profile-dropdown-item"
+                                style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
+                            >
+                                Sign out
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
