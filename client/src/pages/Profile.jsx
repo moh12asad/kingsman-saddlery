@@ -9,7 +9,7 @@ import {
   EmailAuthProvider,
   linkWithCredential
 } from "firebase/auth";
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaShoppingBag } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock } from "react-icons/fa";
 import AuthRoute from "../components/AuthRoute";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -19,8 +19,6 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
   
   // Form states
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -58,7 +56,6 @@ export default function Profile() {
     if (user) {
       // Load user profile data
       loadUserProfile();
-      loadOrders();
     }
   }, [user]);
 
@@ -114,27 +111,6 @@ export default function Profile() {
           country: ""
         }
       });
-    }
-  }
-
-  async function loadOrders() {
-    try {
-      setLoadingOrders(true);
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) return;
-      
-      const res = await fetch(`${API}/api/orders/my-orders`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.orders || []);
-      }
-    } catch (err) {
-      console.error("Error loading orders:", err);
-    } finally {
-      setLoadingOrders(false);
     }
   }
 
@@ -497,71 +473,6 @@ export default function Profile() {
                     Cancel
                   </button>
                 )}
-              </div>
-            )}
-          </div>
-
-          {/* Orders Section */}
-          <div className="card padding-lg">
-            <h2 className="section-title flex-row flex-gap-sm">
-              <FaShoppingBag />
-              My Orders ({orders.length})
-            </h2>
-
-            {loadingOrders ? (
-              <div className="text-center padding-y-lg">
-                <div className="loading-spinner mx-auto"></div>
-                <p className="margin-top-md text-muted">Loading orders...</p>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="card-empty margin-top-md">
-                <p className="text-muted">You haven't placed any orders yet.</p>
-              </div>
-            ) : (
-              <div className="margin-top-md">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Date</th>
-                      <th>Status</th>
-                      <th>Items</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map(order => (
-                      <tr key={order.id}>
-                        <td className="font-mono text-xs">{order.id.substring(0, 8)}...</td>
-                        <td>
-                          {order.createdAt 
-                            ? new Date(order.createdAt).toLocaleDateString()
-                            : "-"}
-                        </td>
-                        <td>
-                          <span className={`badge ${
-                            order.status === "completed" ? "badge-success" :
-                            order.status === "pending" ? "badge-warning" :
-                            "badge-danger"
-                          }`}>
-                            {order.status || "pending"}
-                          </span>
-                        </td>
-                        <td>
-                          <ul className="text-sm">
-                            {(order.items || []).slice(0, 2).map((item, idx) => (
-                              <li key={idx}>{item.quantity} × {item.name}</li>
-                            ))}
-                            {(order.items || []).length > 2 && (
-                              <li className="text-muted">+{(order.items || []).length - 2} more</li>
-                            )}
-                          </ul>
-                        </td>
-                        <td className="font-semibold">${Number(order.total || 0).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             )}
           </div>

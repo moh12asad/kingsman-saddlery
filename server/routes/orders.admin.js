@@ -57,6 +57,85 @@ router.get("/best-sellers", async (_req, res) => {
 
 router.use(verifyFirebaseToken);
 
+// Create order (for regular users)
+router.post("/create", async (req, res) => {
+  try {
+    const { uid, email, displayName } = req.user;
+    const {
+      items = [],
+      shippingAddress,
+      phone,
+      status = "pending",
+      notes = "",
+      subtotal,
+      tax,
+      total,
+      transactionId,
+      metadata = {},
+    } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Order items are required" });
+    }
+
+    if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
+      return res.status(400).json({ error: "Complete shipping address is required" });
+    }
+
+    const normalizedItems = items.map((item, index) => ({
+      productId: item.productId || item.id || "",
+      name: item.name || `Item ${index + 1}`,
+      image: item.image || "",
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.price) || 0,
+    }));
+
+    const computedSubtotal = normalizedItems.reduce(
+      (sum, item) => sum + item.quantity * item.price,
+      0
+    );
+    const orderSubtotal = typeof subtotal === "number" ? subtotal : computedSubtotal;
+    const orderTax = typeof tax === "number" ? tax : 0;
+    const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
+
+    const orderDoc = {
+      customerId: uid,
+      customerName: displayName || req.body.customerName || "Customer",
+      customerEmail: email || req.body.customerEmail,
+      phone: phone || req.body.phone || "",
+      items: normalizedItems,
+      shippingAddress,
+      status,
+      notes,
+      subtotal: orderSubtotal,
+      tax: orderTax,
+      total: orderTotal,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    // Add payment transaction details if provided
+    if (transactionId) {
+      orderDoc.transactionId = transactionId;
+    }
+
+    // Merge metadata (includes payment method, transaction ID, etc.)
+    if (Object.keys(metadata).length > 0) {
+      orderDoc.metadata = metadata;
+    }
+
+    const docRef = await db.collection("orders").add(orderDoc);
+
+    res.status(201).json({ 
+      id: docRef.id,
+      message: "Order created successfully"
+    });
+  } catch (error) {
+    console.error("orders.create error", error);
+    res.status(500).json({ error: "Failed to create order", details: error.message });
+  }
+});
+
 // Get current user's orders
 router.get("/my-orders", async (req, res) => {
   try {

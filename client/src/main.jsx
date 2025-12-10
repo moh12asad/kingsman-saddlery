@@ -14,6 +14,8 @@ import Cart from "./pages/Cart.jsx";
 import Favorites from "./pages/Favorites.jsx";
 import Profile from "./pages/Profile.jsx";
 import OrderConfirmation from "./pages/OrderConfirmation.jsx";
+import Orders from "./pages/Orders.jsx";
+import OrderDetail from "./pages/OrderDetail.jsx";
 import SubCategories from "./pages/SubCategories.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
@@ -64,6 +66,8 @@ const router = createBrowserRouter([
       { path: "checkout", element: <OrderConfirmation /> },
       { path: "favorites", element: <Favorites /> },
       { path: "profile", element: <Profile /> },
+      { path: "orders", element: <Orders /> },
+      { path: "orders/:id", element: <OrderDetail /> },
       { path: "about", element: <AboutUs /> },
       { path: "contact", element: <ContactUs /> },
       { path: "shipping", element: <ShippingReturns /> },
