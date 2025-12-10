@@ -71,8 +71,7 @@ export default function CategoriesGrid() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-12">
-      <h2 className="text-3xl font-bold text-center mb-8">Shop by Category</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
           const hasProducts = products.some(p => p.category === category.name && p.available);
           const hasSubCategories = category.subCategories && category.subCategories.length > 0;
@@ -96,14 +95,14 @@ export default function CategoriesGrid() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, var(--brand), var(--brand-dark))' }}>
                     <span className="text-white text-4xl">📦</span>
                   </div>
                 )}
-                {/* Overlay with category name */}
+                {/* Overlay with category name - bottom center */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-                  <div className="w-full p-4">
-                    <h3 className="text-white font-bold text-lg md:text-xl text-center">
+                  <div className="w-full p-4 flex items-center justify-center">
+                    <h3 className="category-card-title text-white font-bold text-lg md:text-xl text-center px-4 py-2">
                       {category.name}
                     </h3>
                   </div>

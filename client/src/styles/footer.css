@@ -1,12 +1,13 @@
 /* Footer Styles */
 .footer {
-  background-color: #1a1a1a;
-  color: #e5e5e5;
+  background-color: var(--surface-dark);
+  color: var(--text-light);
   margin-top: auto;
   width: 100%;
   position: relative;
   z-index: 50;
   flex-shrink: 0; /* Prevent footer from shrinking */
+  border-top: 1px solid var(--border);
 }
 
 .footer-content {
@@ -27,7 +28,7 @@
 .footer-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--brand);
   margin: 0 0 1rem 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -47,7 +48,7 @@
 }
 
 .footer-links a {
-  color: #b3b3b3;
+  color: #B3B3B3;
   text-decoration: none;
   font-size: 0.9375rem;
   transition: color 0.2s ease;
@@ -55,7 +56,7 @@
 }
 
 .footer-links a:hover {
-  color: #ffffff;
+  color: var(--brand);
   text-decoration: underline;
 }
 
@@ -116,8 +117,8 @@
 }
 
 .footer-social-link:hover {
-  background-color: #4f46e5;
-  color: #ffffff;
+  background-color: var(--brand);
+  color: #000000;
   transform: translateY(-2px);
 }
 

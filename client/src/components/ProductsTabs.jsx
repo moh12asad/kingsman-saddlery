@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
+import FlyToCartAnimation from "./FlyToCartAnimation";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -14,6 +15,7 @@ export default function ProductsTabs() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const scrollRef = useRef(null);
+  const [animationTrigger, setAnimationTrigger] = useState(null);
 
   useEffect(() => {
     async function loadProducts() {
@@ -189,7 +191,13 @@ export default function ProductsTabs() {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onAddToCart={() => addToCart(product)}
+                  onAddToCart={(position) => {
+                    addToCart(product);
+                    setAnimationTrigger({
+                      productImage: product.image,
+                      startPosition: position
+                    });
+                  }}
                   isFavorite={isFavorite(product.id)}
                   onToggleFavorite={() => toggleFavorite(product)}
                 />
@@ -198,6 +206,13 @@ export default function ProductsTabs() {
           </div>
         </div>
       </div>
+      {animationTrigger && (
+        <FlyToCartAnimation
+          productImage={animationTrigger.productImage}
+          startPosition={animationTrigger.startPosition}
+          onComplete={() => setAnimationTrigger(null)}
+        />
+      )}
     </section>
   );
 }
@@ -211,8 +226,17 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   };
 
   const handleAddToCartClick = (e) => {
+    e.preventDefault();
     e.stopPropagation();
-    onAddToCart();
+    
+    // Get button position for animation
+    const buttonRect = e.currentTarget.getBoundingClientRect();
+    const position = {
+      x: buttonRect.left + buttonRect.width / 2 - 30, // Center minus half image width
+      y: buttonRect.top + buttonRect.height / 2 - 30
+    };
+    
+    onAddToCart(position);
   };
 
   const handleFavoriteClick = (e) => {
@@ -267,14 +291,17 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
             </span>
           )}
         </div>
-        <button
-          onClick={handleAddToCartClick}
-          className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
-          style={{ marginTop: '0.75rem' }}
-        >
-          <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-          Add to Cart
-        </button>
+        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={handleAddToCartClick}
+            className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+            style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto', width: '100%' }}
+          >
+            <FaShoppingCart style={{ marginRight: '0.5rem' }} />
+            Add to Cart
+          </button>
+        </div>
       </div>
     </div>
   );

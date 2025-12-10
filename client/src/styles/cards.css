@@ -1,22 +1,24 @@
 /* Card Classes */
 
 .card-product {
-  background: white;
+  background: var(--surface);
   border-radius: 0.5rem;
   border: 1px solid var(--border);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  color: var(--text);
 }
 
 .card-product:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(251, 191, 36, 0.2);
+  border-color: var(--brand);
 }
 
 .card-cart-item {
-  background: white;
+  background: var(--surface);
   border-radius: 0.5rem;
   border: 1px solid var(--border);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -24,10 +26,11 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  color: var(--text);
 }
 
 .card-empty {
-  background: white;
+  background: var(--surface);
   border-radius: 0.75rem;
   border: 1px solid var(--border);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);

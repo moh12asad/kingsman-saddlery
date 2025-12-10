@@ -7,13 +7,13 @@ import SocialButtons from "./components/SocialButtons";
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text)' }}>
       <ScrollToTop />
       <Navbar />
       <SubNavbar />
       <div className="subnavbar-spacer"></div>
       <SocialButtons />
-      <div className="flex-1">
+      <div className="flex-1" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <Outlet />
       </div>
       <Footer />

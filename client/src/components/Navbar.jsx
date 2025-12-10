@@ -34,19 +34,8 @@ export default function Navbar() {
         <div className="navbar-left"></div>
         <Link to="/" className="navbar-brand-center">
           <div className="navbar-brand-wrapper">
-            <img 
-              src="/logo.png" 
-              alt="Kingsman Saddlery Logo" 
-              className="navbar-brand-logo"
-              onError={(e) => {
-                // Fallback if logo doesn't exist
-                e.target.style.display = 'none';
-              }}
-            />
-            <div className="navbar-brand-text">
-              <h1 className="navbar-brand-title">KingsmanSaddlery</h1>
-              <p className="navbar-brand-subtitle">Saddles & Tack</p>
-            </div>
+            <h1 className="navbar-brand-title">KingsmanSaddlery</h1>
+            <p className="navbar-brand-subtitle">Saddles & Tack</p>
           </div>
         </Link>
         <div className="navbar-links">

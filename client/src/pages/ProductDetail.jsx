@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import FlyToCartAnimation from "../components/FlyToCartAnimation";
 import { 
   FaHeart, 
   FaShoppingCart, 
@@ -35,6 +36,7 @@ export default function ProductDetail() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
+  const [animationTrigger, setAnimationTrigger] = useState(null);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
@@ -82,10 +84,23 @@ export default function ProductDetail() {
     }
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
     if (product) {
       for (let i = 0; i < quantity; i++) {
         addToCart(product);
+      }
+      
+      // Trigger animation if button was clicked
+      if (e && e.currentTarget) {
+        const buttonRect = e.currentTarget.getBoundingClientRect();
+        const position = {
+          x: buttonRect.left + buttonRect.width / 2 - 30,
+          y: buttonRect.top + buttonRect.height / 2 - 30
+        };
+        setAnimationTrigger({
+          productImage: product.image,
+          startPosition: position
+        });
       }
     }
   };
@@ -513,6 +528,15 @@ export default function ProductDetail() {
             />
           </div>
         </div>
+      )}
+
+      {/* Fly to Cart Animation */}
+      {animationTrigger && (
+        <FlyToCartAnimation
+          productImage={animationTrigger.productImage}
+          startPosition={animationTrigger.startPosition}
+          onComplete={() => setAnimationTrigger(null)}
+        />
       )}
     </main>
   );

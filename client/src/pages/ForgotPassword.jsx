@@ -58,7 +58,24 @@ export default function ForgotPassword() {
                         disabled={loading}
                     />
                     <button 
-                        className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-60"
+                        className="w-full px-4 py-2 rounded-lg disabled:opacity-60 transition-all"
+                        style={{ 
+                            background: loading ? 'transparent' : 'transparent',
+                            border: '2px solid var(--brand)',
+                            color: 'var(--text)'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!loading) {
+                                e.target.style.background = 'var(--brand)';
+                                e.target.style.color = '#000000';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!loading) {
+                                e.target.style.background = 'transparent';
+                                e.target.style.color = 'var(--text)';
+                            }
+                        }}
                         disabled={loading}
                     >
                         {loading ? "Sending..." : "Send reset link"}
@@ -78,7 +95,7 @@ export default function ForgotPassword() {
                 )}
 
                 <div className="mt-6 text-center">
-                    <Link to="/signin" className="text-indigo-600 hover:underline text-sm">
+                    <Link to="/signin" style={{ color: 'var(--brand)' }} className="hover:underline text-sm">
                         Back to Sign In
                     </Link>
                 </div>

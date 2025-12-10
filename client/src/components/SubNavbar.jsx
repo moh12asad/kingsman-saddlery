@@ -21,19 +21,60 @@ export default function SubNavbar() {
     const updateNavbarHeight = () => {
       const navbar = document.querySelector('.navbar');
       if (navbar) {
-        setNavbarHeight(navbar.offsetHeight);
+        const height = navbar.offsetHeight;
+        setNavbarHeight(height);
       }
     };
 
+    // Initial calculation
     updateNavbarHeight();
+
+    // Use requestAnimationFrame for better timing
+    const rafId = requestAnimationFrame(() => {
+      updateNavbarHeight();
+    });
+
+    // Update after DOM is fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', updateNavbarHeight);
+    } else {
+      // DOM is already loaded, update immediately
+      updateNavbarHeight();
+    }
+
+    // Update after images load (navbar might contain images)
+    window.addEventListener('load', updateNavbarHeight);
+
+    // Update on resize
     window.addEventListener('resize', updateNavbarHeight);
-    
-    // Also update after a short delay to account for any dynamic content
-    const timeout = setTimeout(updateNavbarHeight, 100);
+
+    // Use ResizeObserver to watch for navbar size changes
+    const navbar = document.querySelector('.navbar');
+    let resizeObserver = null;
+    if (navbar && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        updateNavbarHeight();
+      });
+      resizeObserver.observe(navbar);
+    }
+
+    // Also update after multiple delays to account for any dynamic content
+    const timeouts = [
+      setTimeout(updateNavbarHeight, 100),
+      setTimeout(updateNavbarHeight, 300),
+      setTimeout(updateNavbarHeight, 500),
+    ];
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('resize', updateNavbarHeight);
-      clearTimeout(timeout);
+      window.removeEventListener('load', updateNavbarHeight);
+      document.removeEventListener('DOMContentLoaded', updateNavbarHeight);
+      if (resizeObserver && navbar) {
+        resizeObserver.unobserve(navbar);
+        resizeObserver.disconnect();
+      }
+      timeouts.forEach(timeout => clearTimeout(timeout));
     };
   }, []);
 
@@ -77,10 +118,43 @@ export default function SubNavbar() {
       const element = itemRefs.current[hoveredCategory];
       if (element) {
         const rect = element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        
+        // Calculate optimal position
+        let top = rect.bottom;
+        let left = rect.left;
+        let width = Math.max(300, rect.width);
+        
+        // Adjust if dropdown would go off bottom of screen
+        // Estimate dropdown height (we'll use a reasonable max)
+        const estimatedDropdownHeight = 400; // Approximate max height
+        if (top + estimatedDropdownHeight > viewportHeight) {
+          // Position above instead if there's more space above
+          const spaceAbove = rect.top;
+          const spaceBelow = viewportHeight - rect.bottom;
+          if (spaceAbove > spaceBelow && spaceAbove > estimatedDropdownHeight) {
+            top = rect.top - estimatedDropdownHeight;
+          } else {
+            // Adjust to fit within viewport
+            top = Math.max(10, viewportHeight - estimatedDropdownHeight - 10);
+          }
+        }
+        
+        // Adjust if dropdown would go off right side of screen
+        if (left + width > viewportWidth) {
+          left = Math.max(10, viewportWidth - width - 10);
+        }
+        
+        // Adjust if dropdown would go off left side of screen
+        if (left < 0) {
+          left = 10;
+        }
+        
         setDropdownPosition({
-          top: rect.bottom,
-          left: rect.left,
-          width: rect.width
+          top: Math.max(10, top),
+          left: Math.max(10, left),
+          width: width
         });
       }
     };
@@ -189,10 +263,40 @@ export default function SubNavbar() {
                     const element = itemRefs.current[categoryKey];
                     if (element) {
                       const rect = element.getBoundingClientRect();
+                      const viewportHeight = window.innerHeight;
+                      const viewportWidth = window.innerWidth;
+                      
+                      // Calculate optimal position
+                      let top = rect.bottom;
+                      let left = rect.left;
+                      let width = Math.max(300, rect.width);
+                      
+                      // Adjust if dropdown would go off bottom of screen
+                      const estimatedDropdownHeight = 400;
+                      if (top + estimatedDropdownHeight > viewportHeight) {
+                        const spaceAbove = rect.top;
+                        const spaceBelow = viewportHeight - rect.bottom;
+                        if (spaceAbove > spaceBelow && spaceAbove > estimatedDropdownHeight) {
+                          top = rect.top - estimatedDropdownHeight;
+                        } else {
+                          top = Math.max(10, viewportHeight - estimatedDropdownHeight - 10);
+                        }
+                      }
+                      
+                      // Adjust if dropdown would go off right side
+                      if (left + width > viewportWidth) {
+                        left = Math.max(10, viewportWidth - width - 10);
+                      }
+                      
+                      // Adjust if dropdown would go off left side
+                      if (left < 0) {
+                        left = 10;
+                      }
+                      
                       setDropdownPosition({
-                        top: rect.bottom,
-                        left: rect.left,
-                        width: rect.width
+                        top: Math.max(10, top),
+                        left: Math.max(10, left),
+                        width: width
                       });
                     }
                     // Show dropdown if category has subcategories
@@ -225,7 +329,8 @@ export default function SubNavbar() {
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            minWidth: `${Math.max(300, dropdownPosition.width)}px`
+            minWidth: `${Math.max(300, dropdownPosition.width)}px`,
+            maxWidth: typeof window !== 'undefined' ? `${Math.min(600, window.innerWidth - dropdownPosition.left - 20)}px` : '600px'
           }}
           onMouseEnter={() => {
             // Clear any pending close timeout
@@ -248,8 +353,14 @@ export default function SubNavbar() {
                 {hoveredSubCategories.map((subCategory, index) => (
                   <li key={index} className="subnavbar-dropdown-item">
                     <button
-                      onClick={() => handleSubCategoryClick(hoveredCategoryData, subCategory)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSubCategoryClick(hoveredCategoryData, subCategory);
+                        setHoveredCategory(null);
+                      }}
                       className="subnavbar-dropdown-link"
+                      type="button"
                     >
                       {subCategory.name}
                     </button>

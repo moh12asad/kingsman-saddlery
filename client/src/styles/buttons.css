@@ -1,13 +1,22 @@
 /* Button Classes */
 
 .btn-primary {
-  background: var(--brand);
-  color: #fff;
-  border-color: transparent;
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #ffffff;
+  color: var(--brand);
+  border-color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .btn-ghost {
@@ -43,30 +52,39 @@
 .btn-link {
   display: inline-block;
   padding: 0.5rem 1rem;
-  background: var(--brand);
-  color: white;
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  font-weight: 700;
 }
 
 .btn-link:hover {
-  opacity: 0.9;
+  background: #ffffff;
+  color: var(--brand);
+  border-color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .btn-secondary {
   padding: 0.5rem 1rem;
-  background: white;
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  transition: background-color 0.2s;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background: #f9fafb;
+  background: #ffffff;
+  color: var(--brand);
+  border-color: var(--brand);
 }
 
 .btn-full {

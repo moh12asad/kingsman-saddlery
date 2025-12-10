@@ -4,9 +4,15 @@
   margin: 2rem auto;
   border-radius: 12px;
   overflow: hidden;
-  height: 350px;
+  height: 400px;
   width: 100%;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 1920px) {
+  .promotional-banner {
+    height: 450px;
+  }
 }
 
 .promotional-banner-container {
@@ -27,6 +33,9 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .promotional-banner-slide.active {
@@ -34,20 +43,7 @@
   z-index: 1;
 }
 
-.promotional-banner-image {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70%;
-  height: 70%;
-  max-width: 800px;
-  max-height: 280px;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  z-index: 0;
-}
+/* Image is now set as background on the slide itself, so this class is no longer needed */
 
 .promotional-banner-overlay {
   position: absolute;
@@ -114,9 +110,9 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.9);
-  color: #333;
-  border: none;
+  background: #000000;
+  color: #ffffff;
+  border: 2px solid #000000;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -131,9 +127,11 @@
 }
 
 .promotional-banner-nav:hover {
-  background: rgba(255, 255, 255, 1);
+  background: var(--brand);
+  color: #000000;
+  border-color: var(--brand);
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .promotional-banner-nav:active {
@@ -188,15 +186,10 @@
 @media (max-width: 768px) {
   .promotional-banner {
     margin: 1.5rem 1rem;
-    height: 280px;
+    height: 320px;
   }
 
-  .promotional-banner-image {
-    width: 80%;
-    height: 65%;
-    max-width: none;
-    max-height: 200px;
-  }
+  /* Image styling removed - now uses background on slide */
 
   .promotional-banner-content {
     padding: 1.5rem;

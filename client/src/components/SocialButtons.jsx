@@ -2,7 +2,7 @@ import { FaWhatsapp, FaFacebook, FaInstagram, FaTiktok, FaEnvelope, FaMapMarkerA
 
 export default function SocialButtons() {
   return (
-    <div 
+      <div 
       style={{
         position: 'fixed',
         left: '8px',
@@ -11,7 +11,7 @@ export default function SocialButtons() {
         zIndex: 1001,
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '10px',
         pointerEvents: 'auto'
       }}
     >
@@ -22,8 +22,8 @@ export default function SocialButtons() {
         rel="noopener noreferrer"
         aria-label="WhatsApp"
         style={{
-          width: "64px",
-          height: "64px",
+          width: "52px",
+          height: "52px",
           backgroundColor: "#25D366",
           color: "white",
           borderRadius: "50%",
@@ -43,7 +43,7 @@ export default function SocialButtons() {
           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
         }}
       >
-        <FaWhatsapp size={32} />
+        <FaWhatsapp size={26} />
       </a>
 
       {/* Facebook */}
@@ -53,8 +53,8 @@ export default function SocialButtons() {
         rel="noopener noreferrer"
         aria-label="Facebook"
         style={{
-          width: "48px",
-          height: "48px",
+          width: "40px",
+          height: "40px",
           backgroundColor: "#1877F2",
           color: "white",
           borderRadius: "8px",
@@ -74,7 +74,7 @@ export default function SocialButtons() {
           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
         }}
       >
-        <FaFacebook size={20} />
+        <FaFacebook size={18} />
       </a>
 
       {/* Instagram */}
@@ -84,8 +84,8 @@ export default function SocialButtons() {
         rel="noopener noreferrer"
         aria-label="Instagram"
         style={{
-          width: "48px",
-          height: "48px",
+          width: "40px",
+          height: "40px",
           background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
           color: "white",
           borderRadius: "8px",
@@ -105,7 +105,7 @@ export default function SocialButtons() {
           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
         }}
       >
-        <FaInstagram size={20} />
+        <FaInstagram size={18} />
       </a>
 
       {/* TikTok */}
@@ -115,8 +115,8 @@ export default function SocialButtons() {
         rel="noopener noreferrer"
         aria-label="TikTok"
         style={{
-          width: "48px",
-          height: "48px",
+          width: "40px",
+          height: "40px",
           backgroundColor: "#000000",
           color: "white",
           borderRadius: "8px",
@@ -136,7 +136,7 @@ export default function SocialButtons() {
           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
         }}
       >
-        <FaTiktok size={20} />
+        <FaTiktok size={18} />
       </a>
 
       {/* Email */}
@@ -144,8 +144,8 @@ export default function SocialButtons() {
         href="mailto:info@kingsmansaddlery.com"
         aria-label="Email"
         style={{
-          width: "48px",
-          height: "48px",
+          width: "40px",
+          height: "40px",
           backgroundColor: "#EA4335",
           color: "white",
           borderRadius: "8px",
@@ -165,7 +165,7 @@ export default function SocialButtons() {
           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
         }}
       >
-        <FaEnvelope size={20} />
+        <FaEnvelope size={18} />
       </a>
 
       {/* Google Maps */}
@@ -175,8 +175,8 @@ export default function SocialButtons() {
         rel="noopener noreferrer"
         aria-label="Google Maps"
         style={{
-          width: "48px",
-          height: "48px",
+          width: "40px",
+          height: "40px",
           backgroundColor: "white",
           color: "#EA4335",
           borderRadius: "8px",
@@ -197,7 +197,7 @@ export default function SocialButtons() {
           e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
         }}
       >
-        <FaMapMarkerAlt size={20} color="#EA4335" />
+        <FaMapMarkerAlt size={18} color="#EA4335" />
       </a>
     </div>
   );
