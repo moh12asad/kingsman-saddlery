@@ -70,6 +70,8 @@ router.post("/create", async (req, res) => {
       subtotal,
       tax,
       total,
+      transactionId,
+      metadata = {},
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -96,7 +98,7 @@ router.post("/create", async (req, res) => {
     const orderTax = typeof tax === "number" ? tax : 0;
     const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
 
-    const docRef = await db.collection("orders").add({
+    const orderDoc = {
       customerId: uid,
       customerName: displayName || req.body.customerName || "Customer",
       customerEmail: email || req.body.customerEmail,
@@ -110,7 +112,19 @@ router.post("/create", async (req, res) => {
       total: orderTotal,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    };
+
+    // Add payment transaction details if provided
+    if (transactionId) {
+      orderDoc.transactionId = transactionId;
+    }
+
+    // Merge metadata (includes payment method, transaction ID, etc.)
+    if (Object.keys(metadata).length > 0) {
+      orderDoc.metadata = metadata;
+    }
+
+    const docRef = await db.collection("orders").add(orderDoc);
 
     res.status(201).json({ 
       id: docRef.id,

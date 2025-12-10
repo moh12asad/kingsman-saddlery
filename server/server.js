@@ -15,6 +15,7 @@ import adsAdmin from "./routes/ads.admin.js";
 import brandsAdmin from "./routes/brands.admin.js";
 import emailRoutes from "./routes/email.js";
 import settingsAdmin from "./routes/settings.admin.js";
+import paymentRoutes from "./routes/payment.js";
 import { verifyFirebaseToken } from "./middlewares/auth.js";
 
 dotenv.config();
@@ -120,6 +121,7 @@ app.use("/api/ads", adsAdmin);
 app.use("/api/brands", brandsAdmin);
 app.use("/api/email", emailRoutes);
 app.use("/api/settings", settingsAdmin);
+app.use("/api/payment", paymentRoutes);
 
 // ---------- Fallback ----------
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));

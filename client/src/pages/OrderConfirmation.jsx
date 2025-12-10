@@ -183,27 +183,57 @@ export default function OrderConfirmation() {
         total: total,
         subtotal: total,
         tax: 0,
-        status: "pending" // Will be updated to "paid" after Tranzilla payment
+        status: "pending"
       };
 
-      // First, save the order to the database
+      // Step 1: Process payment first
+      const paymentRes = await fetch(`${API}/api/payment/process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          amount: total,
+          currency: "ILS",
+          // Add other payment method details as needed
+        })
+      });
+
+      const paymentResult = await paymentRes.json();
+
+      if (!paymentRes.ok || !paymentResult.success) {
+        setError(paymentResult.error || "Payment processing failed. Please try again.");
+        return;
+      }
+
+      // Step 2: Payment successful - now create order in database
       const orderRes = await fetch(`${API}/api/orders/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(orderData)
+        body: JSON.stringify({
+          ...orderData,
+          status: "paid", // Update status to paid since payment succeeded
+          transactionId: paymentResult.transactionId,
+          metadata: {
+            paymentMethod: "placeholder", // Will be updated with actual payment method
+            transactionId: paymentResult.transactionId
+          }
+        })
       });
 
       const orderResult = await orderRes.json();
 
       if (!orderRes.ok) {
-        setError(orderResult.error || "Failed to create order");
+        setError(orderResult.error || "Payment succeeded but failed to create order. Please contact support.");
+        // TODO: In production, you might want to handle refund here if order creation fails after payment
         return;
       }
 
-      // Order saved successfully, now send confirmation email
+      // Step 3: Order created successfully - send confirmation email
       const emailRes = await fetch(`${API}/api/email/order-confirmation`, {
         method: "POST",
         headers: {
@@ -214,25 +244,25 @@ export default function OrderConfirmation() {
           ...orderData,
           orderNumber: orderResult.id,
           orderDate: new Date().toLocaleDateString(),
+          status: "paid"
         })
       });
 
       const emailResult = await emailRes.json();
 
       if (emailRes.ok) {
-        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created successfully! Confirmation email sent to ${orderData.customerEmail}`);
-        // TODO: After Tranzilla integration, redirect to payment gateway here
-        // For now, just show success message
-        console.log("Order created and email sent. Ready for Tranzilla payment integration.");
+        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! Confirmation email sent to ${orderData.customerEmail}`);
+        console.log("Payment processed, order created, and email sent successfully.");
         console.log("Order ID:", orderResult.id);
+        console.log("Transaction ID:", paymentResult.transactionId);
       } else {
-        // Order was saved but email failed - still show success for order creation
-        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created successfully! However, the confirmation email could not be sent.`);
-        console.warn("Order created but email failed:", emailResult.error);
+        // Payment and order succeeded but email failed - still show success
+        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! However, the confirmation email could not be sent.`);
+        console.warn("Payment and order succeeded but email failed:", emailResult.error);
       }
     } catch (err) {
       console.error("Error proceeding to payment:", err);
-      setError(err.message || "Failed to process order");
+      setError(err.message || "Failed to process payment");
     } finally {
       setSendingEmail(false);
     }
