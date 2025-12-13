@@ -216,10 +216,10 @@ export default function OrderConfirmation() {
         },
         body: JSON.stringify({
           ...orderData,
-          status: "paid", // Update status to paid since payment succeeded
+          status: "new", // New order status
           transactionId: paymentResult.transactionId,
           metadata: {
-            paymentMethod: "placeholder", // Will be updated with actual payment method
+            paymentMethod: "credit_card", // Credit card payment
             transactionId: paymentResult.transactionId
           }
         })
@@ -244,7 +244,7 @@ export default function OrderConfirmation() {
           ...orderData,
           orderNumber: orderResult.id,
           orderDate: new Date().toLocaleDateString(),
-          status: "paid"
+          status: "new"
         })
       });
 

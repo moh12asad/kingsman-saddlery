@@ -329,6 +329,113 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
   }
 });
 
+// Update order status (ADMIN only)
+router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, paymentMethod, deliveryType } = req.body;
+
+    const orderRef = db.collection("orders").doc(id);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+
+    // Update payment method and delivery type in metadata
+    if (paymentMethod !== undefined || deliveryType !== undefined) {
+      const currentData = orderDoc.data();
+      const currentMetadata = currentData.metadata || {};
+      
+      updateData.metadata = {
+        ...currentMetadata,
+        ...(paymentMethod !== undefined && { paymentMethod }),
+        ...(deliveryType !== undefined && { deliveryType }),
+      };
+    }
+
+    await orderRef.set(updateData, { merge: true });
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error("orders.update error", error);
+    res.status(500).json({ error: "Failed to update order", details: error.message });
+  }
+});
+
+// Archive order (ADMIN only) - moves order from orders to archived_orders collection
+router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const orderRef = db.collection("orders").doc(id);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const orderData = orderDoc.data();
+
+    // Add archived timestamp and archivedBy
+    const archivedOrderData = {
+      ...orderData,
+      archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+      archivedBy: req.user.uid,
+      originalOrderId: id, // Keep reference to original order ID
+    };
+
+    // Create the archived order in archived_orders collection
+    await db.collection("archived_orders").doc(id).set(archivedOrderData);
+
+    // Delete the order from orders collection
+    await orderRef.delete();
+
+    res.json({ ok: true, message: "Order archived successfully" });
+  } catch (error) {
+    console.error("orders.archive error", error);
+    res.status(500).json({ error: "Failed to archive order", details: error.message });
+  }
+});
+
+// Get archived orders (ADMIN only)
+router.get("/archived", requireRole("ADMIN"), async (_req, res) => {
+  try {
+    const snap = await db
+      .collection("archived_orders")
+      .orderBy("archivedAt", "desc")
+      .limit(100)
+      .get();
+
+    const orders = snap.docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt?.toDate?.() ?? null;
+      const updatedAt = data.updatedAt?.toDate?.() ?? null;
+      const archivedAt = data.archivedAt?.toDate?.() ?? null;
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: createdAt ? createdAt.toISOString() : null,
+        updatedAt: updatedAt ? updatedAt.toISOString() : null,
+        archivedAt: archivedAt ? archivedAt.toISOString() : null,
+      };
+    });
+
+    res.json({ orders });
+  } catch (error) {
+    console.error("orders.archived error", error);
+    res.status(500).json({ error: "Failed to fetch archived orders", details: error.message });
+  }
+});
+
 export default router;
 
 
