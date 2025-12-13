@@ -95,13 +95,38 @@ router.post("/create", async (req, res) => {
       price: Number(item.price) || 0,
     }));
 
+    // Calculate subtotal from items (server-side calculation - trusted)
     const computedSubtotal = normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
     );
-    const orderSubtotal = typeof subtotal === "number" ? subtotal : computedSubtotal;
-    const orderTax = typeof tax === "number" ? tax : 0;
-    const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
+    
+    // Use provided subtotal if it matches computed, otherwise use computed (more secure)
+    const orderSubtotal = (typeof subtotal === "number" && Math.abs(subtotal - computedSubtotal) < 0.01) 
+      ? subtotal 
+      : computedSubtotal;
+    
+    const orderTax = typeof tax === "number" && tax >= 0 ? tax : 0;
+    
+    // Delivery cost constant (must match client-side)
+    const DELIVERY_COST = 50;
+    const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+    
+    // Calculate expected total on server (trusted calculation)
+    const expectedTotal = orderSubtotal + orderTax + deliveryCost;
+    
+    // Validate client-provided total matches expected total (with small tolerance for floating point)
+    const clientTotal = typeof total === "number" ? total : null;
+    if (clientTotal !== null) {
+      const difference = Math.abs(clientTotal - expectedTotal);
+      if (difference > 0.01) { // Allow 0.01 ILS tolerance for floating point errors
+        console.warn(`Order total mismatch: client sent ${clientTotal}, expected ${expectedTotal}. Using server-calculated total.`);
+        // Reject or use server-calculated total - using server-calculated for security
+      }
+    }
+    
+    // Always use server-calculated total for security
+    const orderTotal = expectedTotal;
 
     const orderDoc = {
       customerId: uid,
