@@ -161,9 +161,10 @@ export default function Navbar() {
                             </NavLink>
                             <div className="profile-dropdown-divider"></div>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     setShowProfileMenu(false);
-                                    signOutUser();
+                                    await signOutUser();
+                                    navigate("/");
                                 }}
                                 className="profile-dropdown-item"
                                 style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}

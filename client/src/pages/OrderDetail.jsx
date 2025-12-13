@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
@@ -14,7 +14,8 @@ import {
   FaEnvelope,
   FaPhone,
   FaArrowLeft,
-  FaUser
+  FaUser,
+  FaTimes
 } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -24,15 +25,29 @@ export default function OrderDetail() {
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   useEffect(() => {
     if (user && id) {
       loadOrder();
     }
   }, [user, id]);
+
+  // Check for success parameter on mount and when order is loaded
+  useEffect(() => {
+    const success = searchParams.get("success");
+    if (success === "true" && order) {
+      setShowSuccessMessage(true);
+      // Remove the success parameter from URL without reloading
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("success");
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, order]);
 
   async function loadOrder() {
     try {
@@ -160,6 +175,37 @@ export default function OrderDetail() {
     <AuthRoute>
       <main className="page-with-navbar">
         <div className="container-main padding-y-xl">
+          {showSuccessMessage && (
+            <div className="card padding-md margin-bottom-lg" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
+              <div className="flex-row flex-gap-md" style={{ alignItems: "flex-start" }}>
+                <FaCheckCircle style={{ color: "#16a34a", fontSize: "1.5rem", flexShrink: 0, marginTop: "0.125rem" }} />
+                <div className="flex-1">
+                  <h3 style={{ color: "#16a34a", margin: 0, marginBottom: "0.5rem", fontSize: "1.125rem", fontWeight: "600" }}>
+                    Order Placed Successfully!
+                  </h3>
+                  <p style={{ color: "#16a34a", margin: 0, fontSize: "0.875rem" }}>
+                    Your order has been confirmed and payment processed. A confirmation email has been sent to {order?.customerEmail || "your email address"}.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSuccessMessage(false)}
+                  className="btn btn-sm"
+                  style={{ 
+                    color: "#16a34a", 
+                    background: "transparent", 
+                    border: "none", 
+                    padding: "0.25rem",
+                    cursor: "pointer",
+                    flexShrink: 0
+                  }}
+                  aria-label="Close success message"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => navigate("/orders")}
             className="btn-secondary margin-bottom-md flex-row flex-gap-xs flex-center"

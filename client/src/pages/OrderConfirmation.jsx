@@ -10,7 +10,7 @@ import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaC
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function OrderConfirmation() {
-  const { cartItems, getTotalPrice, isLoaded } = useCart();
+  const { cartItems, getTotalPrice, isLoaded, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
@@ -268,10 +268,18 @@ export default function OrderConfirmation() {
         console.log("Payment processed, order created, and email sent successfully.");
         console.log("Order ID:", orderResult.id);
         console.log("Transaction ID:", paymentResult.transactionId);
+        
+        // Clear the cart and navigate to order details page with success parameter
+        clearCart();
+        navigate(`/orders/${orderResult.id}?success=true`);
       } else {
         // Payment and order succeeded but email failed - still show success
         setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! However, the confirmation email could not be sent.`);
         console.warn("Payment and order succeeded but email failed:", emailResult.error);
+        
+        // Even if email failed, clear cart and navigate to order details with success parameter
+        clearCart();
+        navigate(`/orders/${orderResult.id}?success=true`);
       }
     } catch (err) {
       console.error("Error proceeding to payment:", err);
