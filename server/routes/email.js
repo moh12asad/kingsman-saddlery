@@ -15,7 +15,8 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       shippingAddress,
       total,
       orderDate,
-      status = "pending"
+      status = "pending",
+      metadata = {}
     } = req.body;
 
     // Validate required fields
@@ -25,11 +26,16 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       });
     }
 
-    if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
-      return res.status(400).json({ 
-        error: "Complete shipping address is required" 
-      });
+    // Delivery address is only required for delivery orders
+    const deliveryType = metadata?.deliveryType || "delivery";
+    if (deliveryType === "delivery") {
+      if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
+        return res.status(400).json({ 
+          error: "Complete delivery address is required for delivery orders" 
+        });
+      }
     }
+    // For pickup orders, shippingAddress can be null - no validation needed
 
     // Generate order number if not provided
     const finalOrderNumber = orderNumber || `ORD-${Date.now()}`;
@@ -44,7 +50,8 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
         quantity: item.quantity || 1,
         price: item.price || 0,
       })),
-      shippingAddress,
+      shippingAddress: deliveryType === "delivery" ? shippingAddress : null,
+      deliveryType: deliveryType,
       total: total || 0,
       orderDate: orderDate || new Date().toLocaleDateString(),
       status

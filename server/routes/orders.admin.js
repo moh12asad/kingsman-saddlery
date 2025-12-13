@@ -78,9 +78,14 @@ router.post("/create", async (req, res) => {
       return res.status(400).json({ error: "Order items are required" });
     }
 
-    if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
-      return res.status(400).json({ error: "Complete shipping address is required" });
+    // Delivery address is only required for delivery orders
+    const deliveryType = metadata?.deliveryType || "delivery";
+    if (deliveryType === "delivery") {
+      if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
+        return res.status(400).json({ error: "Complete delivery address is required for delivery orders" });
+      }
     }
+    // For pickup orders, shippingAddress can be null - no validation needed
 
     const normalizedItems = items.map((item, index) => ({
       productId: item.productId || item.id || "",
@@ -104,7 +109,7 @@ router.post("/create", async (req, res) => {
       customerEmail: email || req.body.customerEmail,
       phone: phone || req.body.phone || "",
       items: normalizedItems,
-      shippingAddress,
+      shippingAddress: deliveryType === "delivery" ? shippingAddress : null,
       status,
       notes,
       subtotal: orderSubtotal,

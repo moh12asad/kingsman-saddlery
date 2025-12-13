@@ -46,6 +46,7 @@ export function generateOrderEmailTemplate(orderData) {
     customerEmail,
     items,
     shippingAddress,
+    deliveryType = "delivery",
     total,
     orderDate,
     status = "pending"
@@ -63,11 +64,15 @@ export function generateOrderEmailTemplate(orderData) {
     </tr>
   `).join("");
 
-  const addressHtml = `
+  const addressHtml = deliveryType === "pickup" 
+    ? `<p style="margin: 0; padding: 4px 0; font-weight: bold;">Store Pickup</p><p style="margin: 4px 0; padding: 4px 0; color: #6b7280;">Please pick up your order from our store.</p>`
+    : shippingAddress 
+    ? `
     <p style="margin: 0; padding: 4px 0;">${shippingAddress.street}</p>
     <p style="margin: 0; padding: 4px 0;">${shippingAddress.city} ${shippingAddress.zipCode}</p>
     ${shippingAddress.country ? `<p style="margin: 0; padding: 4px 0;">${shippingAddress.country}</p>` : ""}
-  `;
+  `
+    : "";
 
   return `
     <!DOCTYPE html>
@@ -118,7 +123,7 @@ export function generateOrderEmailTemplate(orderData) {
         </div>
 
         <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 6px;">
-          <h3 style="color: #111827; font-size: 18px; margin-top: 0; margin-bottom: 15px;">Shipping Address</h3>
+          <h3 style="color: #111827; font-size: 18px; margin-top: 0; margin-bottom: 15px;">${deliveryType === "pickup" ? "Pickup Information" : "Delivery Address"}</h3>
           ${addressHtml}
         </div>
 

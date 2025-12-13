@@ -44,17 +44,33 @@ export default function OrderDetail() {
         return;
       }
 
+      if (!id) {
+        setError("Order ID is missing");
+        return;
+      }
+
       const res = await fetch(`${API}/api/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
         const data = await res.json();
-        const foundOrder = data.orders?.find(o => o.id === id);
+        const orders = data.orders || [];
+        
+        // Try to find the order by exact ID match
+        let foundOrder = orders.find(o => o.id === id);
+        
+        // If not found, try case-insensitive match (just in case)
+        if (!foundOrder) {
+          foundOrder = orders.find(o => o.id?.toLowerCase() === id?.toLowerCase());
+        }
+        
         if (foundOrder) {
           setOrder(foundOrder);
         } else {
-          setError("Order not found");
+          console.error("Order not found. Looking for ID:", id);
+          console.error("Available order IDs:", orders.map(o => o.id));
+          setError("Order not found. The order may have been removed or you don't have permission to view it.");
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -126,11 +142,13 @@ export default function OrderDetail() {
       <AuthRoute>
         <main className="page-with-navbar">
           <div className="container-main padding-y-xl">
-            <div className="card padding-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+            <div className="card card-error padding-md">
               <p className="text-error">{error || "Order not found"}</p>
-              <Link to="/orders" className="btn-primary margin-top-md">
-                Back to Orders
-              </Link>
+              <div className="margin-top-md">
+                <Link to="/orders" className="btn-primary">
+                  Back to Orders
+                </Link>
+              </div>
             </div>
           </div>
         </main>
@@ -144,21 +162,20 @@ export default function OrderDetail() {
         <div className="container-main padding-y-xl">
           <button
             onClick={() => navigate("/orders")}
-            className="btn-secondary margin-bottom-md flex-row flex-gap-xs"
-            style={{ alignItems: "center" }}
+            className="btn-secondary margin-bottom-md flex-row flex-gap-xs flex-center"
           >
             <FaArrowLeft />
             <span>Back to Orders</span>
           </button>
 
-          <div className="flex-row flex-gap-md margin-bottom-lg" style={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-            <h1 className="heading-1 flex-row flex-gap-sm" style={{ margin: 0 }}>
+          <div className="flex-row flex-gap-md margin-bottom-lg order-header-row">
+            <h1 className="heading-1 flex-row flex-gap-sm order-heading">
               <FaShoppingBag />
               Order #{order.id.substring(0, 8)}
             </h1>
-            <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs`} style={{ alignItems: "center", fontSize: "0.875rem", padding: "0.5rem 1rem" }}>
+            <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs order-badge`}>
               {getStatusIcon(order.status)}
-              <span style={{ textTransform: "capitalize" }}>{order.status || "pending"}</span>
+              <span className="order-badge-text">{order.status || "pending"}</span>
             </span>
           </div>
 
@@ -178,11 +195,10 @@ export default function OrderDetail() {
                           <img
                             src={item.image}
                             alt={item.name}
-                            className="w-20 h-20 object-cover rounded-lg border"
-                            style={{ flexShrink: 0 }}
+                            className="w-20 h-20 object-cover rounded-lg border order-item-image-wrapper"
                           />
                         ) : (
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs" style={{ flexShrink: 0 }}>
+                          <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs order-item-image-wrapper">
                             No image
                           </div>
                         )}
@@ -222,24 +238,24 @@ export default function OrderDetail() {
                   <div className="flex items-center gap-2">
                     <FaCalendarAlt className="text-muted" />
                     <div>
-                      <p className="text-muted" style={{ margin: 0, fontSize: "0.75rem" }}>Order Date</p>
-                      <p style={{ margin: 0, fontWeight: 600 }}>{formatDate(order.createdAt)}</p>
+                      <p className="text-muted order-info-label">Order Date</p>
+                      <p className="order-info-value">{formatDate(order.createdAt)}</p>
                     </div>
                   </div>
                   {order.updatedAt && order.updatedAt !== order.createdAt && (
                     <div className="flex items-center gap-2">
                       <FaClock className="text-muted" />
                       <div>
-                        <p className="text-muted" style={{ margin: 0, fontSize: "0.75rem" }}>Last Updated</p>
-                        <p style={{ margin: 0, fontWeight: 600 }}>{formatDate(order.updatedAt)}</p>
+                        <p className="text-muted order-info-label">Last Updated</p>
+                        <p className="order-info-value">{formatDate(order.updatedAt)}</p>
                       </div>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <FaShoppingBag className="text-muted" />
                     <div>
-                      <p className="text-muted" style={{ margin: 0, fontSize: "0.75rem" }}>Order ID</p>
-                      <p className="font-mono text-xs" style={{ margin: 0, fontWeight: 600 }}>{order.id}</p>
+                      <p className="text-muted order-info-label">Order ID</p>
+                      <p className="font-mono text-xs order-info-value-mono">{order.id}</p>
                     </div>
                   </div>
                 </div>
@@ -273,34 +289,45 @@ export default function OrderDetail() {
                 </div>
               </div>
 
-              {/* Shipping Address */}
-              {order.shippingAddress && (
+              {/* Delivery Address / Pickup Information */}
+              {order.metadata?.deliveryType === "pickup" ? (
                 <div className="card">
                   <h2 className="section-title margin-bottom-md flex-row flex-gap-sm">
                     <FaMapMarkerAlt />
-                    Shipping Address
+                    Pickup Information
+                  </h2>
+                  <div className="space-y-2 text-sm">
+                    <p className="order-text-bold">Store Pickup</p>
+                    <p className="order-text-muted">Please pick up your order from our store.</p>
+                  </div>
+                </div>
+              ) : order.shippingAddress ? (
+                <div className="card">
+                  <h2 className="section-title margin-bottom-md flex-row flex-gap-sm">
+                    <FaMapMarkerAlt />
+                    Delivery Address
                   </h2>
                   <div className="space-y-2 text-sm">
                     {order.shippingAddress.street && (
-                      <p style={{ margin: 0 }}>{order.shippingAddress.street}</p>
+                      <p className="order-text-no-margin">{order.shippingAddress.street}</p>
                     )}
                     {(order.shippingAddress.city || order.shippingAddress.zipCode) && (
-                      <p style={{ margin: 0 }}>
+                      <p className="order-text-no-margin">
                         {order.shippingAddress.city} {order.shippingAddress.zipCode}
                       </p>
                     )}
                     {order.shippingAddress.country && (
-                      <p style={{ margin: 0 }}>{order.shippingAddress.country}</p>
+                      <p className="order-text-no-margin">{order.shippingAddress.country}</p>
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Notes */}
               {order.notes && (
                 <div className="card">
                   <h2 className="section-title margin-bottom-md">Notes</h2>
-                  <p className="text-sm" style={{ margin: 0 }}>{order.notes}</p>
+                  <p className="text-sm order-text-no-margin">{order.notes}</p>
                 </div>
               )}
             </div>
