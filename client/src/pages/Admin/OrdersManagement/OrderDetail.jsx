@@ -316,12 +316,23 @@ export default function AdminOrderDetail() {
             </div>
           </div>
 
-          {/* Shipping Address */}
-          {order.shippingAddress && (
+          {/* Delivery Address / Pickup Information */}
+          {order.metadata?.deliveryType === "pickup" ? (
             <div className="card">
               <h2 className="section-title flex items-center gap-2 mb-4">
                 <FaMapMarkerAlt />
-                Shipping Address
+                Pickup Information
+              </h2>
+              <div className="space-y-2">
+                <p className="font-semibold">Store Pickup</p>
+                <p className="text-gray-600 text-sm">Customer will pick up order from store</p>
+              </div>
+            </div>
+          ) : order.shippingAddress ? (
+            <div className="card">
+              <h2 className="section-title flex items-center gap-2 mb-4">
+                <FaMapMarkerAlt />
+                Delivery Address
               </h2>
               <div className="space-y-2">
                 <p>{order.shippingAddress.street || ""}</p>
@@ -334,7 +345,7 @@ export default function AdminOrderDetail() {
                 )}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Order Management */}
           <div className="card">

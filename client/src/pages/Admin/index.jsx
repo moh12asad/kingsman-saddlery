@@ -6,7 +6,13 @@ export default function AdminLayout(){
   const [menuOpen, setMenuOpen] = useState(false);
   
   return (
-    <AdminGate fallback={<div className="p-6">You do not have access to admin.</div>}>
+    <AdminGate fallback={
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center mt-20 mb-20">
+        <div className="text-center">
+          <p className="text-lg text-gray-700">You do not have access to admin.</p>
+        </div>
+      </div>
+    }>
       <div className="container-page py-4 admin-container">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Admin</h1>

@@ -40,6 +40,10 @@ export default function OrderConfirmation() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [error, setError] = useState("");
   const [emailSuccess, setEmailSuccess] = useState("");
+  const [deliveryType, setDeliveryType] = useState("delivery"); // "delivery" or "pickup"
+  
+  // Delivery cost constant (50 ILS)
+  const DELIVERY_COST = 50;
 
   useEffect(() => {
     if (!user) return;
@@ -121,7 +125,9 @@ export default function OrderConfirmation() {
     }
   }
 
-  const total = getTotalPrice();
+  const subtotal = getTotalPrice();
+  const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+  const total = subtotal + deliveryCost;
   
   // Check if address has been changed from profile
   const isAddressChanged = JSON.stringify(orderAddress) !== JSON.stringify(profileData.address);
@@ -129,9 +135,10 @@ export default function OrderConfirmation() {
   // Use order address if it's been changed, otherwise use profile address
   // When editing, always show orderAddress in the form
   const currentAddress = isAddressChanged ? orderAddress : profileData.address;
-  const hasCompleteAddress = currentAddress.street && 
+  // Delivery address is only required for delivery
+  const hasCompleteAddress = deliveryType === "pickup" || (currentAddress.street && 
                              currentAddress.city && 
-                             currentAddress.zipCode;
+                             currentAddress.zipCode);
   
   function handleAddressChange(field, value) {
     setOrderAddress(prev => ({
@@ -179,9 +186,9 @@ export default function OrderConfirmation() {
           quantity: item.quantity,
           price: item.price,
         })),
-        shippingAddress: currentAddress,
+        shippingAddress: deliveryType === "delivery" ? currentAddress : null,
         total: total,
-        subtotal: total,
+        subtotal: subtotal,
         tax: 0,
         status: "pending"
       };
@@ -220,6 +227,7 @@ export default function OrderConfirmation() {
           transactionId: paymentResult.transactionId,
           metadata: {
             paymentMethod: "credit_card", // Credit card payment
+            deliveryType: deliveryType, // "delivery" or "pickup"
             transactionId: paymentResult.transactionId
           }
         })
@@ -244,7 +252,12 @@ export default function OrderConfirmation() {
           ...orderData,
           orderNumber: orderResult.id,
           orderDate: new Date().toLocaleDateString(),
-          status: "new"
+          status: "new",
+          metadata: {
+            paymentMethod: "credit_card",
+            deliveryType: deliveryType,
+            transactionId: paymentResult.transactionId
+          }
         })
       });
 
@@ -346,8 +359,18 @@ export default function OrderConfirmation() {
                     </div>
                   ))}
                 </div>
-                <div className="margin-top-md padding-top-md border-top">
+                <div className="margin-top-md padding-top-md border-top space-y-2">
                   <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted">Subtotal:</span>
+                    <span className="text-sm font-semibold">{formatPrice(subtotal)}</span>
+                  </div>
+                  {deliveryType === "delivery" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted">Delivery:</span>
+                      <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center padding-top-sm border-top">
                     <span className="font-semibold">Total:</span>
                     <span className="text-lg font-bold">{formatPrice(total)}</span>
                   </div>
@@ -355,14 +378,51 @@ export default function OrderConfirmation() {
               </div>
             </div>
 
-            {/* Right Column: Shipping Information */}
+            {/* Right Column: Delivery Information */}
             <div className="space-y-6">
-              {/* Shipping Address */}
+              {/* Delivery/Pickup Selection */}
+              <div className="card">
+                <h2 className="section-title margin-bottom-md">Delivery Options</h2>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      value="delivery"
+                      checked={deliveryType === "delivery"}
+                      onChange={(e) => setDeliveryType(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1">
+                      <span className="font-semibold">Delivery</span>
+                      <span className="text-sm text-muted ml-2">({formatPrice(DELIVERY_COST)})</span>
+                      <p className="text-xs text-muted mt-1">We'll deliver your order to your address</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="deliveryType"
+                      value="pickup"
+                      checked={deliveryType === "pickup"}
+                      onChange={(e) => setDeliveryType(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1">
+                      <span className="font-semibold">Store Pickup</span>
+                      <p className="text-xs text-muted mt-1">Pick up your order from our store</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Delivery Address - Only show for delivery */}
+              {deliveryType === "delivery" && (
               <div className="card">
                 <div className="flex items-center justify-between margin-bottom-md">
                   <h2 className="section-title flex items-center gap-2">
                     <FaMapMarkerAlt />
-                    Shipping Address
+                    Delivery Address
                   </h2>
                   {!isEditingAddress && (
                     <div className="flex gap-2">
@@ -470,7 +530,7 @@ export default function OrderConfirmation() {
                 ) : (
                   <div className="padding-y-md">
                     <p className="text-muted text-sm margin-bottom-md">
-                      Please complete your shipping address.
+                      Please complete your delivery address.
                     </p>
                     <button
                       onClick={handleUseDifferentAddress}
@@ -486,6 +546,7 @@ export default function OrderConfirmation() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Contact Information */}
               <div className="card">
@@ -539,10 +600,10 @@ export default function OrderConfirmation() {
               onClick={handleProceedToPayment}
             >
               {sendingEmail 
-                ? "Sending Email..."
+                ? "Processing..."
                 : !hasCompleteAddress || !profileData.phone
                 ? "Complete Information to Continue"
-                : "Proceed to Payment"}
+                : `Proceed to Payment (${formatPrice(total)})`}
             </button>
           </div>
 
@@ -550,15 +611,15 @@ export default function OrderConfirmation() {
             <div className="card padding-md margin-top-md" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
               <p className="text-sm" style={{ color: "#92400e" }}>
                 <strong>Please complete the following:</strong>{" "}
-                {!hasCompleteAddress && (
+                {deliveryType === "delivery" && !hasCompleteAddress && (
                   <>
                     {isEditingAddress 
-                      ? "Complete the shipping address fields above. "
-                      : "Add a complete shipping address. "}
+                      ? "Complete the delivery address fields above. "
+                      : "Add a complete delivery address. "}
                   </>
                 )}
                 {!profileData.phone && "Add a phone number. "}
-                {!hasCompleteAddress && !isEditingAddress && (
+                {deliveryType === "delivery" && !hasCompleteAddress && !isEditingAddress && (
                   <button onClick={handleUseDifferentAddress} className="underline">
                     Add Address for This Order
                   </button>

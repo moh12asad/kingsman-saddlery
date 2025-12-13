@@ -218,3 +218,72 @@ html {
   gap: 0.5rem;
 }
 
+/* Error card styling */
+.card-error {
+  background: #fee2e2;
+  border-color: #ef4444;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.card-error .text-error {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+/* Order detail utility classes */
+.order-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.order-heading {
+  margin: 0;
+}
+
+.order-badge {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+
+.order-badge-text {
+  text-transform: capitalize;
+}
+
+.order-info-label {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.order-info-value {
+  margin: 0;
+  font-weight: 600;
+}
+
+.order-info-value-mono {
+  margin: 0;
+  font-weight: 600;
+}
+
+.order-item-image-wrapper {
+  flex-shrink: 0;
+}
+
+.order-text-no-margin {
+  margin: 0;
+}
+
+.order-text-bold {
+  margin: 0;
+  font-weight: bold;
+}
+
+.order-text-muted {
+  margin: 0;
+  color: #6b7280;
+}
+

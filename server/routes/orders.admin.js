@@ -78,9 +78,14 @@ router.post("/create", async (req, res) => {
       return res.status(400).json({ error: "Order items are required" });
     }
 
-    if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
-      return res.status(400).json({ error: "Complete shipping address is required" });
+    // Delivery address is only required for delivery orders
+    const deliveryType = metadata?.deliveryType || "delivery";
+    if (deliveryType === "delivery") {
+      if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
+        return res.status(400).json({ error: "Complete delivery address is required for delivery orders" });
+      }
     }
+    // For pickup orders, shippingAddress can be null - no validation needed
 
     const normalizedItems = items.map((item, index) => ({
       productId: item.productId || item.id || "",
@@ -90,13 +95,38 @@ router.post("/create", async (req, res) => {
       price: Number(item.price) || 0,
     }));
 
+    // Calculate subtotal from items (server-side calculation - trusted)
     const computedSubtotal = normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
     );
-    const orderSubtotal = typeof subtotal === "number" ? subtotal : computedSubtotal;
-    const orderTax = typeof tax === "number" ? tax : 0;
-    const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
+    
+    // Use provided subtotal if it matches computed, otherwise use computed (more secure)
+    const orderSubtotal = (typeof subtotal === "number" && Math.abs(subtotal - computedSubtotal) < 0.01) 
+      ? subtotal 
+      : computedSubtotal;
+    
+    const orderTax = typeof tax === "number" && tax >= 0 ? tax : 0;
+    
+    // Delivery cost constant (must match client-side)
+    const DELIVERY_COST = 50;
+    const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+    
+    // Calculate expected total on server (trusted calculation)
+    const expectedTotal = orderSubtotal + orderTax + deliveryCost;
+    
+    // Validate client-provided total matches expected total (with small tolerance for floating point)
+    const clientTotal = typeof total === "number" ? total : null;
+    if (clientTotal !== null) {
+      const difference = Math.abs(clientTotal - expectedTotal);
+      if (difference > 0.01) { // Allow 0.01 ILS tolerance for floating point errors
+        console.warn(`Order total mismatch: client sent ${clientTotal}, expected ${expectedTotal}. Using server-calculated total.`);
+        // Reject or use server-calculated total - using server-calculated for security
+      }
+    }
+    
+    // Always use server-calculated total for security
+    const orderTotal = expectedTotal;
 
     const orderDoc = {
       customerId: uid,
@@ -104,7 +134,7 @@ router.post("/create", async (req, res) => {
       customerEmail: email || req.body.customerEmail,
       phone: phone || req.body.phone || "",
       items: normalizedItems,
-      shippingAddress,
+      shippingAddress: deliveryType === "delivery" ? shippingAddress : null,
       status,
       notes,
       subtotal: orderSubtotal,
@@ -142,10 +172,10 @@ router.get("/my-orders", async (req, res) => {
     const { uid, email } = req.user;
     
     // Fetch orders by customerId (without orderBy to avoid index requirement)
+    // No limit - fetch all user orders
     const snap = await db
       .collection("orders")
       .where("customerId", "==", uid)
-      .limit(100)
       .get();
 
     // If no orders by customerId, try by email
@@ -154,7 +184,6 @@ router.get("/my-orders", async (req, res) => {
       const emailSnap = await db
         .collection("orders")
         .where("customerEmail", "==", email)
-        .limit(100)
         .get();
       
       orders = emailSnap.docs.map((doc) => {
@@ -247,13 +276,14 @@ router.get("/best-sellers", async (_req, res) => {
 
 router.get("/", requireRole("ADMIN"), async (_req, res) => {
   try {
+    // Get all orders, then filter active ones in memory (avoids index requirement)
+    // No limit - fetch all orders
     const snap = await db
       .collection("orders")
       .orderBy("createdAt", "desc")
-      .limit(50)
       .get();
 
-    const orders = snap.docs.map((doc) => {
+    const allOrders = snap.docs.map((doc) => {
       const data = doc.data();
       const createdAt = data.createdAt?.toDate?.() ?? null;
       const updatedAt = data.updatedAt?.toDate?.() ?? null;
@@ -264,6 +294,9 @@ router.get("/", requireRole("ADMIN"), async (_req, res) => {
         updatedAt: updatedAt ? updatedAt.toISOString() : null,
       };
     });
+
+    // Filter to only active orders (archivedAt is null or doesn't exist)
+    const orders = allOrders.filter(order => !order.archivedAt);
 
     res.json({ orders });
   } catch (error) {
@@ -371,7 +404,7 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
   }
 });
 
-// Archive order (ADMIN only) - moves order from orders to archived_orders collection
+// Archive order (ADMIN only) - sets archivedAt timestamp in the same collection
 router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -385,19 +418,17 @@ router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
 
     const orderData = orderDoc.data();
 
-    // Add archived timestamp and archivedBy
-    const archivedOrderData = {
-      ...orderData,
+    // Check if already archived
+    if (orderData.archivedAt) {
+      return res.status(400).json({ error: "Order is already archived" });
+    }
+
+    // Set archived timestamp and archivedBy (keep order in same collection)
+    await orderRef.set({
       archivedAt: admin.firestore.FieldValue.serverTimestamp(),
       archivedBy: req.user.uid,
-      originalOrderId: id, // Keep reference to original order ID
-    };
-
-    // Create the archived order in archived_orders collection
-    await db.collection("archived_orders").doc(id).set(archivedOrderData);
-
-    // Delete the order from orders collection
-    await orderRef.delete();
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
 
     res.json({ ok: true, message: "Order archived successfully" });
   } catch (error) {
@@ -406,16 +437,17 @@ router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
   }
 });
 
-// Get archived orders (ADMIN only)
+// Get archived orders (ADMIN only) - filters from same collection
 router.get("/archived", requireRole("ADMIN"), async (_req, res) => {
   try {
+    // Get all orders, then filter archived ones in memory (avoids index requirement)
+    // No limit - fetch all orders
     const snap = await db
-      .collection("archived_orders")
-      .orderBy("archivedAt", "desc")
-      .limit(100)
+      .collection("orders")
+      .orderBy("createdAt", "desc")
       .get();
 
-    const orders = snap.docs.map((doc) => {
+    const allOrders = snap.docs.map((doc) => {
       const data = doc.data();
       const createdAt = data.createdAt?.toDate?.() ?? null;
       const updatedAt = data.updatedAt?.toDate?.() ?? null;
@@ -428,6 +460,16 @@ router.get("/archived", requireRole("ADMIN"), async (_req, res) => {
         archivedAt: archivedAt ? archivedAt.toISOString() : null,
       };
     });
+
+    // Filter to only archived orders (archivedAt is not null)
+    const orders = allOrders
+      .filter(order => order.archivedAt)
+      .sort((a, b) => {
+        // Sort by archivedAt descending
+        const dateA = a.archivedAt ? new Date(a.archivedAt).getTime() : 0;
+        const dateB = b.archivedAt ? new Date(b.archivedAt).getTime() : 0;
+        return dateB - dateA;
+      });
 
     res.json({ orders });
   } catch (error) {
