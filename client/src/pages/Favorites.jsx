@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
@@ -8,6 +9,7 @@ import FlyToCartAnimation from "../components/FlyToCartAnimation";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function Favorites() {
+  const navigate = useNavigate();
   const { favorites, removeFavorite, isLoaded: favoritesLoaded } = useFavorites();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
@@ -109,65 +111,86 @@ export default function Favorites() {
           </div>
         ) : (
           <div className="grid-products">
-            {favoriteProducts.map((product) => (
-              <div key={product.id} className="card-product">
-                <div className="relative">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="img-product"
-                    />
-                  ) : (
-                    <div className="img-placeholder">No image</div>
-                  )}
-                  <button
-                    className="card-product-favorite active"
-                    onClick={() => removeFavorite(product.id)}
-                    aria-label="Remove from favorites"
-                    style={{ position: 'absolute', top: '0.75rem', right: '0.75rem' }}
-                  >
-                    <FaHeart />
-                  </button>
-                  {product.sale && (
-                    <span className="badge-sale absolute" style={{ top: '0.5rem', left: '0.5rem' }}>
-                      SALE
-                    </span>
-                  )}
-                </div>
-                <div className="padding-sm flex-col flex-1">
-                  <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm">
-                    {product.name}
-                  </h3>
-                  {product.category && (
-                    <p className="text-xs text-muted margin-bottom-sm">{product.category}</p>
-                  )}
-                  <div className="flex-row flex-gap-sm margin-bottom-md">
-                    {product.sale && product.sale_proce > 0 ? (
-                      <>
-                        <span className="price-sale">
-                          {formatPrice(product.sale_proce)}
-                        </span>
-                        <span className="price-original">
-                          {formatPrice(product.price)}
-                        </span>
-                      </>
+            {favoriteProducts.map((product) => {
+              const handleCardClick = () => {
+                navigate(`/product/${product.id}`);
+              };
+
+              const handleFavoriteClick = (e) => {
+                e.stopPropagation();
+                removeFavorite(product.id);
+              };
+
+              const handleAddToCartClick = (e) => {
+                e.stopPropagation();
+                handleAddToCart(product);
+              };
+
+              return (
+                <div 
+                  key={product.id} 
+                  className="card-product"
+                  onClick={handleCardClick}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="relative">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="img-product"
+                      />
                     ) : (
-                      <span className="price">
-                        {formatPrice(product.price)}
+                      <div className="img-placeholder">No image</div>
+                    )}
+                    <button
+                      className="card-product-favorite active"
+                      onClick={handleFavoriteClick}
+                      aria-label="Remove from favorites"
+                      style={{ position: 'absolute', top: '0.75rem', right: '0.75rem' }}
+                    >
+                      <FaHeart />
+                    </button>
+                    {product.sale && (
+                      <span className="badge-sale absolute" style={{ top: '0.5rem', left: '0.5rem' }}>
+                        SALE
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
-                  >
-                    <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-                    Add to Cart
-                  </button>
+                  <div className="padding-sm flex-col flex-1">
+                    <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm">
+                      {product.name}
+                    </h3>
+                    {product.category && (
+                      <p className="text-xs text-muted margin-bottom-sm">{product.category}</p>
+                    )}
+                    <div className="flex-row flex-gap-sm margin-bottom-md">
+                      {product.sale && product.sale_proce > 0 ? (
+                        <>
+                          <span className="price-sale">
+                            {formatPrice(product.sale_proce)}
+                          </span>
+                          <span className="price-original">
+                            {formatPrice(product.price)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="price">
+                          {formatPrice(product.price)}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleAddToCartClick}
+                      className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+                    >
+                      <FaShoppingCart style={{ marginRight: '0.5rem' }} />
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
