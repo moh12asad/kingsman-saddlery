@@ -193,3 +193,28 @@ html {
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+/* Archive button - red hover effect */
+.btn-archive {
+  transition: all 0.2s ease;
+}
+
+.btn-archive:hover:not(:disabled) {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-archive:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Flex center with gap utility */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+

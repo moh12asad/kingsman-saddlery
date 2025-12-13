@@ -36,6 +36,9 @@ import AdminBrands from "./pages/Admin/Brands.jsx";
 import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
 import EditCategory from "./pages/Admin/EditCategory.jsx";
+import OrdersManagementLayout from "./pages/Admin/OrdersManagement/index.jsx";
+import OrdersDashboard from "./pages/Admin/OrdersManagement/Dashboard.jsx";
+import AdminOrderDetail from "./pages/Admin/OrdersManagement/OrderDetail.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
 import ContactUs from "./pages/ContactUs.jsx";
@@ -80,7 +83,7 @@ const router = createBrowserRouter([
         element: <AdminLayout />,
         children: [
           { index: true, element: <AdminDashboard /> },
-          { path: "orders", element: <AdminOrders /> },
+          { path: "orders-old", element: <AdminOrders /> }, // Keep old route for backward compatibility
           { path: "users", element: <AdminUsers /> },
           { path: "users/edit/:id", element: <EditUser /> },
           { path: "products", element: <AdminProducts /> },
@@ -92,6 +95,21 @@ const router = createBrowserRouter([
           { path: "ads", element: <AdminAds /> },
           { path: "brands", element: <AdminBrands /> },
           { path: "settings", element: <AdminSettings /> },
+          // Orders Management with sidebar
+          {
+            path: "orders",
+            element: <OrdersManagementLayout />,
+            children: [
+              { index: true, element: <OrdersDashboard /> },
+              { path: "new", element: <OrdersDashboard /> },
+              { path: "in-progress", element: <OrdersDashboard /> },
+              { path: "ready", element: <OrdersDashboard /> },
+              { path: "delivery", element: <OrdersDashboard /> },
+              { path: "completed", element: <OrdersDashboard /> },
+              { path: "archived", element: <OrdersDashboard /> },
+              { path: ":id", element: <AdminOrderDetail /> },
+            ],
+          },
         ],
       },
 
