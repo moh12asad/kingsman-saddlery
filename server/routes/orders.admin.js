@@ -172,10 +172,10 @@ router.get("/my-orders", async (req, res) => {
     const { uid, email } = req.user;
     
     // Fetch orders by customerId (without orderBy to avoid index requirement)
+    // No limit - fetch all user orders
     const snap = await db
       .collection("orders")
       .where("customerId", "==", uid)
-      .limit(100)
       .get();
 
     // If no orders by customerId, try by email
@@ -184,7 +184,6 @@ router.get("/my-orders", async (req, res) => {
       const emailSnap = await db
         .collection("orders")
         .where("customerEmail", "==", email)
-        .limit(100)
         .get();
       
       orders = emailSnap.docs.map((doc) => {
@@ -277,13 +276,14 @@ router.get("/best-sellers", async (_req, res) => {
 
 router.get("/", requireRole("ADMIN"), async (_req, res) => {
   try {
+    // Get all orders, then filter active ones in memory (avoids index requirement)
+    // No limit - fetch all orders
     const snap = await db
       .collection("orders")
       .orderBy("createdAt", "desc")
-      .limit(50)
       .get();
 
-    const orders = snap.docs.map((doc) => {
+    const allOrders = snap.docs.map((doc) => {
       const data = doc.data();
       const createdAt = data.createdAt?.toDate?.() ?? null;
       const updatedAt = data.updatedAt?.toDate?.() ?? null;
@@ -294,6 +294,9 @@ router.get("/", requireRole("ADMIN"), async (_req, res) => {
         updatedAt: updatedAt ? updatedAt.toISOString() : null,
       };
     });
+
+    // Filter to only active orders (archivedAt is null or doesn't exist)
+    const orders = allOrders.filter(order => !order.archivedAt);
 
     res.json({ orders });
   } catch (error) {
@@ -401,7 +404,7 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
   }
 });
 
-// Archive order (ADMIN only) - moves order from orders to archived_orders collection
+// Archive order (ADMIN only) - sets archivedAt timestamp in the same collection
 router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -415,19 +418,17 @@ router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
 
     const orderData = orderDoc.data();
 
-    // Add archived timestamp and archivedBy
-    const archivedOrderData = {
-      ...orderData,
+    // Check if already archived
+    if (orderData.archivedAt) {
+      return res.status(400).json({ error: "Order is already archived" });
+    }
+
+    // Set archived timestamp and archivedBy (keep order in same collection)
+    await orderRef.set({
       archivedAt: admin.firestore.FieldValue.serverTimestamp(),
       archivedBy: req.user.uid,
-      originalOrderId: id, // Keep reference to original order ID
-    };
-
-    // Create the archived order in archived_orders collection
-    await db.collection("archived_orders").doc(id).set(archivedOrderData);
-
-    // Delete the order from orders collection
-    await orderRef.delete();
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
 
     res.json({ ok: true, message: "Order archived successfully" });
   } catch (error) {
@@ -436,16 +437,17 @@ router.post("/:id/archive", requireRole("ADMIN"), async (req, res) => {
   }
 });
 
-// Get archived orders (ADMIN only)
+// Get archived orders (ADMIN only) - filters from same collection
 router.get("/archived", requireRole("ADMIN"), async (_req, res) => {
   try {
+    // Get all orders, then filter archived ones in memory (avoids index requirement)
+    // No limit - fetch all orders
     const snap = await db
-      .collection("archived_orders")
-      .orderBy("archivedAt", "desc")
-      .limit(100)
+      .collection("orders")
+      .orderBy("createdAt", "desc")
       .get();
 
-    const orders = snap.docs.map((doc) => {
+    const allOrders = snap.docs.map((doc) => {
       const data = doc.data();
       const createdAt = data.createdAt?.toDate?.() ?? null;
       const updatedAt = data.updatedAt?.toDate?.() ?? null;
@@ -458,6 +460,16 @@ router.get("/archived", requireRole("ADMIN"), async (_req, res) => {
         archivedAt: archivedAt ? archivedAt.toISOString() : null,
       };
     });
+
+    // Filter to only archived orders (archivedAt is not null)
+    const orders = allOrders
+      .filter(order => order.archivedAt)
+      .sort((a, b) => {
+        // Sort by archivedAt descending
+        const dateA = a.archivedAt ? new Date(a.archivedAt).getTime() : 0;
+        const dateB = b.archivedAt ? new Date(b.archivedAt).getTime() : 0;
+        return dateB - dateA;
+      });
 
     res.json({ orders });
   } catch (error) {
