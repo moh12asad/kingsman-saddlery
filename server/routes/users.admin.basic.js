@@ -20,7 +20,38 @@ router.get("/me", async (req, res) => {
     const userDoc = await db.collection("users").doc(uid).get();
     const authUser = await adminAuth.getUser(uid);
     
-    const userData = userDoc.exists ? userDoc.data() : {};
+    let userData = userDoc.exists ? userDoc.data() : {};
+    let needsRefetch = false;
+    
+    // If user document doesn't exist, create it with CUSTOMER role
+    if (!userDoc.exists) {
+      console.log("GET /api/users/me - User document not found, creating with CUSTOMER role");
+      await db.collection("users").doc(uid).set({
+        role: "CUSTOMER",
+        active: true,
+        email: authUser.email || "",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      needsRefetch = true;
+    }
+    
+    // Ensure role is set to CUSTOMER if not already set (for existing users without roles)
+    if (!userData.role || userData.role === "") {
+      await db.collection("users").doc(uid).set({
+        role: "CUSTOMER",
+        active: userData.active !== undefined ? userData.active : true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      needsRefetch = true;
+    }
+    
+    // Refetch the document if we just created or updated it to get resolved timestamps
+    if (needsRefetch) {
+      const refreshedDoc = await db.collection("users").doc(uid).get();
+      userData = refreshedDoc.exists ? refreshedDoc.data() : {};
+    }
+    
     const response = {
       uid: authUser.uid,
       email: authUser.email,
@@ -88,6 +119,10 @@ router.put("/me", async (req, res) => {
     const { uid } = req.user;
     const { displayName, email, phone, address } = req.body;
 
+    // Get existing user document to check if role is already set
+    const userDoc = await db.collection("users").doc(uid).get();
+    const existingData = userDoc.exists ? userDoc.data() : {};
+
     // Update Firestore user document
     const updateData = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -96,6 +131,18 @@ router.put("/me", async (req, res) => {
     if (displayName !== undefined) updateData.displayName = displayName;
     if (phone !== undefined) updateData.phone = phone;
     if (address !== undefined) updateData.address = address;
+
+    // Automatically assign CUSTOMER role if user doesn't have a role yet
+    // Only assign CUSTOMER if they don't already have ADMIN, STAFF, or other roles
+    if (!existingData.role || existingData.role === "") {
+      updateData.role = "CUSTOMER";
+      updateData.active = existingData.active !== undefined ? existingData.active : true;
+    }
+
+    // Set email if not already set
+    if (!existingData.email && req.user.email) {
+      updateData.email = req.user.email;
+    }
 
     await db.collection("users").doc(uid).set(updateData, { merge: true });
 
