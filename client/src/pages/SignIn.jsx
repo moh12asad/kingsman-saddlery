@@ -1,11 +1,12 @@
 // src/pages/SignIn.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, signInWithGoogle } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
 import { useAuth } from "../context/AuthContext"; // assumes you expose user + loading
 import { resolveRole } from "../utils/resolveRole";
+import { checkProfileComplete } from "../utils/checkProfileComplete";
 
 export default function SignIn() {
     const [email, setEmail] = useState("");
@@ -16,44 +17,74 @@ export default function SignIn() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const redirectTo = searchParams.get("redirect") || null;
+    const hasRedirected = useRef(false); // Prevent multiple redirects
 
     const { user, loading: authLoading } = useAuth?.() ?? { user: null, loading: false };
 
+    // Helper function to handle post-sign-in redirect
+    const handlePostSignInRedirect = useCallback(async (userToCheck) => {
+        if (!userToCheck || hasRedirected.current) return;
+        
+        try {
+            console.log("Checking redirect for user:", userToCheck.email);
+            
+            // Check if there's a redirect parameter
+            if (redirectTo) {
+                hasRedirected.current = true;
+                navigate(redirectTo, { replace: true });
+                return;
+            }
+
+            const role = await resolveRole(userToCheck);
+            console.log("User role:", role);
+            
+            // Admins skip profile completion
+            if (role === "admin") {
+                hasRedirected.current = true;
+                navigate("/admin", { replace: true });
+                return;
+            }
+
+            // For regular users, check if profile is complete
+            console.log("Checking profile completion...");
+            const isProfileComplete = await checkProfileComplete(userToCheck);
+            console.log("Profile complete:", isProfileComplete);
+            
+            if (!isProfileComplete) {
+                hasRedirected.current = true;
+                navigate("/complete-profile", { replace: true });
+                return;
+            }
+
+            // Profile is complete, go to home
+            hasRedirected.current = true;
+            navigate("/", { replace: true });
+        } catch (e) {
+            console.error("Post-sign-in redirect failed:", e);
+            hasRedirected.current = true;
+            navigate(redirectTo || "/", { replace: true });
+        }
+    }, [navigate, redirectTo]);
+
     // If already signed in, redirect appropriately
     useEffect(() => {
-        if (authLoading || !user) return;
-
-        (async () => {
-            try {
-                // Check if there's a redirect parameter
-                if (redirectTo) {
-                    navigate(redirectTo, { replace: true });
-                    return;
-                }
-
-                const role = await resolveRole(user);// "admin" | "owner" | null
-                console.log("role: ",role)
-                if (role === "admin") {
-                    navigate("/admin", { replace: true });
-                } else if (role === "owner") {
-                    navigate("/owner", { replace: true });
-                } else {
-                    // unknown role -> send home or show a helpful message
-                    navigate("/", { replace: true });
-                }
-            } catch (e) {
-                console.error("resolveRole failed:", e);
-                navigate(redirectTo || "/", { replace: true });
-            }
-        })();
-    }, [user, authLoading, navigate, redirectTo]);
+        if (authLoading || !user || hasRedirected.current) return;
+        
+        // Small delay to ensure user document is created in backend
+        const timer = setTimeout(() => {
+            handlePostSignInRedirect(user);
+        }, 300);
+        
+        return () => clearTimeout(timer);
+    }, [user, authLoading, handlePostSignInRedirect]);
 
     async function onSubmit(e) {
         e.preventDefault();
         setErr(""); setLoading(true);
+        hasRedirected.current = false; // Reset redirect flag
         try {
-            const cred = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-            //await redirectByRole(cred.user);
+            await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+            // Redirect will be handled by the useEffect hook when user state updates
         } catch (e) {
             const code = e.code || "";
             let errorMessage = e.message || "Sign-in failed.";
@@ -79,9 +110,10 @@ export default function SignIn() {
 
     async function onGoogle() {
         setErr(""); setLoading(true);
+        hasRedirected.current = false; // Reset redirect flag
         try {
-            const cred = await signInWithGoogle(); // must return a UserCredential
-            //await redirectByRole(cred.user);
+            await signInWithGoogle(); // must return a UserCredential
+            // Redirect will be handled by the useEffect hook when user state updates
         } catch (e) {
             const code = e.code || "";
             let errorMessage = e.message || "Google sign-in failed.";

@@ -53,7 +53,7 @@ export default function AdminUsers(){
                     const userId = u.uid || u.id || `user-${index}`;
                     return (
                       <tr key={userId}>
-                        <td className="font-medium">{u.name || "-"}</td>
+                        <td className="font-medium">{u.displayName || u.name || "-"}</td>
                         <td>
                           <div className="flex items-center gap-2">
                             <span>{u.email}</span>

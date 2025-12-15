@@ -1,22 +1,42 @@
 // src/utils/resolveRole.js
-import { db } from "../lib/firebase";
-import { doc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export async function resolveRole(user) {
-    // Example strategies — customize to your app:
-    // 1) Admin by email (simple)
-    if (user.email === "moh12asad10@gmail.com") return "admin";
+    if (!user) return null;
 
-    // 2) Owner if they exist in owners (prefer doc by uid; fallback email)
-    let ownerSnap = await getDoc(doc(db, "owners", user.uid));
-    if (ownerSnap.exists()){
-        return "owner";
+    try {
+        // 1) Admin by email (simple check - no API call needed)
+        if (user.email === "moh12asad10@gmail.com") return "admin";
+
+        // 2) Get user data from backend API (which includes role)
+        const token = await user.getIdToken();
+        const res = await fetch(`${API}/api/users/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+            console.error("resolveRole: Failed to fetch user data:", res.status);
+            // Fallback to "user" if API call fails
+            return "user";
+        }
+
+        const userData = await res.json();
+        const role = userData.role;
+
+        console.log("resolveRole: User role from backend:", role);
+
+        // Map backend roles to frontend roles
+        if (role === "ADMIN") {
+            console.log("resolveRole: User is ADMIN");
+            return "admin";
+        }
+        
+        // Default to regular user (CUSTOMER role)
+        console.log("resolveRole: User is regular user (CUSTOMER)");
+        return "user";
+    } catch (error) {
+        console.error("resolveRole: Error resolving role:", error);
+        // Fallback to "user" on error
+        return "user";
     }
-
-    const q = query(collection(db, "owners"), where("email", "==", user.email));
-    const byEmail = await getDocs(q);
-    if (!byEmail.empty) return "owner";
-
-    // 3) Else regular user
-    return "user";
 }

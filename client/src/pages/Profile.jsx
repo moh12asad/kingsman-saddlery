@@ -115,12 +115,32 @@ export default function Profile() {
   }
 
   async function handleCreatePassword() {
-    if (!passwordData.newPassword || passwordData.newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+    // Clear previous errors
+    setError("");
+    
+    // Password requirements: 6-12 characters with at least one number
+    if (!passwordData.newPassword) {
+      setError("Password: Please enter a new password");
       return;
     }
+
+    if (passwordData.newPassword.length < 6) {
+      setError("Password: Password must be at least 6 characters long");
+      return;
+    }
+
+    if (passwordData.newPassword.length > 12) {
+      setError("Password: Password must be no more than 12 characters long");
+      return;
+    }
+
+    if (!/\d/.test(passwordData.newPassword)) {
+      setError("Password: Password must contain at least one number");
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError("Passwords do not match");
+      setError("Password: Passwords do not match");
       return;
     }
 
@@ -138,7 +158,7 @@ export default function Profile() {
             passwordData.newPassword
           );
           await linkWithCredential(user, credential);
-          setSuccess("Password created successfully! You can now sign in with email and password.");
+          setSuccess("Password: Password created successfully! You can now sign in with email and password.");
         } catch (linkErr) {
           if (linkErr.code === "auth/credential-already-in-use") {
             // Password provider already exists, just update password
@@ -148,9 +168,10 @@ export default function Profile() {
             );
             await reauthenticateWithCredential(user, credential);
             await updatePassword(user, passwordData.newPassword);
-            setSuccess("Password updated successfully!");
+            setSuccess("Password: Password updated successfully!");
           } else if (linkErr.code === "auth/requires-recent-login") {
-            setError("For security, please sign out and sign in again, then try creating your password.");
+            setError("Password: For security, please sign out and sign in again, then try creating your password.");
+            return; // Return early to prevent clearing the error
           } else {
             throw linkErr;
           }
@@ -158,7 +179,7 @@ export default function Profile() {
       } else {
         // For existing password users, need to reauthenticate first
         if (!passwordData.currentPassword) {
-          setError("Please enter your current password");
+          setError("Password: Please enter your current password");
           return;
         }
         const credential = EmailAuthProvider.credential(
@@ -167,22 +188,26 @@ export default function Profile() {
         );
         await reauthenticateWithCredential(user, credential);
         await updatePassword(user, passwordData.newPassword);
-        setSuccess("Password updated successfully!");
+        setSuccess("Password: Password updated successfully!");
       }
 
+      // Only clear error and reset form on actual success
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setShowPasswordForm(false);
+      setError(""); // Clear error on success
     } catch (err) {
       console.error("Password creation error:", err);
+      let errorMessage = "";
       if (err.code === "auth/weak-password") {
-        setError("Password is too weak. Please use a stronger password.");
+        errorMessage = "Password is too weak. Please use a stronger password.";
       } else if (err.code === "auth/wrong-password") {
-        setError("Current password is incorrect");
+        errorMessage = "Current password is incorrect";
       } else if (err.code === "auth/requires-recent-login") {
-        setError("Please sign out and sign in again before changing your password.");
+        errorMessage = "Please sign out and sign in again before changing your password.";
       } else {
-        setError(err.message || "Failed to create password");
+        errorMessage = err.message || "Failed to create password";
       }
+      setError(`Password: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -243,13 +268,13 @@ export default function Profile() {
         <div className="container-main padding-y-xl">
           <h1 className="heading-1 margin-bottom-lg">My Profile</h1>
 
-          {error && (
+          {error && !error.includes("Password") && (
             <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
               <p className="text-error">{error}</p>
             </div>
           )}
 
-          {success && (
+          {success && !success.includes("Password") && (
             <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
               <p style={{ color: "#16a34a" }}>{success}</p>
             </div>
@@ -370,6 +395,13 @@ export default function Profile() {
               Password
             </h2>
             
+            {/* Password validation errors - shown above password section */}
+            {error && error.includes("Password") && (
+              <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+                <p className="text-error">{error}</p>
+              </div>
+            )}
+            
             {isGoogleUser && !showPasswordForm && (
               <div className="margin-top-md">
                 <p className="text-muted margin-bottom-md">
@@ -409,7 +441,12 @@ export default function Profile() {
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm">New Password</label>
+                  <label className="text-sm font-medium margin-bottom-sm">
+                    New Password
+                    <span className="text-xs text-muted" style={{ marginLeft: "0.5rem" }}>
+                      (6-12 characters, must include at least one number)
+                    </span>
+                  </label>
                   <div className="relative">
                     <input
                       type={showPasswords.new ? "text" : "password"}
@@ -473,6 +510,13 @@ export default function Profile() {
                     Cancel
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Password success messages - shown under password section */}
+            {success && success.includes("Password:") && (
+              <div className="card padding-md margin-top-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
+                <p style={{ color: "#16a34a" }}>{success.replace("Password: ", "")}</p>
               </div>
             )}
           </div>
