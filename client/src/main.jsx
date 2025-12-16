@@ -46,6 +46,9 @@ import ContactUs from "./pages/ContactUs.jsx";
 import ShippingReturns from "./pages/ShippingReturns.jsx";
 import TermsConditions from "./pages/TermsConditions.jsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import NotFound from "./pages/NotFound.jsx";
+import ServerError from "./pages/ServerError.jsx";
+import Unauthorized from "./pages/Unauthorized.jsx";
 
 import "./lib/firebase"; // make sure Firebase init runs
 import { AuthProvider } from "./context/AuthContext.jsx";
@@ -78,6 +81,8 @@ const router = createBrowserRouter([
       { path: "shipping", element: <ShippingReturns /> },
       { path: "terms", element: <TermsConditions /> },
       { path: "privacy", element: <PrivacyPolicy /> },
+      { path: "401", element: <Unauthorized /> },
+      { path: "500", element: <ServerError /> },
 
       // ADMIN (nested under App layout)
       {
@@ -115,8 +120,8 @@ const router = createBrowserRouter([
         ],
       },
 
-      // catch-all
-      { path: "*", element: <Navigate to="/" replace /> },
+      // catch-all - 404 page
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);
