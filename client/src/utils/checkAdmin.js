@@ -1,6 +1,6 @@
 // client/src/utils/checkAdmin.js
 import { auth, db } from "../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDocFromServer, getDocFromCache } from "firebase/firestore";
 
 /**
  * Check if the current user is an admin by querying Firestore users collection
@@ -12,14 +12,24 @@ export async function checkAdmin() {
     if (!user) return false;
 
     // Check Firestore users collection for admin role
-    const userDoc = await getDoc(doc(db, "users", user.uid));
+    // Use getDocFromServer to force network read and avoid offline cache issues
+    const userDoc = await getDocFromServer(doc(db, "users", user.uid));
     if (!userDoc.exists()) return false;
 
     const userData = userDoc.data();
     return userData?.role === "ADMIN" && userData?.active !== false;
   } catch (error) {
     console.error("Error checking admin status:", error);
-    return false;
+    // If server read fails (e.g., network issue), try cache as fallback
+    try {
+      const userDoc = await getDocFromCache(doc(db, "users", user.uid));
+      if (!userDoc.exists()) return false;
+      const userData = userDoc.data();
+      return userData?.role === "ADMIN" && userData?.active !== false;
+    } catch (cacheError) {
+      console.error("Error checking admin status from cache:", cacheError);
+      return false;
+    }
   }
 }
 
