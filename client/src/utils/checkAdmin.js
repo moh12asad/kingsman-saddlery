@@ -19,16 +19,19 @@ export async function checkAdmin() {
     const userData = userDoc.data();
     return userData?.role === "ADMIN" && userData?.active !== false;
   } catch (error) {
-    // If server read fails (e.g., network issue or offline), try cache as fallback
-    if (error.code === 'unavailable' || error.message?.includes('offline')) {
-      console.warn("Network unavailable, checking admin status from cache:", error.message);
+    // If server read fails due to network/offline, try cache as fallback
+    if (error.code === 'unavailable' || error.code === 'failed-precondition' || error.message?.includes('offline')) {
       try {
         const userDoc = await getDocFromCache(doc(db, "users", user.uid));
         if (!userDoc.exists()) return false;
         const userData = userDoc.data();
         return userData?.role === "ADMIN" && userData?.active !== false;
       } catch (cacheError) {
-        console.error("Error checking admin status from cache:", cacheError);
+        // Document not in cache is expected - just return false silently
+        // Only log actual errors (not cache misses)
+        if (cacheError.code !== 'unavailable' && !cacheError.message?.includes('cache')) {
+          console.error("Error checking admin status from cache:", cacheError);
+        }
         return false;
       }
     }
