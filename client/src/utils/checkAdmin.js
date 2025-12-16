@@ -1,24 +1,52 @@
 // client/src/utils/checkAdmin.js
-import { auth, db } from "../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { auth } from "../lib/firebase";
+
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 /**
- * Check if the current user is an admin by querying Firestore users collection
+ * Check if the current user is an admin by querying the backend API
+ * This avoids Firestore security rules issues and is more secure
  * @returns {Promise<boolean>} True if user is admin, false otherwise
  */
 export async function checkAdmin() {
+  const user = auth.currentUser;
+  if (!user) {
+    console.log("[checkAdmin] No authenticated user");
+    return false;
+  }
+
+  console.log("[checkAdmin] Checking admin status for user:", user.uid, user.email);
+
   try {
-    const user = auth.currentUser;
-    if (!user) return false;
+    // Get user data from backend API (which includes role)
+    const token = await user.getIdToken();
+    console.log("[checkAdmin] Fetching user data from backend API...");
+    
+    const res = await fetch(`${API}/api/users/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-    // Check Firestore users collection for admin role
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (!userDoc.exists()) return false;
+    if (!res.ok) {
+      console.error("[checkAdmin] Failed to fetch user data:", res.status, res.statusText);
+      return false;
+    }
 
-    const userData = userDoc.data();
-    return userData?.role === "ADMIN" && userData?.active !== false;
+    const userData = await res.json();
+    console.log("[checkAdmin] User data from API:", {
+      role: userData.role,
+      active: userData.active,
+      email: userData.email
+    });
+
+    const isAdmin = userData.role === "ADMIN" && userData.active !== false;
+    console.log("[checkAdmin] Admin check result:", isAdmin, {
+      roleMatch: userData.role === "ADMIN",
+      activeCheck: userData.active !== false
+    });
+
+    return isAdmin;
   } catch (error) {
-    console.error("Error checking admin status:", error);
+    console.error("[checkAdmin] Error checking admin status:", error);
     return false;
   }
 }
