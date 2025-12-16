@@ -1,9 +1,11 @@
 // client/src/utils/checkAdmin.js
-import { auth, db } from "../lib/firebase";
-import { doc, getDocFromServer, getDocFromCache } from "firebase/firestore";
+import { auth } from "../lib/firebase";
+
+const API = import.meta.env.VITE_API_BASE_URL || "";
 
 /**
- * Check if the current user is an admin by querying Firestore users collection
+ * Check if the current user is an admin by querying the backend API
+ * This avoids Firestore security rules issues and is more secure
  * @returns {Promise<boolean>} True if user is admin, false otherwise
  */
 export async function checkAdmin() {
@@ -16,65 +18,34 @@ export async function checkAdmin() {
   console.log("[checkAdmin] Checking admin status for user:", user.uid, user.email);
 
   try {
-    // Check Firestore users collection for admin role
-    // Use getDocFromServer to force network read and avoid offline cache issues
-    console.log("[checkAdmin] Attempting server read from users collection...");
-    const userDoc = await getDocFromServer(doc(db, "users", user.uid));
+    // Get user data from backend API (which includes role)
+    const token = await user.getIdToken();
+    console.log("[checkAdmin] Fetching user data from backend API...");
     
-    if (!userDoc.exists()) {
-      console.warn("[checkAdmin] User document does not exist in Firestore for:", user.uid);
+    const res = await fetch(`${API}/api/users/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!res.ok) {
+      console.error("[checkAdmin] Failed to fetch user data:", res.status, res.statusText);
       return false;
     }
 
-    const userData = userDoc.data();
-    console.log("[checkAdmin] User document data:", {
-      role: userData?.role,
-      active: userData?.active,
-      email: userData?.email,
-      fullData: userData
+    const userData = await res.json();
+    console.log("[checkAdmin] User data from API:", {
+      role: userData.role,
+      active: userData.active,
+      email: userData.email
     });
 
-    const isAdmin = userData?.role === "ADMIN" && userData?.active !== false;
+    const isAdmin = userData.role === "ADMIN" && userData.active !== false;
     console.log("[checkAdmin] Admin check result:", isAdmin, {
-      roleMatch: userData?.role === "ADMIN",
-      activeCheck: userData?.active !== false
+      roleMatch: userData.role === "ADMIN",
+      activeCheck: userData.active !== false
     });
 
     return isAdmin;
   } catch (error) {
-    console.error("[checkAdmin] Server read error:", {
-      code: error.code,
-      message: error.message,
-      error: error
-    });
-
-    // If server read fails due to network/offline, try cache as fallback
-    if (error.code === 'unavailable' || error.code === 'failed-precondition' || error.message?.includes('offline')) {
-      console.log("[checkAdmin] Network unavailable, trying cache fallback...");
-      try {
-        const userDoc = await getDocFromCache(doc(db, "users", user.uid));
-        if (!userDoc.exists()) {
-          console.warn("[checkAdmin] User document not in cache");
-          return false;
-        }
-        const userData = userDoc.data();
-        console.log("[checkAdmin] Cache data:", {
-          role: userData?.role,
-          active: userData?.active
-        });
-        const isAdmin = userData?.role === "ADMIN" && userData?.active !== false;
-        console.log("[checkAdmin] Cache admin check result:", isAdmin);
-        return isAdmin;
-      } catch (cacheError) {
-        // Document not in cache is expected - just return false silently
-        // Only log actual errors (not cache misses)
-        if (cacheError.code !== 'unavailable' && !cacheError.message?.includes('cache')) {
-          console.error("[checkAdmin] Error checking admin status from cache:", cacheError);
-        }
-        return false;
-      }
-    }
-    // For other errors, log and return false
     console.error("[checkAdmin] Error checking admin status:", error);
     return false;
   }
