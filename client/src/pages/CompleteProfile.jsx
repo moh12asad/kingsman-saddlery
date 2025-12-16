@@ -143,6 +143,8 @@ export default function CompleteProfile() {
           errorMessage += "Please allow location access or enter your address manually.";
         } else if (err.code === 2) {
           errorMessage += "Location unavailable. Please enter your address manually.";
+        } else if (err.code === 3) {
+          errorMessage += "Location request timed out. Please try again or enter your address manually.";
         } else {
           errorMessage += "Please enter your address manually.";
         }
@@ -150,9 +152,9 @@ export default function CompleteProfile() {
         setLocationLoading(false);
       },
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        enableHighAccuracy: false, // Set to false to reduce timeout issues
+        timeout: 20000, // Increased to 20 seconds
+        maximumAge: 60000 // Allow cached location up to 1 minute old
       }
     );
   }
