@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { checkAdmin } from "../../utils/checkAdmin";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -65,6 +66,12 @@ export default function CreateProduct(){
     // Ensure user is authenticated
     if (!auth.currentUser) {
       throw new Error("You must be signed in to upload images");
+    }
+
+    // Check if user is admin
+    const isAdmin = await checkAdmin();
+    if (!isAdmin) {
+      throw new Error("Only administrators can upload product images");
     }
     
     // Verify file type
