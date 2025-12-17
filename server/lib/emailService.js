@@ -9,6 +9,15 @@ function getTransporter() {
     return transporter;
   }
 
+  // Detect hosting environment
+  const isRender = process.env.RENDER === 'true' || process.env.RENDER_SERVICE_ID !== undefined;
+  const isRailway = process.env.RAILWAY_ENVIRONMENT !== undefined;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hostEnv = isRender ? 'Render' : isRailway ? 'Railway' : isProduction ? 'Production' : 'Local';
+  
+  console.log(`[EMAIL] Environment detected: ${hostEnv}`);
+  console.log(`[EMAIL] NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+
   // Configure email service (can be Gmail, SendGrid, SMTP, etc.)
   // For development, you can use Gmail or a service like Mailtrap
   const emailConfig = {
@@ -20,6 +29,12 @@ function getTransporter() {
       pass: process.env.SMTP_PASS,
     },
   };
+
+  console.log(`[EMAIL] SMTP Configuration:`);
+  console.log(`[EMAIL]   Host: ${emailConfig.host}`);
+  console.log(`[EMAIL]   Port: ${emailConfig.port}`);
+  console.log(`[EMAIL]   Secure: ${emailConfig.secure}`);
+  console.log(`[EMAIL]   User: ${emailConfig.auth.user ? emailConfig.auth.user.substring(0, 3) + '***' : 'NOT SET'}`);
 
   // If no SMTP config, return null (emails won't be sent)
   if (!emailConfig.auth.user || !emailConfig.auth.pass) {
@@ -33,6 +48,13 @@ function getTransporter() {
   }
 
   transporter = nodemailer.createTransport(emailConfig);
+  
+  // Add event listeners for connection diagnostics
+  transporter.on('token', (token) => {
+    console.log(`[EMAIL] OAuth token received`);
+  });
+
+  console.log(`[EMAIL] Transporter created successfully`);
   return transporter;
 }
 
@@ -158,11 +180,18 @@ export function generateOrderEmailTemplate(orderData) {
  * Send order confirmation email
  */
 export async function sendOrderConfirmationEmail(orderData) {
+  const startTime = Date.now();
+  const timestamp = new Date().toISOString();
+  
   try {
+    console.log(`[EMAIL] ===== Email Send Started at ${timestamp} =====`);
+    console.log(`[EMAIL] Order Number: ${orderData.orderNumber}`);
+    console.log(`[EMAIL] Recipient: ${orderData.customerEmail}`);
+    
     const emailTransporter = getTransporter();
     
     if (!emailTransporter) {
-      console.warn("Email service not configured. Email not sent.");
+      console.warn("[EMAIL] Email service not configured. Email not sent.");
       return { success: false, error: "Email service not configured" };
     }
 
@@ -184,12 +213,106 @@ export async function sendOrderConfirmationEmail(orderData) {
       text: `Order Confirmation #${orderNumber}\n\nDear ${customerName},\n\nThank you for your order! We've received your order and will process it shortly.\n\nOrder Number: #${orderNumber}\nTotal: $${orderData.total.toFixed(2)}\n\nBest regards,\nKingsman Saddlery Team`,
     };
 
+    console.log(`[EMAIL] Attempting to connect to SMTP server...`);
+    console.log(`[EMAIL] SMTP Target: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`);
+    const connectionStartTime = Date.now();
+    
+    // Verify connection first (this will help diagnose connection issues)
+    try {
+      await emailTransporter.verify();
+      const verifyTime = Date.now() - connectionStartTime;
+      console.log(`[EMAIL] ✓ SMTP connection verified successfully (${verifyTime}ms)`);
+    } catch (verifyError) {
+      const verifyTime = Date.now() - connectionStartTime;
+      console.error(`[EMAIL] ✗ SMTP connection verification failed after ${verifyTime}ms`);
+      console.error(`[EMAIL] Verification Error Code: ${verifyError.code || 'N/A'}`);
+      console.error(`[EMAIL] Verification Error Message: ${verifyError.message}`);
+      console.error(`[EMAIL] Verification Error Stack: ${verifyError.stack}`);
+      
+      // Check for specific error types that indicate Render/hosting issues
+      if (verifyError.code === 'ETIMEDOUT' || verifyError.code === 'ECONNRESET' || verifyError.code === 'ECONNREFUSED') {
+        console.error(`[EMAIL] ⚠️  NETWORK ERROR DETECTED - This suggests a hosting/firewall issue:`);
+        console.error(`[EMAIL]    Error Code: ${verifyError.code}`);
+        console.error(`[EMAIL]    This could indicate:`);
+        console.error(`[EMAIL]    1. Render/Railway blocking outbound SMTP connections`);
+        console.error(`[EMAIL]    2. Firewall blocking port ${process.env.SMTP_PORT}`);
+        console.error(`[EMAIL]    3. Network routing issue from hosting provider`);
+      }
+      
+      throw verifyError;
+    }
+
+    console.log(`[EMAIL] Sending email to ${customerEmail}...`);
+    const sendStartTime = Date.now();
+    
     const info = await emailTransporter.sendMail(mailOptions);
-    console.log("Order confirmation email sent:", info.messageId);
+    const sendTime = Date.now() - sendStartTime;
+    const totalTime = Date.now() - startTime;
+    
+    console.log(`[EMAIL] ✓ Email sent successfully!`);
+    console.log(`[EMAIL]   Message ID: ${info.messageId}`);
+    console.log(`[EMAIL]   Send Time: ${sendTime}ms`);
+    console.log(`[EMAIL]   Total Time: ${totalTime}ms`);
+    console.log(`[EMAIL] ===== Email Send Completed =====`);
     
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("Error sending order confirmation email:", error);
+    const totalTime = Date.now() - startTime;
+    console.error(`[EMAIL] ===== Email Send Failed after ${totalTime}ms =====`);
+    console.error(`[EMAIL] Error Type: ${error.constructor.name}`);
+    console.error(`[EMAIL] Error Code: ${error.code || 'N/A'}`);
+    console.error(`[EMAIL] Error Message: ${error.message}`);
+    console.error(`[EMAIL] Error Stack: ${error.stack}`);
+    
+    // Detailed error analysis for common issues
+    if (error.code) {
+      console.error(`[EMAIL] Error Code Analysis:`);
+      switch (error.code) {
+        case 'ETIMEDOUT':
+          console.error(`[EMAIL]   ETIMEDOUT: Connection timed out`);
+          console.error(`[EMAIL]   Possible causes:`);
+          console.error(`[EMAIL]     - Render/Railway blocking SMTP port ${process.env.SMTP_PORT}`);
+          console.error(`[EMAIL]     - Gmail SMTP server not reachable from hosting IP`);
+          console.error(`[EMAIL]     - Network routing issue`);
+          break;
+        case 'ECONNREFUSED':
+          console.error(`[EMAIL]   ECONNREFUSED: Connection refused`);
+          console.error(`[EMAIL]   Possible causes:`);
+          console.error(`[EMAIL]     - Port ${process.env.SMTP_PORT} is blocked by hosting provider`);
+          console.error(`[EMAIL]     - SMTP server is down or unreachable`);
+          break;
+        case 'ECONNRESET':
+          console.error(`[EMAIL]   ECONNRESET: Connection reset by peer`);
+          console.error(`[EMAIL]   Possible causes:`);
+          console.error(`[EMAIL]     - Firewall closing connection`);
+          console.error(`[EMAIL]     - Gmail blocking connection from hosting IP`);
+          break;
+        case 'EHOSTUNREACH':
+          console.error(`[EMAIL]   EHOSTUNREACH: Host unreachable`);
+          console.error(`[EMAIL]   Possible causes:`);
+          console.error(`[EMAIL]     - DNS resolution issue`);
+          console.error(`[EMAIL]     - Network routing problem from hosting provider`);
+          break;
+        case 'ENOTFOUND':
+          console.error(`[EMAIL]   ENOTFOUND: DNS lookup failed`);
+          console.error(`[EMAIL]   Possible causes:`);
+          console.error(`[EMAIL]     - DNS resolution issue on hosting provider`);
+          console.error(`[EMAIL]     - Invalid SMTP host: ${process.env.SMTP_HOST}`);
+          break;
+        default:
+          console.error(`[EMAIL]   ${error.code}: Check error message for details`);
+      }
+    }
+    
+    // Check if it's a Gmail-specific error
+    if (error.response) {
+      console.error(`[EMAIL] SMTP Server Response:`);
+      console.error(`[EMAIL]   Code: ${error.responseCode || 'N/A'}`);
+      console.error(`[EMAIL]   Message: ${error.response || 'N/A'}`);
+    }
+    
+    console.error(`[EMAIL] ===== End Error Details =====`);
+    
     return { success: false, error: error.message };
   }
 }

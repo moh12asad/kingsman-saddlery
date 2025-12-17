@@ -6,6 +6,13 @@ const router = Router();
 
 // Send order confirmation email
 router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
+  const requestStartTime = Date.now();
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  console.log(`[EMAIL-ROUTE] ===== Email Request Started [${requestId}] =====`);
+  console.log(`[EMAIL-ROUTE] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[EMAIL-ROUTE] User: ${req.user?.email || req.user?.uid || 'unknown'}`);
+  
   try {
     const {
       orderNumber,
@@ -19,8 +26,14 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       metadata = {}
     } = req.body;
 
+    console.log(`[EMAIL-ROUTE] Request Body:`);
+    console.log(`[EMAIL-ROUTE]   Order Number: ${orderNumber || 'not provided'}`);
+    console.log(`[EMAIL-ROUTE]   Customer Email: ${customerEmail || 'not provided'}`);
+    console.log(`[EMAIL-ROUTE]   Items Count: ${items?.length || 0}`);
+
     // Validate required fields
     if (!customerEmail || !items || !Array.isArray(items) || items.length === 0) {
+      console.warn(`[EMAIL-ROUTE] Validation failed: Missing required fields`);
       return res.status(400).json({ 
         error: "Missing required fields: customerEmail, items" 
       });
@@ -82,9 +95,20 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       status
     };
 
+    console.log(`[EMAIL-ROUTE] Calling sendOrderConfirmationEmail...`);
+    const emailStartTime = Date.now();
+    
     const result = await sendOrderConfirmationEmail(orderData);
+    
+    const emailTime = Date.now() - emailStartTime;
+    const totalRequestTime = Date.now() - requestStartTime;
+    
+    console.log(`[EMAIL-ROUTE] Email function completed in ${emailTime}ms`);
+    console.log(`[EMAIL-ROUTE] Total request time: ${totalRequestTime}ms`);
 
     if (result.success) {
+      console.log(`[EMAIL-ROUTE] ✓ Request successful [${requestId}]`);
+      console.log(`[EMAIL-ROUTE] ===== Email Request Completed Successfully =====`);
       res.json({ 
         success: true, 
         message: "Order confirmation email sent successfully",
@@ -92,13 +116,24 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
         messageId: result.messageId
       });
     } else {
+      console.error(`[EMAIL-ROUTE] ✗ Request failed [${requestId}]`);
+      console.error(`[EMAIL-ROUTE] Error: ${result.error}`);
+      console.error(`[EMAIL-ROUTE] ===== Email Request Failed =====`);
       res.status(500).json({ 
         error: "Failed to send email", 
         details: result.error 
       });
     }
   } catch (error) {
-    console.error("Error in order confirmation email endpoint:", error);
+    const totalRequestTime = Date.now() - requestStartTime;
+    console.error(`[EMAIL-ROUTE] ===== Unhandled Error in Email Route [${requestId}] =====`);
+    console.error(`[EMAIL-ROUTE] Error after ${totalRequestTime}ms`);
+    console.error(`[EMAIL-ROUTE] Error Type: ${error.constructor.name}`);
+    console.error(`[EMAIL-ROUTE] Error Code: ${error.code || 'N/A'}`);
+    console.error(`[EMAIL-ROUTE] Error Message: ${error.message}`);
+    console.error(`[EMAIL-ROUTE] Error Stack: ${error.stack}`);
+    console.error(`[EMAIL-ROUTE] ===== End Route Error =====`);
+    
     res.status(500).json({ 
       error: "Failed to send order confirmation email", 
       details: error.message 
