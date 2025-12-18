@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { auth } from "../../lib/firebase";
+import { FaCalendarAlt } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -74,6 +75,45 @@ export default function EditUser() {
       setError(err.message || "Unable to update user");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return "N/A";
+    try {
+      // Handle different date formats
+      let date;
+      if (typeof dateString === 'string') {
+        date = new Date(dateString);
+      } else if (dateString._seconds) {
+        // Firestore timestamp format with _seconds (serialized JSON)
+        date = new Date(dateString._seconds * 1000);
+      } else if (dateString.seconds) {
+        // Firestore timestamp format with seconds
+        date = new Date(dateString.seconds * 1000);
+      } else if (dateString.toDate) {
+        // Firestore Timestamp object
+        date = dateString.toDate();
+      } else {
+        date = new Date(dateString);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date:", dateString);
+        return "N/A";
+      }
+      
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (err) {
+      console.error("Error formatting date:", err, dateString);
+      return "N/A";
     }
   }
 
@@ -185,6 +225,25 @@ export default function EditUser() {
           {user.emailVerified && (
             <div className="grid-col-span-full md:col-span-2">
               <span className="badge badge-success">Email Verified</span>
+            </div>
+          )}
+
+          {(user.createdAt || user.metadata?.creationTime) && (
+            <div>
+              <div className="form-group">
+                <label className="form-label flex-row flex-gap-sm">
+                  <FaCalendarAlt />
+                  Account Created
+                </label>
+                <input
+                  className="input"
+                  style={{ background: '#f9fafb' }}
+                  value={formatDate(user.createdAt || user.metadata?.creationTime)}
+                  disabled
+                  readOnly
+                />
+                <p className="form-help">User account creation date (read-only)</p>
+              </div>
             </div>
           )}
         </div>

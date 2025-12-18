@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -41,14 +41,105 @@ export default function OrderConfirmation() {
   const [error, setError] = useState("");
   const [emailSuccess, setEmailSuccess] = useState("");
   const [deliveryType, setDeliveryType] = useState("delivery"); // "delivery" or "pickup"
+  const [discountInfo, setDiscountInfo] = useState(null); // Store discount information
+  const [calculatedTotal, setCalculatedTotal] = useState(null); // Store calculated total with discount
+  const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
+  const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
   
   // Delivery cost constant (50 ILS)
   const DELIVERY_COST = 50;
+
+  // SECURITY: Use ref to track the current request's deliveryType to prevent race conditions
+  // If deliveryType changes while a request is in flight, we'll ignore the stale response
+  const currentRequestRef = useRef(null);
+
+  // Calculate total with discount - defined before useEffect to avoid initialization error
+  const calculateTotalWithDiscount = useCallback(async () => {
+    // Generate a unique request ID for this calculation
+    const requestId = Symbol();
+    currentRequestRef.current = requestId;
+    
+    // Capture the deliveryType at the start of this request
+    const requestDeliveryType = deliveryType;
+    
+    try {
+      setCalculatingDiscount(true);
+      setDiscountCalculationError(null);
+      
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        // Only update state if this is still the current request
+        if (currentRequestRef.current === requestId) {
+          setDiscountCalculationError("Authentication required");
+          setCalculatingDiscount(false);
+        }
+        return;
+      }
+
+      const subtotal = getTotalPrice();
+      const deliveryCost = requestDeliveryType === "delivery" ? DELIVERY_COST : 0;
+
+      const res = await fetch(`${API}/api/payment/calculate-total`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subtotal,
+          tax: 0,
+          deliveryCost
+        })
+      });
+
+      // SECURITY: Only update state if this is still the current request
+      // This prevents race conditions where an old request overwrites newer state
+      if (currentRequestRef.current !== requestId) {
+        console.log("Ignoring stale discount calculation response (deliveryType changed)");
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        // Double-check we're still the current request before updating state
+        if (currentRequestRef.current === requestId) {
+          setDiscountInfo(data.discount);
+          setCalculatedTotal(data.total);
+          setDiscountCalculationError(null);
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.error || "Failed to calculate discount";
+        console.error("Discount calculation failed:", errorMessage);
+        // Only update state if this is still the current request
+        if (currentRequestRef.current === requestId) {
+          setDiscountCalculationError(errorMessage);
+        }
+      }
+    } catch (err) {
+      // Only update state if this is still the current request
+      if (currentRequestRef.current === requestId) {
+        console.error("Error calculating total with discount:", err);
+        setDiscountCalculationError(err.message || "Failed to calculate discount");
+      }
+    } finally {
+      // Only update loading state if this is still the current request
+      if (currentRequestRef.current === requestId) {
+        setCalculatingDiscount(false);
+      }
+    }
+  }, [deliveryType, getTotalPrice]);
 
   useEffect(() => {
     if (!user) return;
     loadUserProfile();
   }, [user]);
+
+  // Calculate total with discount when cart items or delivery type changes
+  useEffect(() => {
+    if (!user || !isLoaded || cartItems.length === 0) return;
+    calculateTotalWithDiscount();
+  }, [user, cartItems, deliveryType, isLoaded, calculateTotalWithDiscount]);
 
   useEffect(() => {
     // Redirect to cart if cart is empty
@@ -127,7 +218,16 @@ export default function OrderConfirmation() {
 
   const subtotal = getTotalPrice();
   const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
-  const total = subtotal + deliveryCost;
+  
+  // SECURITY: Only use calculated total if discount calculation has completed successfully
+  // If calculation is in progress or failed, we cannot proceed with payment
+  // This prevents price mismatches between payment and order creation
+  const isDiscountCalculationReady = !calculatingDiscount && !discountCalculationError && calculatedTotal !== null;
+  const total = isDiscountCalculationReady ? calculatedTotal : null; // null means not ready for payment
+  const subtotalAfterDiscount = discountInfo ? (subtotal - discountInfo.amount) : subtotal;
+  
+  // Check if payment can proceed (discount calculation must be complete)
+  const canProceedToPayment = isDiscountCalculationReady && total !== null;
   
   // Check if address has been changed from profile
   const isAddressChanged = JSON.stringify(orderAddress) !== JSON.stringify(profileData.address);
@@ -167,13 +267,34 @@ export default function OrderConfirmation() {
       setError("");
       setEmailSuccess("");
       
+      // SECURITY: Ensure discount calculation has completed before proceeding
+      if (calculatingDiscount) {
+        setError("Please wait while we calculate your discount...");
+        setSendingEmail(false);
+        return;
+      }
+      
+      if (discountCalculationError) {
+        setError(`Unable to calculate discount: ${discountCalculationError}. Please refresh the page and try again.`);
+        setSendingEmail(false);
+        return;
+      }
+      
+      if (!canProceedToPayment || total === null) {
+        setError("Unable to calculate order total. Please refresh the page and try again.");
+        setSendingEmail(false);
+        return;
+      }
+      
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
         setError("You must be signed in to proceed");
+        setSendingEmail(false);
         return;
       }
 
       // Prepare order data
+      // SECURITY: total is guaranteed to include discount at this point (validated above)
       const orderData = {
         customerName: profileData.displayName || user?.displayName || "Customer",
         customerEmail: profileData.email || user?.email,
@@ -187,13 +308,14 @@ export default function OrderConfirmation() {
           price: item.price,
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
-        total: total,
-        subtotal: subtotal,
+        total: total, // This is guaranteed to be the correct total with discount
+        subtotal: subtotalAfterDiscount, // Use subtotal after discount
+        subtotalBeforeDiscount: subtotal, // Original subtotal before discount
         tax: 0,
         status: "pending"
       };
 
-      // Step 1: Process payment first
+      // Step 1: Process payment first (use calculated total with discount)
       const paymentRes = await fetch(`${API}/api/payment/process`, {
         method: "POST",
         headers: {
@@ -203,6 +325,9 @@ export default function OrderConfirmation() {
         body: JSON.stringify({
           amount: total,
           currency: "ILS",
+          subtotal: subtotal,
+          tax: 0,
+          deliveryCost: deliveryCost,
           // Add other payment method details as needed
         })
       });
@@ -253,6 +378,10 @@ export default function OrderConfirmation() {
           orderNumber: orderResult.id,
           orderDate: new Date().toLocaleDateString(),
           status: "new",
+          subtotal: subtotalAfterDiscount,
+          subtotalBeforeDiscount: subtotal,
+          discount: discountInfo,
+          tax: 0,
           metadata: {
             paymentMethod: "credit_card",
             deliveryType: deliveryType,
@@ -312,6 +441,22 @@ export default function OrderConfirmation() {
         <div className="container-main padding-y-xl">
           <h1 className="heading-1 margin-bottom-lg">Order Confirmation</h1>
 
+          {discountInfo && (
+            <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: "1.25rem" }}>🎉</span>
+                <div>
+                  <p style={{ color: "#16a34a", fontWeight: "600" }}>
+                    Congratulations! You're eligible for a {discountInfo.percentage}% new user discount!
+                  </p>
+                  <p style={{ color: "#15803d", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                    Save {formatPrice(discountInfo.amount)} on your first order (valid for first 3 months)
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
               <p className="text-error">{error}</p>
@@ -368,20 +513,53 @@ export default function OrderConfirmation() {
                   ))}
                 </div>
                 <div className="margin-top-md padding-top-md border-top space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted">Subtotal:</span>
-                    <span className="text-sm font-semibold">{formatPrice(subtotal)}</span>
-                  </div>
-                  {deliveryType === "delivery" && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted">Delivery:</span>
-                      <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
+                  {calculatingDiscount ? (
+                    <div className="flex justify-center items-center padding-y-md">
+                      <div className="loading-spinner mx-auto"></div>
+                      <p className="text-sm text-muted margin-top-sm">Calculating discount...</p>
                     </div>
+                  ) : discountCalculationError ? (
+                    <div className="card padding-sm margin-bottom-sm" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+                      <p className="text-error text-sm">Unable to calculate discount. Please refresh the page.</p>
+                    </div>
+                  ) : total === null ? (
+                    <div className="flex justify-center items-center padding-y-md">
+                      <p className="text-sm text-muted">Loading order total...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted">Subtotal:</span>
+                        <span className="text-sm font-semibold">{formatPrice(subtotal)}</span>
+                      </div>
+                      {discountInfo && (
+                        <div className="flex justify-between items-center" style={{ color: "#22c55e" }}>
+                          <span className="text-sm font-semibold">
+                            New User Discount ({discountInfo.percentage}%):
+                          </span>
+                          <span className="text-sm font-semibold">
+                            -{formatPrice(discountInfo.amount)}
+                          </span>
+                        </div>
+                      )}
+                      {discountInfo && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted">Subtotal after discount:</span>
+                          <span className="text-sm font-semibold">{formatPrice(subtotalAfterDiscount)}</span>
+                        </div>
+                      )}
+                      {deliveryType === "delivery" && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted">Delivery:</span>
+                          <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center padding-top-sm border-top">
+                        <span className="font-semibold">Total:</span>
+                        <span className="text-lg font-bold">{formatPrice(total)}</span>
+                      </div>
+                    </>
                   )}
-                  <div className="flex justify-between items-center padding-top-sm border-top">
-                    <span className="font-semibold">Total:</span>
-                    <span className="text-lg font-bold">{formatPrice(total)}</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -604,11 +782,15 @@ export default function OrderConfirmation() {
             </Link>
             <button
               className="btn-primary"
-              disabled={!hasCompleteAddress || !profileData.phone || sendingEmail}
+              disabled={!hasCompleteAddress || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
               onClick={handleProceedToPayment}
             >
               {sendingEmail 
                 ? "Processing..."
+                : calculatingDiscount
+                ? "Calculating Discount..."
+                : !canProceedToPayment
+                ? "Loading Order Total..."
                 : !hasCompleteAddress || !profileData.phone
                 ? "Complete Information to Continue"
                 : `Proceed to Payment (${formatPrice(total)})`}

@@ -503,12 +503,48 @@ export default function AdminOrderDetail() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal:</span>
-                <span className="font-semibold">{formatPrice(Number(order.subtotal || 0))}</span>
+                <span className="font-semibold">
+                  {formatPrice(Number(order.subtotalBeforeDiscount || order.subtotal || 0))}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax:</span>
-                <span className="font-semibold">{formatPrice(Number(order.tax || 0))}</span>
-              </div>
+              
+              {/* Discount information */}
+              {order.discount && order.discount.amount > 0 && (
+                <>
+                  <div className="flex justify-between" style={{ color: "#22c55e" }}>
+                    <span className="text-sm font-semibold">
+                      {order.discount.type === "new_user" ? "New User Discount" : "Discount"} ({order.discount.percentage}%):
+                    </span>
+                    <span className="text-sm font-semibold">
+                      -{formatPrice(Number(order.discount.amount))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-sm">Subtotal after discount:</span>
+                    <span className="font-semibold text-sm">
+                      {formatPrice(Number(order.subtotal || 0))}
+                    </span>
+                  </div>
+                </>
+              )}
+              
+              {order.tax && order.tax > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax:</span>
+                  <span className="font-semibold">{formatPrice(Number(order.tax))}</span>
+                </div>
+              )}
+              
+              {/* Delivery cost */}
+              {order.metadata?.deliveryType === "delivery" && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Delivery:</span>
+                  <span className="font-semibold">
+                    {formatPrice(Number((order.total || 0) - (order.subtotal || 0) - (order.tax || 0)))}
+                  </span>
+                </div>
+              )}
+              
               <div className="flex justify-between pt-2 border-t">
                 <span className="font-semibold text-lg">Total:</span>
                 <span className="font-bold text-lg">{formatPrice(Number(order.total || 0))}</span>

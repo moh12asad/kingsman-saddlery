@@ -52,6 +52,37 @@ router.get("/me", async (req, res) => {
       userData = refreshedDoc.exists ? refreshedDoc.data() : {};
     }
     
+    // Convert Firestore timestamps to ISO strings
+    let createdAt = null;
+    let updatedAt = null;
+    
+    if (userData.createdAt) {
+      if (userData.createdAt.toDate) {
+        // Firestore Timestamp object
+        createdAt = userData.createdAt.toDate().toISOString();
+      } else if (userData.createdAt._seconds) {
+        // Serialized Firestore timestamp (from JSON)
+        createdAt = new Date(userData.createdAt._seconds * 1000).toISOString();
+      } else if (userData.createdAt.seconds) {
+        // Firestore timestamp with seconds property
+        createdAt = new Date(userData.createdAt.seconds * 1000).toISOString();
+      } else if (typeof userData.createdAt === 'string') {
+        createdAt = userData.createdAt;
+      }
+    }
+    
+    if (userData.updatedAt) {
+      if (userData.updatedAt.toDate) {
+        updatedAt = userData.updatedAt.toDate().toISOString();
+      } else if (userData.updatedAt._seconds) {
+        updatedAt = new Date(userData.updatedAt._seconds * 1000).toISOString();
+      } else if (userData.updatedAt.seconds) {
+        updatedAt = new Date(userData.updatedAt.seconds * 1000).toISOString();
+      } else if (typeof userData.updatedAt === 'string') {
+        updatedAt = userData.updatedAt;
+      }
+    }
+
     const response = {
       uid: authUser.uid,
       email: authUser.email,
@@ -63,7 +94,9 @@ router.get("/me", async (req, res) => {
         zipCode: "",
         country: ""
       },
-      ...userData
+      ...userData,
+      createdAt: createdAt || null,
+      updatedAt: updatedAt || null
     };
     console.log("GET /api/users/me - Success for:", uid);
     res.json(response);
@@ -94,6 +127,38 @@ router.get("/", async (_req, res) => {
       list.users.map(async (user) => {
         const userDoc = await db.collection("users").doc(user.uid).get();
         const userData = userDoc.exists ? userDoc.data() : {};
+        
+        // Convert Firestore timestamps to ISO strings
+        let createdAt = null;
+        let updatedAt = null;
+        
+        if (userData.createdAt) {
+          if (userData.createdAt.toDate) {
+            // Firestore Timestamp object
+            createdAt = userData.createdAt.toDate().toISOString();
+          } else if (userData.createdAt._seconds) {
+            // Serialized Firestore timestamp (from JSON)
+            createdAt = new Date(userData.createdAt._seconds * 1000).toISOString();
+          } else if (userData.createdAt.seconds) {
+            // Firestore timestamp with seconds property
+            createdAt = new Date(userData.createdAt.seconds * 1000).toISOString();
+          } else if (typeof userData.createdAt === 'string') {
+            createdAt = userData.createdAt;
+          }
+        }
+        
+        if (userData.updatedAt) {
+          if (userData.updatedAt.toDate) {
+            updatedAt = userData.updatedAt.toDate().toISOString();
+          } else if (userData.updatedAt._seconds) {
+            updatedAt = new Date(userData.updatedAt._seconds * 1000).toISOString();
+          } else if (userData.updatedAt.seconds) {
+            updatedAt = new Date(userData.updatedAt.seconds * 1000).toISOString();
+          } else if (typeof userData.updatedAt === 'string') {
+            updatedAt = userData.updatedAt;
+          }
+        }
+        
         return {
           uid: user.uid,
           email: user.email,
@@ -103,6 +168,8 @@ router.get("/", async (_req, res) => {
           disabled: user.disabled,
           metadata: user.metadata,
           ...userData, // Include role, active, name, phone from Firestore
+          createdAt: createdAt || null,
+          updatedAt: updatedAt || null
         };
       })
     );

@@ -2,6 +2,7 @@ import { Router } from "express";
 import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
+import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../utils/discount.js";
 
 const db = admin.firestore();
 const router = Router();
@@ -102,9 +103,23 @@ router.post("/create", async (req, res) => {
     );
     
     // Use provided subtotal if it matches computed, otherwise use computed (more secure)
-    const orderSubtotal = (typeof subtotal === "number" && Math.abs(subtotal - computedSubtotal) < 0.01) 
+    const orderSubtotalBeforeDiscount = (typeof subtotal === "number" && Math.abs(subtotal - computedSubtotal) < 0.01) 
       ? subtotal 
       : computedSubtotal;
+    
+    // SECURITY: Check discount eligibility server-side (never trust client)
+    const discountCheck = await checkNewUserDiscountEligibility(uid);
+    let discountAmount = 0;
+    let discountPercentage = 0;
+    
+    if (discountCheck.eligible) {
+      discountPercentage = discountCheck.discountPercentage;
+      discountAmount = calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage);
+      console.log(`Applied ${discountPercentage}% new user discount for user ${uid}: ${discountAmount} ILS off`);
+    }
+    
+    // Apply discount to subtotal (discount applies to product prices, before tax and delivery)
+    const orderSubtotal = Math.max(0, orderSubtotalBeforeDiscount - discountAmount);
     
     const orderTax = typeof tax === "number" && tax >= 0 ? tax : 0;
     
@@ -113,10 +128,20 @@ router.post("/create", async (req, res) => {
     const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
     
     // Calculate expected total on server (trusted calculation)
-    const expectedTotal = orderSubtotal + orderTax + deliveryCost;
+    // Total = (Subtotal - Discount) + Tax + Delivery
+    const expectedTotal = Math.max(0, orderSubtotal + orderTax + deliveryCost);
+    
+    // SECURITY: Ensure total is a valid finite number
+    if (!isFinite(expectedTotal)) {
+      console.error(`Invalid order total calculation for user ${uid}: ${expectedTotal}`);
+      return res.status(500).json({ 
+        error: "Invalid order calculation", 
+        details: "Order total calculation resulted in invalid value" 
+      });
+    }
     
     // Validate client-provided total matches expected total (with small tolerance for floating point)
-    const clientTotal = typeof total === "number" ? total : null;
+    const clientTotal = typeof total === "number" && isFinite(total) ? total : null;
     if (clientTotal !== null) {
       const difference = Math.abs(clientTotal - expectedTotal);
       if (difference > 0.01) { // Allow 0.01 ILS tolerance for floating point errors
@@ -137,7 +162,15 @@ router.post("/create", async (req, res) => {
       shippingAddress: deliveryType === "delivery" ? shippingAddress : null,
       status,
       notes,
-      subtotal: orderSubtotal,
+      subtotal: orderSubtotal, // Subtotal after discount
+      subtotalBeforeDiscount: orderSubtotalBeforeDiscount, // Original subtotal before discount
+      discount: discountAmount > 0 ? {
+        amount: discountAmount,
+        percentage: discountPercentage,
+        type: "new_user",
+        eligible: discountCheck.eligible,
+        reason: discountCheck.reason || "New user discount (first 3 months)"
+      } : null,
       tax: orderTax,
       total: orderTotal,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -335,7 +368,31 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       (sum, item) => sum + item.quantity * item.price,
       0
     );
-    const orderSubtotal = typeof subtotal === "number" ? subtotal : computedSubtotal;
+    const orderSubtotalBeforeDiscount = typeof subtotal === "number" ? subtotal : computedSubtotal;
+    
+    // SECURITY: Check discount eligibility server-side if customerId is provided
+    let discountAmount = 0;
+    let discountPercentage = 0;
+    let discountInfo = null;
+    
+    if (customerId && typeof customerId === "string" && customerId.trim() !== "") {
+      const discountCheck = await checkNewUserDiscountEligibility(customerId);
+      if (discountCheck.eligible) {
+        discountPercentage = discountCheck.discountPercentage;
+        discountAmount = calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage);
+        discountInfo = {
+          amount: discountAmount,
+          percentage: discountPercentage,
+          type: "new_user",
+          eligible: discountCheck.eligible,
+          reason: discountCheck.reason || "New user discount (first 3 months)"
+        };
+        console.log(`Applied ${discountPercentage}% new user discount for user ${customerId}: ${discountAmount} ILS off`);
+      }
+    }
+    
+    // Apply discount to subtotal
+    const orderSubtotal = Math.max(0, orderSubtotalBeforeDiscount - discountAmount);
     const orderTax = typeof tax === "number" ? tax : 0;
     const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
 
@@ -346,7 +403,9 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       items: normalizedItems,
       status,
       notes,
-      subtotal: orderSubtotal,
+      subtotal: orderSubtotal, // Subtotal after discount
+      subtotalBeforeDiscount: orderSubtotalBeforeDiscount, // Original subtotal before discount
+      discount: discountInfo,
       tax: orderTax,
       total: orderTotal,
       metadata,
