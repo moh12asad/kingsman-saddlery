@@ -9,7 +9,7 @@ import {
   EmailAuthProvider,
   linkWithCredential
 } from "firebase/auth";
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaCalendarAlt } from "react-icons/fa";
 import AuthRoute from "../components/AuthRoute";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -44,6 +44,7 @@ export default function Profile() {
       country: ""
     }
   });
+  const [createdAt, setCreatedAt] = useState(null);
 
   // Check if user signed in with Google (no password provider)
   const isGoogleUser = useMemo(() => {
@@ -82,6 +83,38 @@ export default function Profile() {
             country: ""
           }
         });
+        // Store creation date if available
+        // Handle both ISO string and Firestore timestamp formats
+        if (data.createdAt) {
+          // If it's already a string (ISO), use it directly
+          if (typeof data.createdAt === 'string') {
+            setCreatedAt(data.createdAt);
+          } else if (data.createdAt._seconds) {
+            // Firestore timestamp format with _seconds (serialized JSON)
+            setCreatedAt(new Date(data.createdAt._seconds * 1000).toISOString());
+          } else if (data.createdAt.seconds) {
+            // Firestore timestamp format with seconds
+            setCreatedAt(new Date(data.createdAt.seconds * 1000).toISOString());
+          } else if (data.createdAt.toDate) {
+            // Firestore Timestamp object (if not serialized)
+            setCreatedAt(data.createdAt.toDate().toISOString());
+          } else {
+            // Try to parse as date string
+            const parsed = new Date(data.createdAt);
+            if (!isNaN(parsed.getTime())) {
+              setCreatedAt(parsed.toISOString());
+            } else {
+              console.warn("Could not parse createdAt:", data.createdAt);
+              setCreatedAt(null);
+            }
+          }
+        } else if (user.metadata?.creationTime) {
+          // Fallback to Firebase Auth creation time
+          setCreatedAt(user.metadata.creationTime);
+        } else {
+          // No creation date available
+          setCreatedAt(null);
+        }
       } else {
         // Fallback to Firebase user data
         setProfileData({
@@ -95,6 +128,12 @@ export default function Profile() {
             country: ""
           }
         });
+        // Try to get creation time from Firebase Auth
+        if (user.metadata?.creationTime) {
+          setCreatedAt(user.metadata.creationTime);
+        } else {
+          setCreatedAt(null);
+        }
       }
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -111,6 +150,12 @@ export default function Profile() {
           country: ""
         }
       });
+      // Try to get creation time from Firebase Auth
+      if (user.metadata?.creationTime) {
+        setCreatedAt(user.metadata.creationTime);
+      } else {
+        setCreatedAt(null);
+      }
     }
   }
 
@@ -262,6 +307,26 @@ export default function Profile() {
     }
   }
 
+  function formatDate(dateString) {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date string:", dateString);
+        return "N/A";
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+    } catch (err) {
+      console.error("Error formatting date:", err, dateString);
+      return "N/A";
+    }
+  }
+
   return (
     <AuthRoute>
       <main className="page-with-navbar">
@@ -326,6 +391,24 @@ export default function Profile() {
                   placeholder="05XXXXXXXX"
                 />
               </div>
+
+              {createdAt && (
+                <div>
+                  <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
+                    <FaCalendarAlt />
+                    Member Since
+                  </label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formatDate(createdAt)}
+                    disabled
+                    readOnly
+                    style={{ background: '#f9fafb', cursor: 'not-allowed' }}
+                  />
+                  <p className="text-xs text-muted margin-top-xs">Account creation date</p>
+                </div>
+              )}
             </div>
 
             <div className="margin-top-md">

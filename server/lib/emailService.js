@@ -69,6 +69,11 @@ export function generateOrderEmailTemplate(orderData) {
     items,
     shippingAddress,
     deliveryType = "delivery",
+    subtotal,
+    subtotalBeforeDiscount,
+    discount,
+    tax = 0,
+    deliveryCost = 0,
     total,
     orderDate,
     status = "pending"
@@ -81,8 +86,8 @@ export function generateOrderEmailTemplate(orderData) {
       </td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.price.toFixed(2)}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.price.toFixed(2)} ILS</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${(item.price * item.quantity).toFixed(2)} ILS</td>
     </tr>
   `).join("");
 
@@ -139,9 +144,32 @@ export function generateOrderEmailTemplate(orderData) {
         </table>
 
         <div style="text-align: right; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
-          <p style="margin: 8px 0; font-size: 16px;">
-            <span style="font-weight: bold;">Total: $${total.toFixed(2)}</span>
-          </p>
+          <div style="margin: 8px 0;">
+            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+              Subtotal: ${(subtotalBeforeDiscount || subtotal || 0).toFixed(2)} ILS
+            </p>
+            ${discount && discount.amount > 0 ? `
+            <p style="margin: 4px 0; font-size: 14px; color: #22c55e; font-weight: bold;">
+              ${discount.type === "new_user" ? "New User Discount" : "Discount"} (${discount.percentage}%): -${discount.amount.toFixed(2)} ILS
+            </p>
+            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+              Subtotal after discount: ${(subtotal || 0).toFixed(2)} ILS
+            </p>
+            ` : ""}
+            ${tax > 0 ? `
+            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+              Tax: ${tax.toFixed(2)} ILS
+            </p>
+            ` : ""}
+            ${deliveryType === "delivery" && deliveryCost > 0 ? `
+            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+              Delivery: ${deliveryCost.toFixed(2)} ILS
+            </p>
+            ` : ""}
+            <p style="margin: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #111827; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+              Total: ${total.toFixed(2)} ILS
+            </p>
+          </div>
         </div>
 
         <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 6px;">
@@ -205,12 +233,34 @@ export async function sendOrderConfirmationEmail(orderData) {
       throw new Error("Customer email is required");
     }
 
+    // Generate plain text version with discount info
+    let textEmail = `Order Confirmation #${orderNumber}\n\nDear ${customerName},\n\nThank you for your order! We've received your order and will process it shortly.\n\nOrder Number: #${orderNumber}\n`;
+    
+    if (orderData.subtotalBeforeDiscount) {
+      textEmail += `Subtotal: ${orderData.subtotalBeforeDiscount.toFixed(2)} ILS\n`;
+    }
+    
+    if (orderData.discount && orderData.discount.amount > 0) {
+      textEmail += `${orderData.discount.type === "new_user" ? "New User Discount" : "Discount"} (${orderData.discount.percentage}%): -${orderData.discount.amount.toFixed(2)} ILS\n`;
+      textEmail += `Subtotal after discount: ${(orderData.subtotal || 0).toFixed(2)} ILS\n`;
+    }
+    
+    if (orderData.tax > 0) {
+      textEmail += `Tax: ${orderData.tax.toFixed(2)} ILS\n`;
+    }
+    
+    if (orderData.deliveryType === "delivery" && orderData.deliveryCost > 0) {
+      textEmail += `Delivery: ${orderData.deliveryCost.toFixed(2)} ILS\n`;
+    }
+    
+    textEmail += `\nTotal: ${orderData.total.toFixed(2)} ILS\n\nBest regards,\nKingsman Saddlery Team`;
+
     const mailOptions = {
       from: `"Kingsman Saddlery" <${process.env.SMTP_USER}>`,
       to: customerEmail,
       subject: `Order Confirmation #${orderNumber} - Kingsman Saddlery`,
       html: generateOrderEmailTemplate(orderData),
-      text: `Order Confirmation #${orderNumber}\n\nDear ${customerName},\n\nThank you for your order! We've received your order and will process it shortly.\n\nOrder Number: #${orderNumber}\nTotal: $${orderData.total.toFixed(2)}\n\nBest regards,\nKingsman Saddlery Team`,
+      text: textEmail,
     };
 
     console.log(`[EMAIL] Attempting to connect to SMTP server...`);

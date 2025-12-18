@@ -21,6 +21,10 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       items,
       shippingAddress,
       total,
+      subtotal,
+      subtotalBeforeDiscount,
+      discount,
+      tax = 0,
       orderDate,
       status = "pending",
       metadata = {}
@@ -66,12 +70,23 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       0
     );
     
+    // Use provided subtotalBeforeDiscount if available, otherwise use computed
+    const orderSubtotalBeforeDiscount = typeof subtotalBeforeDiscount === "number" && subtotalBeforeDiscount >= 0
+      ? subtotalBeforeDiscount
+      : computedSubtotal;
+    
     // Delivery cost constant (must match client-side)
     const DELIVERY_COST = 50;
     const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
     
+    // Use provided discount if available (already validated server-side)
+    const orderDiscount = discount && typeof discount === "object" && discount.amount > 0 ? discount : null;
+    const orderSubtotal = typeof subtotal === "number" && subtotal >= 0 ? subtotal : computedSubtotal;
+    const orderTax = typeof tax === "number" && tax >= 0 ? tax : 0;
+    
     // Calculate expected total on server (trusted calculation)
-    const expectedTotal = computedSubtotal + deliveryCost;
+    // Total = (Subtotal - Discount) + Tax + Delivery
+    const expectedTotal = Math.max(0, orderSubtotal + orderTax + deliveryCost);
     
     // Validate client-provided total if provided (with small tolerance for floating point)
     const clientTotal = typeof total === "number" ? total : null;
@@ -90,6 +105,11 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       items: normalizedItems,
       shippingAddress: deliveryType === "delivery" ? shippingAddress : null,
       deliveryType: deliveryType,
+      subtotal: orderSubtotal,
+      subtotalBeforeDiscount: orderSubtotalBeforeDiscount,
+      discount: orderDiscount,
+      tax: orderTax,
+      deliveryCost: deliveryCost,
       total: expectedTotal, // Always use server-calculated total
       orderDate: orderDate || new Date().toLocaleDateString(),
       status

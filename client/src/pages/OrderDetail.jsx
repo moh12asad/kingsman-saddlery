@@ -266,8 +266,55 @@ export default function OrderDetail() {
                     <p className="text-muted text-sm">No items found</p>
                   )}
                 </div>
-                <div className="margin-top-md padding-top-md border-top">
+                <div className="margin-top-md padding-top-md border-top space-y-2">
+                  {/* Subtotal before discount */}
                   <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted">Subtotal:</span>
+                    <span className="text-sm font-semibold">
+                      {formatPrice(order.subtotalBeforeDiscount || order.subtotal || 0)}
+                    </span>
+                  </div>
+                  
+                  {/* Discount information */}
+                  {order.discount && order.discount.amount > 0 && (
+                    <>
+                      <div className="flex justify-between items-center" style={{ color: "#22c55e" }}>
+                        <span className="text-sm font-semibold">
+                          {order.discount.type === "new_user" ? "New User Discount" : "Discount"} ({order.discount.percentage}%):
+                        </span>
+                        <span className="text-sm font-semibold">
+                          -{formatPrice(order.discount.amount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted">Subtotal after discount:</span>
+                        <span className="text-sm font-semibold">
+                          {formatPrice(order.subtotal || 0)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Tax */}
+                  {order.tax && order.tax > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted">Tax:</span>
+                      <span className="text-sm font-semibold">{formatPrice(order.tax)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Delivery cost */}
+                  {order.metadata?.deliveryType === "delivery" && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted">Delivery:</span>
+                      <span className="text-sm font-semibold">
+                        {formatPrice((order.total || 0) - (order.subtotal || 0) - (order.tax || 0))}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Final Total */}
+                  <div className="flex justify-between items-center padding-top-sm border-top">
                     <span className="font-semibold">Total:</span>
                     <span className="text-lg font-bold">{formatPrice(order.total || 0)}</span>
                   </div>
