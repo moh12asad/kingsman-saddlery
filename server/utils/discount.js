@@ -49,8 +49,47 @@ export async function checkNewUserDiscountEligibility(userId) {
       };
     }
 
-    // Convert Firestore timestamp to Date
-    const accountCreationDate = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+    // SECURITY: Robust timestamp parsing - handle multiple formats
+    let accountCreationDate;
+    try {
+      if (createdAt.toDate && typeof createdAt.toDate === "function") {
+        // Firestore Timestamp object (not serialized)
+        accountCreationDate = createdAt.toDate();
+      } else if (createdAt._seconds !== undefined) {
+        // Serialized Firestore timestamp with _seconds (from JSON)
+        accountCreationDate = new Date(createdAt._seconds * 1000);
+      } else if (createdAt.seconds !== undefined) {
+        // Firestore timestamp with seconds property
+        accountCreationDate = new Date(createdAt.seconds * 1000);
+      } else if (typeof createdAt === "string") {
+        // ISO string format
+        accountCreationDate = new Date(createdAt);
+      } else if (createdAt instanceof Date) {
+        // Already a Date object
+        accountCreationDate = createdAt;
+      } else {
+        // Try to parse as date string
+        accountCreationDate = new Date(createdAt);
+      }
+      
+      // Validate the parsed date
+      if (!accountCreationDate || isNaN(accountCreationDate.getTime())) {
+        console.warn(`Invalid createdAt format for user ${userId}:`, createdAt);
+        return {
+          eligible: false,
+          discountPercentage: 0,
+          reason: "Invalid user creation date format"
+        };
+      }
+    } catch (error) {
+      console.error(`Error parsing createdAt for user ${userId}:`, error, createdAt);
+      return {
+        eligible: false,
+        discountPercentage: 0,
+        reason: "Error parsing user creation date"
+      };
+    }
+    
     const now = new Date();
 
     // Calculate the difference in milliseconds

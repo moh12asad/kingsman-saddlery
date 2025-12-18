@@ -447,7 +447,7 @@ export default function OrderConfirmation() {
                 <span style={{ fontSize: "1.25rem" }}>🎉</span>
                 <div>
                   <p style={{ color: "#16a34a", fontWeight: "600" }}>
-                    Congratulations! You're eligible for a {discountInfo.percentage}% new user discount!
+                    You're eligible for a {discountInfo.percentage}% new user discount!
                   </p>
                   <p style={{ color: "#15803d", fontSize: "0.875rem", marginTop: "0.25rem" }}>
                     Save {formatPrice(discountInfo.amount)} on your first order (valid for first 3 months)

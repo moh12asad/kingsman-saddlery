@@ -88,15 +88,116 @@ router.post("/create", async (req, res) => {
     }
     // For pickup orders, shippingAddress can be null - no validation needed
 
-    const normalizedItems = items.map((item, index) => ({
-      productId: item.productId || item.id || "",
-      name: item.name || `Item ${index + 1}`,
-      image: item.image || "",
-      quantity: Number(item.quantity) || 1,
-      price: Number(item.price) || 0,
-    }));
+    // SECURITY: Validate product prices against database (never trust client-provided prices)
+    const productIds = items.map(item => item.productId || item.id).filter(id => id);
+    const productPriceMap = new Map();
+    
+    if (productIds.length > 0) {
+      try {
+        // Fetch all products in parallel for efficiency
+        const productPromises = productIds.map(productId => 
+          db.collection("products").doc(productId).get()
+        );
+        const productDocs = await Promise.all(productPromises);
+        
+        productDocs.forEach((doc, index) => {
+          if (doc.exists) {
+            const productData = doc.data();
+            const productId = productIds[index];
+            // Use sale price if on sale, otherwise use regular price
+            const actualPrice = productData.sale && productData.sale_proce > 0 
+              ? Number(productData.sale_proce) 
+              : Number(productData.price);
+            
+            if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
+              productPriceMap.set(productId, actualPrice);
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching product prices:", error);
+        return res.status(500).json({ 
+          error: "Failed to validate product prices", 
+          details: "Could not fetch product information from database" 
+        });
+      }
+    }
 
-    // Calculate subtotal from items (server-side calculation - trusted)
+    // SECURITY: Validate and normalize items with database prices
+    const normalizedItems = [];
+    const priceMismatches = [];
+    
+    for (const item of items) {
+      const productId = item.productId || item.id || "";
+      const clientPrice = Number(item.price) || 0;
+      const quantity = Number(item.quantity) || 1;
+      
+      // Validate quantity
+      if (quantity <= 0 || !isFinite(quantity)) {
+        return res.status(400).json({ 
+          error: "Invalid item quantity", 
+          details: `Item ${item.name || productId} has invalid quantity: ${item.quantity}` 
+        });
+      }
+      
+      // SECURITY: If productId exists, validate price against database
+      if (productId && productPriceMap.has(productId)) {
+        const databasePrice = productPriceMap.get(productId);
+        
+        // Allow small tolerance for floating point errors (0.01 ILS)
+        if (Math.abs(clientPrice - databasePrice) > 0.01) {
+          priceMismatches.push({
+            productId,
+            productName: item.name || "Unknown",
+            clientPrice,
+            databasePrice,
+            difference: Math.abs(clientPrice - databasePrice)
+          });
+          
+          // Use database price for security (reject client price)
+          console.warn(`Price mismatch for product ${productId}: client sent ${clientPrice}, database has ${databasePrice}. Using database price.`);
+        }
+        
+        // Always use database price (source of truth)
+        normalizedItems.push({
+          productId,
+          name: item.name || `Item ${normalizedItems.length + 1}`,
+          image: item.image || "",
+          quantity,
+          price: databasePrice, // SECURITY: Use database price, not client price
+        });
+      } else if (productId) {
+        // Product ID provided but product not found in database
+        return res.status(400).json({ 
+          error: "Invalid product", 
+          details: `Product ${productId} not found in database` 
+        });
+      } else {
+        // No productId - allow custom items (for admin orders or special cases)
+        // But validate price is reasonable
+        if (clientPrice < 0 || !isFinite(clientPrice)) {
+          return res.status(400).json({ 
+            error: "Invalid item price", 
+            details: `Item ${item.name || "Unknown"} has invalid price: ${item.price}` 
+          });
+        }
+        
+        normalizedItems.push({
+          productId: "",
+          name: item.name || `Item ${normalizedItems.length + 1}`,
+          image: item.image || "",
+          quantity,
+          price: clientPrice,
+        });
+      }
+    }
+    
+    // Log price mismatches for security monitoring
+    if (priceMismatches.length > 0) {
+      console.warn(`[SECURITY] Price mismatches detected for user ${uid}:`, priceMismatches);
+    }
+
+    // Calculate subtotal from items using validated database prices
     const computedSubtotal = normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
@@ -357,12 +458,112 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       return res.status(400).json({ error: "Order items are required" });
     }
 
-    const normalizedItems = items.map((item, index) => ({
-      productId: item.productId || "",
-      name: item.name || `Item ${index + 1}`,
-      quantity: Number(item.quantity) || 1,
-      price: Number(item.price) || 0,
-    }));
+    // SECURITY: Validate product prices against database (never trust client-provided prices)
+    const productIds = items.map(item => item.productId).filter(id => id);
+    const productPriceMap = new Map();
+    
+    if (productIds.length > 0) {
+      try {
+        // Fetch all products in parallel for efficiency
+        const productPromises = productIds.map(productId => 
+          db.collection("products").doc(productId).get()
+        );
+        const productDocs = await Promise.all(productPromises);
+        
+        productDocs.forEach((doc, index) => {
+          if (doc.exists) {
+            const productData = doc.data();
+            const productId = productIds[index];
+            // Use sale price if on sale, otherwise use regular price
+            const actualPrice = productData.sale && productData.sale_proce > 0 
+              ? Number(productData.sale_proce) 
+              : Number(productData.price);
+            
+            if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
+              productPriceMap.set(productId, actualPrice);
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching product prices:", error);
+        return res.status(500).json({ 
+          error: "Failed to validate product prices", 
+          details: "Could not fetch product information from database" 
+        });
+      }
+    }
+
+    // SECURITY: Validate and normalize items with database prices
+    const normalizedItems = [];
+    const priceMismatches = [];
+    
+    for (const item of items) {
+      const productId = item.productId || "";
+      const clientPrice = Number(item.price) || 0;
+      const quantity = Number(item.quantity) || 1;
+      
+      // Validate quantity
+      if (quantity <= 0 || !isFinite(quantity)) {
+        return res.status(400).json({ 
+          error: "Invalid item quantity", 
+          details: `Item ${item.name || productId} has invalid quantity: ${item.quantity}` 
+        });
+      }
+      
+      // SECURITY: If productId exists, validate price against database
+      if (productId && productPriceMap.has(productId)) {
+        const databasePrice = productPriceMap.get(productId);
+        
+        // Allow small tolerance for floating point errors (0.01 ILS)
+        if (Math.abs(clientPrice - databasePrice) > 0.01) {
+          priceMismatches.push({
+            productId,
+            productName: item.name || "Unknown",
+            clientPrice,
+            databasePrice,
+            difference: Math.abs(clientPrice - databasePrice)
+          });
+          
+          // Use database price for security (reject client price)
+          console.warn(`[ADMIN ORDER] Price mismatch for product ${productId}: client sent ${clientPrice}, database has ${databasePrice}. Using database price.`);
+        }
+        
+        // Always use database price (source of truth)
+        normalizedItems.push({
+          productId,
+          name: item.name || `Item ${normalizedItems.length + 1}`,
+          quantity,
+          price: databasePrice, // SECURITY: Use database price, not client price
+        });
+      } else if (productId) {
+        // Product ID provided but product not found in database
+        return res.status(400).json({ 
+          error: "Invalid product", 
+          details: `Product ${productId} not found in database` 
+        });
+      } else {
+        // No productId - allow custom items (for admin orders or special cases)
+        // But validate price is reasonable
+        if (clientPrice < 0 || !isFinite(clientPrice)) {
+          return res.status(400).json({ 
+            error: "Invalid item price", 
+            details: `Item ${item.name || "Unknown"} has invalid price: ${item.price}` 
+          });
+        }
+        
+        normalizedItems.push({
+          productId: "",
+          name: item.name || `Item ${normalizedItems.length + 1}`,
+          quantity,
+          price: clientPrice,
+        });
+      }
+    }
+    
+    // Log price mismatches for security monitoring
+    if (priceMismatches.length > 0) {
+      console.warn(`[SECURITY] [ADMIN ORDER] Price mismatches detected:`, priceMismatches);
+    }
 
     const computedSubtotal = normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
