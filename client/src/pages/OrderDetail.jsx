@@ -15,7 +15,6 @@ import {
   FaPhone,
   FaUser,
   FaTimes,
-  FaDirections,
   FaFileInvoice,
 } from "react-icons/fa";
 import Invoice from "../components/Invoice";
@@ -415,35 +414,6 @@ export default function OrderDetail() {
                     )}
                     {order.shippingAddress.country && (
                       <p className="order-text-no-margin">{order.shippingAddress.country}</p>
-                    )}
-                    {(order.shippingAddress.latitude && order.shippingAddress.longitude) && (
-                      <div className="flex gap-2 margin-top-md padding-top-md border-top">
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${order.shippingAddress.latitude},${order.shippingAddress.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-sm btn-primary flex items-center gap-2"
-                        >
-                          <FaDirections />
-                          Open in Google Maps
-                        </a>
-                        <a
-                          href={`https://waze.com/ul?ll=${order.shippingAddress.latitude},${order.shippingAddress.longitude}&navigate=yes`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-sm btn-secondary flex items-center gap-2"
-                        >
-                          <FaDirections />
-                          Open in Waze
-                        </a>
-                      </div>
-                    )}
-                    {(!order.shippingAddress.latitude || !order.shippingAddress.longitude) && (
-                      <div className="margin-top-md padding-top-md border-top">
-                        <p className="text-xs text-muted">
-                          Address coordinates not available. Navigation links unavailable.
-                        </p>
-                      </div>
                     )}
                   </div>
                 </div>

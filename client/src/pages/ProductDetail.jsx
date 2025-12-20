@@ -152,8 +152,8 @@ export default function ProductDetail() {
   }
 
   return (
-    <main className="product-detail-page">
-      <div className="container-main padding-y-xl" style={{ paddingTop: '3rem' }}>
+    <main className="product-detail-page margin-top-2xl">
+      <div className="container-main" >
         {/* Breadcrumbs */}
         <nav className="breadcrumbs margin-bottom-lg">
           <Link to="/" className="breadcrumb-link">Home</Link>

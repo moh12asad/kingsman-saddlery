@@ -82,22 +82,22 @@ export function generateOrderEmailTemplate(orderData) {
   const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-        <img src="${item.image || ''}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+        <img src="${item.image || ''}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid #FCD34D;" />
       </td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.price.toFixed(2)} ILS</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">${(item.price * item.quantity).toFixed(2)} ILS</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #000000; font-weight: 600;">${item.name}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #000000; font-weight: 600;">${item.quantity}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #000000; font-weight: 600;">${item.price.toFixed(2)} ILS</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #000000; font-weight: 700;">${(item.price * item.quantity).toFixed(2)} ILS</td>
     </tr>
   `).join("");
 
   const addressHtml = deliveryType === "pickup" 
-    ? `<p style="margin: 0; padding: 4px 0; font-weight: bold;">Store Pickup</p><p style="margin: 4px 0; padding: 4px 0; color: #6b7280;">Please pick up your order from our store.</p>`
+    ? `<p style="margin: 0; padding: 4px 0; font-weight: 700; color: #000000;">Store Pickup</p><p style="margin: 4px 0; padding: 4px 0; color: #000000; font-weight: 600;">Please pick up your order from our store.</p>`
     : shippingAddress 
     ? `
-    <p style="margin: 0; padding: 4px 0;">${shippingAddress.street}</p>
-    <p style="margin: 0; padding: 4px 0;">${shippingAddress.city} ${shippingAddress.zipCode}</p>
-    ${shippingAddress.country ? `<p style="margin: 0; padding: 4px 0;">${shippingAddress.country}</p>` : ""}
+    <p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${shippingAddress.street}</p>
+    <p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${shippingAddress.city} ${shippingAddress.zipCode}</p>
+    ${shippingAddress.country ? `<p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${shippingAddress.country}</p>` : ""}
   `
     : "";
 
@@ -109,33 +109,40 @@ export function generateOrderEmailTemplate(orderData) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Order Confirmation - Kingsman Saddlery</title>
     </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Kingsman Saddlery</h1>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+      <div style="background: #000000; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 2px 4px rgba(255, 215, 0, 0.3);">
+          KINGSMANSADDLERY
+        </h1>
+        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
+        <p style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #FFFFFF; margin-top: 10px;">
+          SADDLES & TACK
+        </p>
+        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-        <h2 style="color: #111827; margin-top: 0; font-size: 24px;">Order Confirmation</h2>
+        <h2 style="color: #000000; margin-top: 0; font-size: 24px; font-weight: 700; border-bottom: 3px solid #FCD34D; padding-bottom: 10px; display: inline-block;">Order Confirmation</h2>
         
-        <p style="font-size: 16px;">Dear ${customerName},</p>
+        <p style="font-size: 16px; color: #000000; font-weight: 600;">Dear ${customerName},</p>
         
-        <p style="font-size: 16px;">Thank you for your order! We've received your order and will process it shortly.</p>
+        <p style="font-size: 16px; color: #000000;">Thank you for your order! We've received your order and will process it shortly.</p>
         
-        <div style="background: #f9fafb; padding: 20px; border-radius: 6px; margin: 20px 0;">
-          <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 14px; color: #6b7280;">ORDER NUMBER</p>
-          <p style="margin: 0; font-size: 20px; font-weight: bold; color: #111827;">#${orderNumber}</p>
-          ${orderDate ? `<p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">Date: ${orderDate}</p>` : ""}
+        <div style="background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%); padding: 20px; border-radius: 6px; margin: 20px 0; border: 2px solid #000000;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 14px; color: #000000; text-transform: uppercase; letter-spacing: 1px;">ORDER NUMBER</p>
+          <p style="margin: 0; font-size: 24px; font-weight: 900; color: #000000;">#${orderNumber}</p>
+          ${orderDate ? `<p style="margin: 8px 0 0 0; font-size: 14px; color: #000000; font-weight: 600;">Date: ${orderDate}</p>` : ""}
         </div>
 
-        <h3 style="color: #111827; font-size: 18px; margin-top: 30px; margin-bottom: 15px;">Order Items</h3>
+        <h3 style="color: #000000; font-size: 18px; margin-top: 30px; margin-bottom: 15px; font-weight: 700; border-bottom: 2px solid #FCD34D; padding-bottom: 8px; display: inline-block;">Order Items</h3>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <thead>
-            <tr style="background: #f9fafb;">
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280;">Image</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280;">Product</th>
-              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280;">Qty</th>
-              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280;">Price</th>
-              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-transform: uppercase; color: #6b7280;">Total</th>
+            <tr style="background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%);">
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #000000; font-size: 12px; text-transform: uppercase; color: #000000; font-weight: 700;">Image</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #000000; font-size: 12px; text-transform: uppercase; color: #000000; font-weight: 700;">Product</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #000000; font-size: 12px; text-transform: uppercase; color: #000000; font-weight: 700;">Qty</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #000000; font-size: 12px; text-transform: uppercase; color: #000000; font-weight: 700;">Price</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #000000; font-size: 12px; text-transform: uppercase; color: #000000; font-weight: 700;">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -143,61 +150,61 @@ export function generateOrderEmailTemplate(orderData) {
           </tbody>
         </table>
 
-        <div style="text-align: right; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
+        <div style="text-align: right; margin-top: 20px; padding-top: 20px; border-top: 3px solid #FCD34D;">
           <div style="margin: 8px 0;">
-            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
               Subtotal: ${(subtotalBeforeDiscount || subtotal || 0).toFixed(2)} ILS
             </p>
             ${discount && discount.amount > 0 ? `
-            <p style="margin: 4px 0; font-size: 14px; color: #22c55e; font-weight: bold;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 700; background: #FCD34D; padding: 4px 8px; display: inline-block; border-radius: 4px;">
               ${discount.type === "new_user" ? "New User Discount" : "Discount"} (${discount.percentage}%): -${discount.amount.toFixed(2)} ILS
             </p>
-            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
               Subtotal after discount: ${(subtotal || 0).toFixed(2)} ILS
             </p>
             ` : ""}
             ${tax > 0 ? `
-            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
               Tax: ${tax.toFixed(2)} ILS
             </p>
             ` : ""}
             ${deliveryType === "delivery" && deliveryCost > 0 ? `
-            <p style="margin: 4px 0; font-size: 14px; color: #6b7280;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
               Delivery: ${deliveryCost.toFixed(2)} ILS
             </p>
             ` : ""}
-            <p style="margin: 12px 0 0 0; font-size: 18px; font-weight: bold; color: #111827; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+            <p style="margin: 12px 0 0 0; font-size: 20px; font-weight: 900; color: #000000; padding-top: 8px; border-top: 2px solid #000000; background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%); padding: 12px; border-radius: 4px; display: inline-block; min-width: 200px; text-align: center;">
               Total: ${total.toFixed(2)} ILS
             </p>
           </div>
         </div>
 
-        <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-radius: 6px;">
-          <h3 style="color: #111827; font-size: 18px; margin-top: 0; margin-bottom: 15px;">${deliveryType === "pickup" ? "Pickup Information" : "Delivery Address"}</h3>
+        <div style="margin-top: 30px; padding: 20px; background: #ffffff; border: 2px solid #FCD34D; border-radius: 6px;">
+          <h3 style="color: #000000; font-size: 18px; margin-top: 0; margin-bottom: 15px; font-weight: 700; border-bottom: 2px solid #FCD34D; padding-bottom: 8px; display: inline-block;">${deliveryType === "pickup" ? "Pickup Information" : "Delivery Address"}</h3>
           ${addressHtml}
         </div>
 
-        <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
-          <p style="margin: 0; font-size: 14px; color: #92400e;">
+        <div style="margin-top: 30px; padding: 20px; background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%); border: 2px solid #000000; border-radius: 4px;">
+          <p style="margin: 0; font-size: 14px; color: #000000; font-weight: 700;">
             <strong>Status:</strong> ${status === "pending" ? "Pending Payment" : status.charAt(0).toUpperCase() + status.slice(1)}
           </p>
           ${status === "pending" ? `
-            <p style="margin: 10px 0 0 0; font-size: 14px; color: #92400e;">
+            <p style="margin: 10px 0 0 0; font-size: 14px; color: #000000; font-weight: 600;">
               Your order will be processed once payment is confirmed. You will receive another email when your order is shipped.
             </p>
           ` : ""}
         </div>
 
-        <p style="font-size: 16px; margin-top: 30px;">If you have any questions about your order, please don't hesitate to contact us.</p>
+        <p style="font-size: 16px; margin-top: 30px; color: #000000;">If you have any questions about your order, please don't hesitate to contact us.</p>
         
-        <p style="font-size: 16px; margin-top: 20px;">
+        <p style="font-size: 16px; margin-top: 20px; color: #000000;">
           Best regards,<br>
-          <strong>Kingsman Saddlery Team</strong>
+          <strong style="color: #000000;">Kingsman Saddlery Team</strong>
         </p>
       </div>
       
-      <div style="text-align: center; margin-top: 20px; padding: 20px; color: #6b7280; font-size: 12px;">
-        <p style="margin: 0;">This is an automated email. Please do not reply to this message.</p>
+      <div style="text-align: center; margin-top: 20px; padding: 20px; color: #000000; font-size: 12px; border-top: 1px solid #FCD34D;">
+        <p style="margin: 0; font-weight: 600;">This is an automated email. Please do not reply to this message.</p>
       </div>
     </body>
     </html>

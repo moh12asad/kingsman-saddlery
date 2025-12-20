@@ -170,7 +170,7 @@ export default function Products() {
     <main className="shop-page">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 margin-top-xl">
           <button
             onClick={() => navigate("/shop")}
             className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center gap-2"
