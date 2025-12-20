@@ -9,7 +9,7 @@ import {
   EmailAuthProvider,
   linkWithCredential
 } from "firebase/auth";
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaCalendarAlt } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaCalendarAlt, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
 import AuthRoute from "../components/AuthRoute";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -19,6 +19,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [originalProfileData, setOriginalProfileData] = useState(null);
   
   // Form states
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -72,7 +74,7 @@ export default function Profile() {
       
       if (res.ok) {
         const data = await res.json();
-        setProfileData({
+        const loadedData = {
           displayName: data.displayName || user.displayName || "",
           email: data.email || user.email || "",
           phone: data.phone || "",
@@ -82,7 +84,9 @@ export default function Profile() {
             zipCode: "",
             country: ""
           }
-        });
+        };
+        setProfileData(loadedData);
+        setOriginalProfileData(JSON.parse(JSON.stringify(loadedData)));
         // Store creation date if available
         // Handle both ISO string and Firestore timestamp formats
         if (data.createdAt) {
@@ -117,7 +121,7 @@ export default function Profile() {
         }
       } else {
         // Fallback to Firebase user data
-        setProfileData({
+        const fallbackData = {
           displayName: user.displayName || "",
           email: user.email || "",
           phone: "",
@@ -127,7 +131,9 @@ export default function Profile() {
             zipCode: "",
             country: ""
           }
-        });
+        };
+        setProfileData(fallbackData);
+        setOriginalProfileData(JSON.parse(JSON.stringify(fallbackData)));
         // Try to get creation time from Firebase Auth
         if (user.metadata?.creationTime) {
           setCreatedAt(user.metadata.creationTime);
@@ -138,7 +144,7 @@ export default function Profile() {
     } catch (err) {
       console.error("Error loading profile:", err);
       // Fallback to Firebase user data
-      setProfileData({
+      const fallbackData = {
         displayName: user.displayName || "",
         email: user.email || "",
         phone: "",
@@ -149,7 +155,9 @@ export default function Profile() {
           zipCode: "",
           country: ""
         }
-      });
+      };
+      setProfileData(fallbackData);
+      setOriginalProfileData(JSON.parse(JSON.stringify(fallbackData)));
       // Try to get creation time from Firebase Auth
       if (user.metadata?.creationTime) {
         setCreatedAt(user.metadata.creationTime);
@@ -258,6 +266,22 @@ export default function Profile() {
     }
   }
 
+  function handleStartEdit() {
+    setOriginalProfileData(JSON.parse(JSON.stringify(profileData)));
+    setIsEditing(true);
+    setError("");
+    setSuccess("");
+  }
+
+  function handleCancelEdit() {
+    if (originalProfileData) {
+      setProfileData(JSON.parse(JSON.stringify(originalProfileData)));
+    }
+    setIsEditing(false);
+    setError("");
+    setSuccess("");
+  }
+
   async function handleUpdateProfile() {
     try {
       setLoading(true);
@@ -292,7 +316,15 @@ export default function Profile() {
         });
       }
 
+      // Update original data to match current state
+      setOriginalProfileData(JSON.parse(JSON.stringify(profileData)));
+      setIsEditing(false);
       setSuccess("Profile updated successfully!");
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccess("");
+      }, 5000);
     } catch (err) {
       console.error("Profile update error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -347,7 +379,7 @@ export default function Profile() {
 
           {/* Profile Information Section */}
           <div className="card padding-lg margin-bottom-lg">
-            <h2 className="section-title flex-row flex-gap-sm">
+            <h2 className="section-title flex-row flex-gap-sm margin-bottom-md">
               <FaUser />
               Profile Information
             </h2>
@@ -361,6 +393,9 @@ export default function Profile() {
                   value={profileData.displayName}
                   onChange={e => setProfileData({ ...profileData, displayName: e.target.value })}
                   placeholder="Your name"
+                  disabled={!isEditing}
+                  readOnly={!isEditing}
+                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                 />
               </div>
               
@@ -375,6 +410,9 @@ export default function Profile() {
                   value={profileData.email}
                   onChange={e => setProfileData({ ...profileData, email: e.target.value })}
                   placeholder="your@email.com"
+                  disabled={!isEditing}
+                  readOnly={!isEditing}
+                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                 />
               </div>
 
@@ -389,6 +427,9 @@ export default function Profile() {
                   value={profileData.phone}
                   onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
                   placeholder="05XXXXXXXX"
+                  disabled={!isEditing}
+                  readOnly={!isEditing}
+                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                 />
               </div>
 
@@ -427,6 +468,9 @@ export default function Profile() {
                       address: { ...profileData.address, street: e.target.value }
                     })}
                     placeholder="Street Address"
+                    disabled={!isEditing}
+                    readOnly={!isEditing}
+                    style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                   />
                 </div>
                 <input
@@ -438,6 +482,9 @@ export default function Profile() {
                     address: { ...profileData.address, city: e.target.value }
                   })}
                   placeholder="City"
+                  disabled={!isEditing}
+                  readOnly={!isEditing}
+                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                 />
                 <input
                   type="text"
@@ -448,6 +495,9 @@ export default function Profile() {
                     address: { ...profileData.address, zipCode: e.target.value }
                   })}
                   placeholder="ZIP/Postal Code"
+                  disabled={!isEditing}
+                  readOnly={!isEditing}
+                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                 />
                 <input
                   type="text"
@@ -458,17 +508,43 @@ export default function Profile() {
                     address: { ...profileData.address, country: e.target.value }
                   })}
                   placeholder="Country"
+                  disabled={!isEditing}
+                  readOnly={!isEditing}
+                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                 />
               </div>
             </div>
 
-            <button
-              className="btn-primary margin-top-md"
-              onClick={handleUpdateProfile}
-              disabled={loading}
-            >
-              {loading ? "Updating..." : "Update Profile"}
-            </button>
+            <div className="flex-row flex-gap-md margin-top-md">
+              {isEditing ? (
+                <>
+                  <button
+                    className="btn-primary flex-row flex-gap-sm"
+                    onClick={handleUpdateProfile}
+                    disabled={loading}
+                  >
+                    <FaCheck />
+                    {loading ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    className="btn-secondary flex-row flex-gap-sm"
+                    onClick={handleCancelEdit}
+                    disabled={loading}
+                  >
+                    <FaTimes />
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="btn-secondary flex-row flex-gap-sm"
+                  onClick={handleStartEdit}
+                >
+                  <FaEdit />
+                  Edit Profile
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Password Section */}
