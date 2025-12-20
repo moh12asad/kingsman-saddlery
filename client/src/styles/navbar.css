@@ -249,6 +249,16 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     padding: 0.25rem 0;
+    position: relative;
+    /* Don't clip positioned children */
+    contain: none;
+  }
+
+  /* Ensure profile container can escape overflow */
+  .navbar-links .profile-menu-container {
+    position: relative;
+    z-index: 1010;
+    overflow: visible;
   }
 
   .navbar-links::-webkit-scrollbar {
@@ -663,7 +673,7 @@
 
 .profile-menu-container {
   position: relative;
-  z-index: 1003;
+  z-index: 1010;
 }
 
 .profile-dropdown {
@@ -672,17 +682,18 @@
   right: 0;
   min-width: 200px;
   max-width: 250px;
-  background: var(--surface);
-  border: 2px solid var(--border);
+  background: #FFFFFF !important;
+  border: 2px solid #E5E7EB !important;
   border-radius: 0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(252, 211, 77, 0.1);
-  z-index: 1003;
+  z-index: 1011 !important;
   overflow: hidden;
   animation: dropdownFadeIn 0.15s ease;
   margin-top: 0;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 @keyframes dropdownFadeIn {
@@ -701,7 +712,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  color: var(--text);
+  color: #000000 !important;
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 600;
@@ -732,11 +743,26 @@
 
 .profile-dropdown-divider {
   height: 1px;
-  background: var(--border);
+  background: #E5E7EB !important;
   margin: 0.5rem 0;
 }
 
-/* Mobile Styles */
+/* Mobile Styles - Portal dropdown */
+.profile-dropdown-mobile {
+  min-width: 180px !important;
+  max-width: calc(100vw - 1rem) !important;
+  background: #FFFFFF !important;
+  border: 2px solid #E5E7EB !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  z-index: 1011 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow: hidden !important;
+}
+
 @media (max-width: 768px) {
   .profile-dropdown {
     min-width: 180px;
@@ -757,15 +783,25 @@
 
 @media (max-width: 480px) {
   .profile-dropdown {
-    min-width: 160px;
-    max-width: calc(100vw - 1rem);
-    right: 0;
+    min-width: 160px !important;
+    max-width: calc(100vw - 1rem) !important;
+    right: 0 !important;
+    position: absolute !important;
+    z-index: 1011 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #FFFFFF !important;
+    overflow: visible !important;
   }
 
   .profile-dropdown-item {
     padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
     gap: 0.5rem;
+    color: #000000 !important;
+    width: 100% !important;
+    display: flex !important;
   }
 }
 
