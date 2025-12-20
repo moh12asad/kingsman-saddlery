@@ -132,6 +132,15 @@ export default function Footer() {
           <h3 className="footer-title">Follow Us</h3>
           <div className="footer-social">
             <a 
+              href="https://wa.me/+972548740666" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="footer-social-link"
+              aria-label="WhatsApp"
+            >
+              <FaWhatsapp className="footer-social-icon" />
+            </a>
+            <a 
               href="https://www.facebook.com/profile.php?id=100063785065499" 
               target="_blank" 
               rel="noopener noreferrer"
@@ -166,7 +175,7 @@ export default function Footer() {
               <FaEnvelope className="footer-social-icon" />
             </a>
             <a 
-              href="https://maps.google.com" 
+              href="https://www.google.com/maps/dir/32.3977216,35.045376/32.86528,35.30071/@32.865443,35.3005489,19.75z/data=!4m4!4m3!1m1!4e1!1m0?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D" 
               target="_blank" 
               rel="noopener noreferrer"
               className="footer-social-link"

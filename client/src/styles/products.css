@@ -136,15 +136,59 @@ html {
 
 @media (max-width: 768px) {
   .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
+  }
+
+  .product-grid .card-product-image-wrapper {
+    height: 240px;
+  }
+
+  .product-grid .card-product-content {
+    padding: 0.75rem;
+  }
+
+  .product-grid .card-product-title {
+    font-size: 0.875rem;
   }
 }
 
 @media (max-width: 480px) {
   .product-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .product-grid .card-product-image-wrapper {
+    height: 180px;
+  }
+
+  .product-grid .card-product-content {
+    padding: 0.5rem;
+  }
+
+  .product-grid .card-product-title {
+    font-size: 0.8125rem;
+    min-height: 2rem;
+  }
+
+  .product-grid .card-product-favorite {
+    width: 1.75rem;
+    height: 1.75rem;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .product-grid .card-product-badge {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .product-grid .card-product-content .btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
   }
 }
 
@@ -312,12 +356,65 @@ html {
 
 @media (max-width: 640px) {
   .card-product-carousel {
-    min-width: 240px;
-    max-width: 240px;
+    min-width: 200px;
+    max-width: 200px;
   }
   
   .card-product-image-wrapper {
-    height: 280px;
+    height: 220px;
+  }
+
+  .card-product-content {
+    padding: 0.75rem;
+  }
+
+  .card-product-title {
+    font-size: 0.875rem;
+    min-height: 2.25rem;
+  }
+
+  .card-product-content .btn {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-product-carousel {
+    min-width: 160px;
+    max-width: 160px;
+  }
+  
+  .card-product-image-wrapper {
+    height: 180px;
+  }
+
+  .card-product-content {
+    padding: 0.5rem;
+  }
+
+  .card-product-title {
+    font-size: 0.8125rem;
+    min-height: 2rem;
+  }
+
+  .card-product-favorite {
+    width: 1.75rem;
+    height: 1.75rem;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .card-product-badge {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .card-product-content .btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
   }
 }
 
