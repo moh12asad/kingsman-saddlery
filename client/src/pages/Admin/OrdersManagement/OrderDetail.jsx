@@ -13,6 +13,8 @@ import {
   FaArchive,
   FaDirections,
 } from "react-icons/fa";
+import GoogleMapsIcon from "../../../components/icons/GoogleMapsIcon";
+import WazeIcon from "../../../components/icons/WazeIcon";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -352,7 +354,7 @@ export default function AdminOrderDetail() {
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-primary flex items-center gap-2"
                     >
-                      <FaDirections />
+                      <GoogleMapsIcon size={16} />
                       Open in Google Maps
                     </a>
                     <a
@@ -361,7 +363,7 @@ export default function AdminOrderDetail() {
                       rel="noopener noreferrer"
                       className="btn btn-sm btn-secondary flex items-center gap-2"
                     >
-                      <FaDirections />
+                      <WazeIcon size={16} />
                       Open in Waze
                     </a>
                   </div>

@@ -548,7 +548,6 @@ export default function OrderConfirmation() {
           {discountInfo && (
             <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
               <div className="flex items-center gap-2">
-                <span style={{ fontSize: "1.25rem" }}>🎉</span>
                 <div>
                   <p style={{ color: "#16a34a", fontWeight: "600" }}>
                     You're eligible for a {discountInfo.percentage}% new user discount!
