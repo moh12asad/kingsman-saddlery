@@ -1,7 +1,7 @@
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-radial-glow">
-      <div className="max-w-6xl mx-auto px-4 pt-24 pb-20">
+    <section className="relative overflow-hidden bg-radial-glow" style={{ paddingTop: '1rem' }}>
+      <div className="max-w-6xl mx-auto px-4 pt-12 md:pt-24 pb-12 md:pb-20">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h1 className="text-4xl md:text-6xl font-black tracking-tight">
