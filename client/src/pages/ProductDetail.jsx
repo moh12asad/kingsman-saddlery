@@ -11,8 +11,6 @@ import {
   FaChevronRight, 
   FaSearchPlus,
   FaPlay,
-  FaShare,
-  FaFacebook,
   FaWhatsapp,
   FaQuestionCircle,
   FaShieldAlt,
@@ -492,17 +490,6 @@ export default function ProductDetail() {
               </a>
             </div>
 
-            {/* Social Sharing */}
-            <div className="product-social-share margin-top-md">
-              <button className="product-social-btn">
-                <FaFacebook />
-                <span>Like</span>
-              </button>
-              <button className="product-social-btn">
-                <FaShare />
-                <span>Share</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
