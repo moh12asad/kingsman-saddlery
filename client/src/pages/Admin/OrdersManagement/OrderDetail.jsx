@@ -358,35 +358,67 @@ export default function AdminOrderDetail() {
                 {order.shippingAddress.country && (
                   <p>{order.shippingAddress.country}</p>
                 )}
-                {(order.shippingAddress.latitude && order.shippingAddress.longitude) && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t">
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${order.shippingAddress.latitude},${order.shippingAddress.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-primary flex items-center gap-2"
-                    >
-                      <GoogleMapsIcon size={16} />
-                      Open in Google Maps
-                    </a>
-                    <a
-                      href={`https://waze.com/ul?ll=${order.shippingAddress.latitude},${order.shippingAddress.longitude}&navigate=yes`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-secondary flex items-center gap-2"
-                    >
-                      <WazeIcon size={16} />
-                      Open in Waze
-                    </a>
-                  </div>
-                )}
-                {(!order.shippingAddress.latitude || !order.shippingAddress.longitude) && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-xs text-gray-500">
-                      Address coordinates not available. Navigation links unavailable.
-                    </p>
-                  </div>
-                )}
+                {/* Navigation Links - Always show for delivery addresses */}
+                <div className="flex gap-2 mt-3 pt-3 border-t">
+                  {order.shippingAddress.latitude && order.shippingAddress.longitude ? (
+                    <>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${order.shippingAddress.latitude},${order.shippingAddress.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-primary flex items-center gap-2"
+                      >
+                        <GoogleMapsIcon size={16} />
+                        Directions (Google Maps)
+                      </a>
+                      <a
+                        href={`https://waze.com/ul?ll=${order.shippingAddress.latitude},${order.shippingAddress.longitude}&navigate=yes`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-secondary flex items-center gap-2"
+                      >
+                        <WazeIcon size={16} />
+                        Directions (Waze)
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      {/* Use address string if coordinates not available */}
+                      {(() => {
+                        const addressParts = [
+                          order.shippingAddress.street,
+                          order.shippingAddress.city,
+                          order.shippingAddress.zipCode,
+                          order.shippingAddress.country
+                        ].filter(Boolean);
+                        const fullAddress = addressParts.join(', ');
+                        const encodedAddress = encodeURIComponent(fullAddress);
+                        return (
+                          <>
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-primary flex items-center gap-2"
+                            >
+                              <GoogleMapsIcon size={16} />
+                              Directions (Google Maps)
+                            </a>
+                            <a
+                              href={`https://waze.com/ul?q=${encodedAddress}&navigate=yes`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-secondary flex items-center gap-2"
+                            >
+                              <WazeIcon size={16} />
+                              Directions (Waze)
+                            </a>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ) : null}

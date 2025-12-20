@@ -408,7 +408,7 @@
 .subnavbar-list {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0;
   list-style: none;
   margin: 0;
@@ -417,7 +417,6 @@
   overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  width: 100%;
 }
 
 .subnavbar-list::-webkit-scrollbar {
@@ -616,9 +615,10 @@
   }
 
   .subnavbar-content {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    padding-left: 0;
+    padding-right: 0;
     overflow: visible;
+    width: 100%;
   }
 
   .subnavbar-list {
@@ -630,6 +630,11 @@
     /* Ensure all items are visible and scrollable */
     flex-wrap: nowrap;
     width: 100%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    /* Make sure all items are accessible */
+    scroll-padding-left: 0.5rem;
+    scroll-padding-right: 0.5rem;
   }
 
   .subnavbar-list::-webkit-scrollbar {
@@ -650,6 +655,8 @@
     padding: 0.625rem 0.75rem;
     font-size: 0.875rem;
     white-space: nowrap;
+    /* Ensure links don't shrink */
+    flex-shrink: 0;
   }
 
   .subnavbar-dropdown {
