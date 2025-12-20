@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
-import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
+import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -32,10 +32,13 @@ export default function OrderConfirmation() {
     street: "",
     city: "",
     zipCode: "",
-    country: ""
+    country: "",
+    latitude: null,
+    longitude: null
   });
   
   const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [error, setError] = useState("");
@@ -167,7 +170,9 @@ export default function OrderConfirmation() {
           street: "",
           city: "",
           zipCode: "",
-          country: ""
+          country: "",
+          latitude: null,
+          longitude: null
         };
         setProfileData({
           displayName: data.displayName || user?.displayName || "",
@@ -175,15 +180,21 @@ export default function OrderConfirmation() {
           phone: data.phone || "",
           address: profileAddress
         });
-        // Initialize order address with profile address
-        setOrderAddress(profileAddress);
+        // Initialize order address with profile address (ensure lat/lng are included)
+        setOrderAddress({
+          ...profileAddress,
+          latitude: profileAddress.latitude || null,
+          longitude: profileAddress.longitude || null
+        });
       } else {
         // Fallback to Firebase user data
         const emptyAddress = {
           street: "",
           city: "",
           zipCode: "",
-          country: ""
+          country: "",
+          latitude: null,
+          longitude: null
         };
         setProfileData({
           displayName: user?.displayName || "",
@@ -202,7 +213,9 @@ export default function OrderConfirmation() {
         city: "",
         state: "",
         zipCode: "",
-        country: ""
+        country: "",
+        latitude: null,
+        longitude: null
       };
       setProfileData({
         displayName: user?.displayName || "",
@@ -230,7 +243,15 @@ export default function OrderConfirmation() {
   const canProceedToPayment = isDiscountCalculationReady && total !== null;
   
   // Check if address has been changed from profile
-  const isAddressChanged = JSON.stringify(orderAddress) !== JSON.stringify(profileData.address);
+  // Compare only the actual address fields, ignoring latitude/longitude
+  const normalizeAddressForComparison = (addr) => ({
+    street: addr?.street || "",
+    city: addr?.city || "",
+    zipCode: addr?.zipCode || "",
+    country: addr?.country || ""
+  });
+  const isAddressChanged = JSON.stringify(normalizeAddressForComparison(orderAddress)) !== 
+                           JSON.stringify(normalizeAddressForComparison(profileData.address));
   
   // Use order address if it's been changed, otherwise use profile address
   // When editing, always show orderAddress in the form
@@ -252,13 +273,96 @@ export default function OrderConfirmation() {
   }
   
   function handleCancelEdit() {
-    // Reset to profile address
-    setOrderAddress(profileData.address);
+    // Reset to profile address, ensuring latitude/longitude fields are included
+    setOrderAddress({
+      street: profileData.address?.street || "",
+      city: profileData.address?.city || "",
+      zipCode: profileData.address?.zipCode || "",
+      country: profileData.address?.country || "",
+      latitude: profileData.address?.latitude || null,
+      longitude: profileData.address?.longitude || null
+    });
     setIsEditingAddress(false);
   }
   
   function handleUseDifferentAddress() {
     setIsEditingAddress(true);
+  }
+
+  // Get user's location and reverse geocode to address
+  async function handleUseLocation() {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLocationLoading(true);
+    setError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use a reverse geocoding service (using OpenStreetMap Nominatim API - free, no API key needed)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'KingsmanSaddlery/1.0' // Required by Nominatim
+              }
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch address");
+          }
+
+          const data = await response.json();
+          const address = data.address || {};
+
+          // Map the response to our address structure
+          setOrderAddress({
+            street: [
+              address.road,
+              address.house_number,
+              address.building
+            ].filter(Boolean).join(" ") || "",
+            city: address.city || address.town || address.village || address.municipality || "",
+            zipCode: address.postcode || "",
+            country: address.country || "",
+            latitude: latitude,
+            longitude: longitude
+          });
+
+          setLocationLoading(false);
+        } catch (err) {
+          console.error("Geocoding error:", err);
+          setError("Failed to get address from location. Please enter it manually.");
+          setLocationLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        let errorMessage = "Failed to get your location. ";
+        if (err.code === 1) {
+          errorMessage += "Please allow location access or enter your address manually.";
+        } else if (err.code === 2) {
+          errorMessage += "Location unavailable. Please enter your address manually.";
+        } else if (err.code === 3) {
+          errorMessage += "Location request timed out. Please try again or enter your address manually.";
+        } else {
+          errorMessage += "Please enter your address manually.";
+        }
+        setError(errorMessage);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: false, // Set to false to reduce timeout issues
+        timeout: 20000, // Increased to 20 seconds
+        maximumAge: 60000 // Allow cached location up to 1 minute old
+      }
+    );
   }
 
   async function handleProceedToPayment() {
@@ -444,7 +548,6 @@ export default function OrderConfirmation() {
           {discountInfo && (
             <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
               <div className="flex items-center gap-2">
-                <span style={{ fontSize: "1.25rem" }}>🎉</span>
                 <div>
                   <p style={{ color: "#16a34a", fontWeight: "600" }}>
                     You're eligible for a {discountInfo.percentage}% new user discount!
@@ -630,6 +733,28 @@ export default function OrderConfirmation() {
                 
                 {isEditingAddress ? (
                   <div className="space-y-3">
+                    <div className="flex-row flex-gap-sm flex-items-center margin-bottom-sm">
+                      <label className="text-xs text-muted">Address</label>
+                      <button
+                        type="button"
+                        onClick={handleUseLocation}
+                        disabled={locationLoading}
+                        className="btn-secondary flex-row flex-gap-sm"
+                        style={{ marginLeft: "auto", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                      >
+                        {locationLoading ? (
+                          <>
+                            <FaSpinner className="animate-spin" />
+                            Getting location...
+                          </>
+                        ) : (
+                          <>
+                            <FaLocationArrow />
+                            Use My Location
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <div>
                       <label className="text-xs text-muted block margin-bottom-xs">Street Address</label>
                       <input
