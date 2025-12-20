@@ -13,11 +13,12 @@ import {
   FaMapMarkerAlt,
   FaEnvelope,
   FaPhone,
-  FaArrowLeft,
   FaUser,
   FaTimes,
-  FaDirections
+  FaDirections,
+  FaFileInvoice,
 } from "react-icons/fa";
+import Invoice from "../components/Invoice";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -31,6 +32,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     if (user && id) {
@@ -207,23 +209,24 @@ export default function OrderDetail() {
             </div>
           )}
 
-          <button
-            onClick={() => navigate("/orders")}
-            className="btn-secondary margin-bottom-md flex-row flex-gap-xs flex-center"
-          >
-            <FaArrowLeft />
-            <span>Back to Orders</span>
-          </button>
-
-          <div className="flex-row flex-gap-md margin-bottom-lg order-header-row">
-            <h1 className="heading-1 flex-row flex-gap-sm order-heading">
-              <FaShoppingBag />
-              Order #{order.id.substring(0, 8)}
-            </h1>
-            <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs order-badge`}>
-              {getStatusIcon(order.status)}
-              <span className="order-badge-text">{order.status || "pending"}</span>
-            </span>
+          <div className="flex-row flex-gap-md margin-bottom-lg order-header-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div className="flex-row flex-gap-md" style={{ alignItems: "center" }}>
+              <h1 className="heading-1 flex-row flex-gap-sm order-heading">
+                <FaShoppingBag />
+                Order #{order.id.substring(0, 8)}
+              </h1>
+              <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs order-badge`}>
+                {getStatusIcon(order.status)}
+                <span className="order-badge-text">{order.status || "pending"}</span>
+              </span>
+            </div>
+            <button
+              onClick={() => setShowInvoice(true)}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <FaFileInvoice />
+              View Invoice
+            </button>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -456,6 +459,33 @@ export default function OrderDetail() {
             </div>
           </div>
         </div>
+
+        {/* Invoice Modal */}
+        {showInvoice && (
+          <div
+            className="invoice-modal-overlay"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 1000,
+              overflowY: "auto",
+              padding: "2rem",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowInvoice(false);
+              }
+            }}
+          >
+            <div style={{ position: "relative", maxWidth: "900px", margin: "0 auto" }}>
+              <Invoice order={order} onClose={() => setShowInvoice(false)} />
+            </div>
+          </div>
+        )}
       </main>
     </AuthRoute>
   );
