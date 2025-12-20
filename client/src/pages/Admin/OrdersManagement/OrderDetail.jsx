@@ -12,9 +12,11 @@ import {
   FaUser,
   FaArchive,
   FaDirections,
+  FaFileInvoice,
 } from "react-icons/fa";
 import GoogleMapsIcon from "../../../components/icons/GoogleMapsIcon";
 import WazeIcon from "../../../components/icons/WazeIcon";
+import Invoice from "../../../components/Invoice";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -53,6 +55,7 @@ export default function AdminOrderDetail() {
   const [archiving, setArchiving] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
   const [pendingDeliveryType, setPendingDeliveryType] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -283,9 +286,18 @@ export default function AdminOrderDetail() {
             Created: {formatDate(order.createdAt)}
           </p>
         </div>
-        <span className={`badge ${getStatusBadgeClass(order.status)}`}>
-          {STATUS_OPTIONS[order.status] || normalizedStatus}
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowInvoice(true)}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <FaFileInvoice />
+            View Invoice
+          </button>
+          <span className={`badge ${getStatusBadgeClass(order.status)}`}>
+            {STATUS_OPTIONS[order.status] || normalizedStatus}
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -619,6 +631,32 @@ export default function AdminOrderDetail() {
         </div>
       </div>
 
+      {/* Invoice Modal */}
+      {showInvoice && (
+        <div
+          className="invoice-modal-overlay"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 1000,
+            overflowY: "auto",
+            padding: "2rem",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowInvoice(false);
+            }
+          }}
+        >
+          <div style={{ position: "relative", maxWidth: "900px", margin: "0 auto" }}>
+            <Invoice order={order} onClose={() => setShowInvoice(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
