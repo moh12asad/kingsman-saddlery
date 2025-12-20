@@ -761,6 +761,20 @@
   opacity: 1 !important;
   pointer-events: auto !important;
   overflow: hidden !important;
+  position: fixed !important;
+}
+
+.profile-dropdown-mobile .profile-dropdown-item {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.profile-dropdown-mobile .profile-dropdown-item a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
 }
 
 @media (max-width: 768px) {

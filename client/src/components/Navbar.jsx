@@ -68,8 +68,10 @@ export default function Navbar() {
     }
   }, [showProfileMenu, isMobile]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (only for desktop)
   useEffect(() => {
+    if (isMobile) return; // Don't add click outside handler for mobile (backdrop handles it)
+    
     function handleClickOutside(event) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setShowProfileMenu(false);
@@ -80,16 +82,14 @@ export default function Navbar() {
       // Small delay to prevent immediate closure
       const timeoutId = setTimeout(() => {
         document.addEventListener("mousedown", handleClickOutside);
-        document.addEventListener("touchstart", handleClickOutside);
       }, 10);
 
       return () => {
         clearTimeout(timeoutId);
         document.removeEventListener("mousedown", handleClickOutside);
-        document.removeEventListener("touchstart", handleClickOutside);
       };
     }
-  }, [showProfileMenu]);
+  }, [showProfileMenu, isMobile]);
 
   return (
     <header className="navbar">
@@ -215,45 +215,84 @@ export default function Navbar() {
                         </div>
                     )}
                     {showProfileMenu && isMobile && createPortal(
-                        <div 
-                            className="profile-dropdown profile-dropdown-mobile"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                position: 'fixed',
-                                top: `${dropdownPosition.top}px`,
-                                right: `${dropdownPosition.right}px`,
-                                zIndex: 1011
-                            }}
-                        >
-                            <NavLink
-                                to="/profile"
-                                className="profile-dropdown-item"
-                                onClick={() => setShowProfileMenu(false)}
-                            >
-                                <FaUser className="w-4 h-4" />
-                                <span>Profile</span>
-                            </NavLink>
-                            <NavLink
-                                to="/orders"
-                                className="profile-dropdown-item"
-                                onClick={() => setShowProfileMenu(false)}
-                            >
-                                <FaShoppingBag className="w-4 h-4" />
-                                <span>My Orders</span>
-                            </NavLink>
-                            <div className="profile-dropdown-divider"></div>
-                            <button
-                                onClick={async () => {
-                                    setShowProfileMenu(false);
-                                    await signOutUser();
-                                    navigate("/");
+                        <>
+                            {/* Backdrop to close dropdown */}
+                            <div 
+                                style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    zIndex: 1010,
+                                    backgroundColor: 'transparent'
                                 }}
-                                className="profile-dropdown-item"
-                                style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
+                                onClick={() => setShowProfileMenu(false)}
+                            />
+                            {/* Dropdown menu */}
+                            <div 
+                                className="profile-dropdown profile-dropdown-mobile"
+                                onClick={(e) => {
+                                    // Allow clicks on links/buttons to work
+                                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                                        return;
+                                    }
+                                    e.stopPropagation();
+                                }}
+                                style={{
+                                    position: 'fixed',
+                                    top: `${dropdownPosition.top}px`,
+                                    right: `${dropdownPosition.right}px`,
+                                    zIndex: 1011
+                                }}
                             >
-                                Sign out
-                            </button>
-                        </div>,
+                                <NavLink
+                                    to="/profile"
+                                    className="profile-dropdown-item"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowProfileMenu(false);
+                                    }}
+                                    style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                >
+                                    <FaUser className="w-4 h-4" />
+                                    <span>Profile</span>
+                                </NavLink>
+                                <NavLink
+                                    to="/orders"
+                                    className="profile-dropdown-item"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowProfileMenu(false);
+                                    }}
+                                    style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                >
+                                    <FaShoppingBag className="w-4 h-4" />
+                                    <span>My Orders</span>
+                                </NavLink>
+                                <div className="profile-dropdown-divider"></div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowProfileMenu(false);
+                                        signOutUser().then(() => {
+                                            navigate("/");
+                                        });
+                                    }}
+                                    className="profile-dropdown-item"
+                                    style={{ 
+                                        width: "100%", 
+                                        textAlign: "left", 
+                                        background: "none", 
+                                        border: "none", 
+                                        cursor: "pointer",
+                                        pointerEvents: 'auto'
+                                    }}
+                                >
+                                    Sign out
+                                </button>
+                            </div>
+                        </>,
                         document.body
                     )}
                 </div>
