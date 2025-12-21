@@ -75,3 +75,52 @@
     margin-bottom: 1rem;
   }
 }
+
+/* Orders Filter Navigation - Horizontal Tabs */
+.orders-filter-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.orders-filter-nav a {
+  display: inline-block;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.orders-filter-nav a:hover {
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--brand);
+}
+
+.orders-filter-nav a.active {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--brand);
+  font-weight: 700;
+  border-bottom-color: var(--brand);
+}
+
+@media (max-width: 768px) {
+  .orders-filter-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  
+  .orders-filter-nav a {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}

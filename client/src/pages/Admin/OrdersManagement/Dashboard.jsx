@@ -157,23 +157,16 @@ export default function OrdersDashboard() {
   const statusFilter = getStatusFilter();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ width: "100%" }}>
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="section-title">
-          {statusFilter === "archived"
-            ? "Archived Orders"
-            : statusFilter 
-            ? STATUS_OPTIONS[statusFilter] || "Orders"
-            : "All Orders"}
-        </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1" style={{ minWidth: "250px" }}>
           <input
             type="text"
             placeholder="Search orders..."
             className="input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ minWidth: "250px" }}
+            style={{ minWidth: "250px", flex: 1, maxWidth: "400px" }}
           />
           <button
             onClick={loadOrders}
@@ -191,8 +184,8 @@ export default function OrdersDashboard() {
         </div>
       )}
 
-      <div className="card">
-        <div className="section-title">
+      <div className="card" style={{ width: "100%", overflow: "hidden" }}>
+        <div className="section-title margin-bottom-md">
           {statusFilter === "archived"
             ? `Archived Orders (${displayOrders.length})`
             : statusFilter 
@@ -204,7 +197,7 @@ export default function OrdersDashboard() {
         ) : displayOrders.length === 0 ? (
           <div className="text-gray-500 text-sm py-8 text-center">No orders found.</div>
         ) : (
-          <div className="overflow-x-auto" style={{ width: "100%" }}>
+          <div className="overflow-x-auto" style={{ width: "100%", margin: "0 -1rem", padding: "0 1rem" }}>
             <table className="table" style={{ fontSize: "0.875rem", width: "100%", minWidth: "1400px" }}>
               <thead>
                 <tr>
