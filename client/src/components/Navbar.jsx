@@ -5,6 +5,7 @@ import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch, FaShoppingBag, FaChev
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useMemo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -14,7 +15,10 @@ export default function Navbar() {
   const cartCount = getTotalItems();
   const favoriteCount = getFavoriteCount();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const [isMobile, setIsMobile] = useState(false);
   const profileMenuRef = useRef(null);
+  const profileButtonRef = useRef(null);
 
   const handleSearchClick = () => {
     navigate("/products?search=true");
@@ -30,8 +34,44 @@ export default function Navbar() {
     return adminEmails.length === 0 || adminEmails.includes(user.email.toLowerCase());
   }, [user]);
 
-  // Close dropdown when clicking outside
+  // Check if mobile and calculate dropdown position
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Calculate dropdown position on mobile
+  useEffect(() => {
+    if (showProfileMenu && isMobile && profileButtonRef.current) {
+      const updatePosition = () => {
+        const buttonRect = profileButtonRef.current?.getBoundingClientRect();
+        if (buttonRect) {
+          setDropdownPosition({
+            top: buttonRect.bottom + 8,
+            right: window.innerWidth - buttonRect.right
+          });
+        }
+      };
+
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition, true);
+      };
+    }
+  }, [showProfileMenu, isMobile]);
+
+  // Close dropdown when clicking outside (only for desktop)
+  useEffect(() => {
+    if (isMobile) return; // Don't add click outside handler for mobile (backdrop handles it)
+    
     function handleClickOutside(event) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setShowProfileMenu(false);
@@ -49,7 +89,7 @@ export default function Navbar() {
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
-  }, [showProfileMenu]);
+  }, [showProfileMenu, isMobile]);
 
   return (
     <header className="navbar">
@@ -125,6 +165,7 @@ export default function Navbar() {
                         />
                     )}
                     <button
+                        ref={profileButtonRef}
                         onClick={(e) => {
                             e.stopPropagation();
                             setShowProfileMenu(!showProfileMenu);
@@ -138,7 +179,7 @@ export default function Navbar() {
                         <FaChevronDown className="w-3 h-3" style={{ transition: "transform 0.2s", transform: showProfileMenu ? "rotate(180deg)" : "rotate(0deg)" }} />
                     </button>
                     
-                    {showProfileMenu && (
+                    {showProfileMenu && !isMobile && (
                         <div 
                             className="profile-dropdown"
                             onClick={(e) => e.stopPropagation()}
@@ -172,6 +213,87 @@ export default function Navbar() {
                                 Sign out
                             </button>
                         </div>
+                    )}
+                    {showProfileMenu && isMobile && createPortal(
+                        <>
+                            {/* Backdrop to close dropdown */}
+                            <div 
+                                style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    zIndex: 1010,
+                                    backgroundColor: 'transparent'
+                                }}
+                                onClick={() => setShowProfileMenu(false)}
+                            />
+                            {/* Dropdown menu */}
+                            <div 
+                                className="profile-dropdown profile-dropdown-mobile"
+                                onClick={(e) => {
+                                    // Allow clicks on links/buttons to work
+                                    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                                        return;
+                                    }
+                                    e.stopPropagation();
+                                }}
+                                style={{
+                                    position: 'fixed',
+                                    top: `${dropdownPosition.top}px`,
+                                    right: `${dropdownPosition.right}px`,
+                                    zIndex: 1011
+                                }}
+                            >
+                                <NavLink
+                                    to="/profile"
+                                    className="profile-dropdown-item"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowProfileMenu(false);
+                                    }}
+                                    style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                >
+                                    <FaUser className="w-4 h-4" />
+                                    <span>Profile</span>
+                                </NavLink>
+                                <NavLink
+                                    to="/orders"
+                                    className="profile-dropdown-item"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowProfileMenu(false);
+                                    }}
+                                    style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                >
+                                    <FaShoppingBag className="w-4 h-4" />
+                                    <span>My Orders</span>
+                                </NavLink>
+                                <div className="profile-dropdown-divider"></div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowProfileMenu(false);
+                                        signOutUser().then(() => {
+                                            navigate("/");
+                                        });
+                                    }}
+                                    className="profile-dropdown-item"
+                                    style={{ 
+                                        width: "100%", 
+                                        textAlign: "left", 
+                                        background: "none", 
+                                        border: "none", 
+                                        cursor: "pointer",
+                                        pointerEvents: 'auto'
+                                    }}
+                                >
+                                    Sign out
+                                </button>
+                            </div>
+                        </>,
+                        document.body
                     )}
                 </div>
             )}

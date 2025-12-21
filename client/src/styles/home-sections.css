@@ -201,3 +201,48 @@
 .group:hover .category-card-title {
   color: var(--brand);
 }
+
+/* Categories Grid Mobile Styles */
+@media (max-width: 768px) {
+  /* Ensure categories section has proper spacing on mobile */
+  section.max-w-7xl {
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Make category cards more compact on mobile */
+  .grid.grid-cols-1 {
+    gap: 1rem !important;
+  }
+
+  /* Ensure category cards are fully visible */
+  .aspect-square {
+    min-height: 200px;
+  }
+
+  .category-card-title {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  section.max-w-7xl {
+    padding-top: 0.75rem;
+    padding-bottom: 1rem;
+  }
+
+  .grid.grid-cols-1 {
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+  }
+
+  .aspect-square {
+    min-height: 180px;
+  }
+
+  .category-card-title {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
+  }
+}

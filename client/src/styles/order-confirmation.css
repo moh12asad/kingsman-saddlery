@@ -1,0 +1,73 @@
+/* Order Confirmation Page Styles */
+
+/* Success Messages */
+.order-confirmation-success {
+  background: #dcfce7;
+  border-color: #22c55e;
+}
+
+.order-confirmation-success-text {
+  color: #16a34a;
+}
+
+.order-confirmation-success-text-bold {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.order-confirmation-success-text-secondary {
+  color: #15803d;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.order-confirmation-success-text-small {
+  color: #16a34a;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+/* Error Messages */
+.order-confirmation-error {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* Warning Messages */
+.order-confirmation-warning {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.order-confirmation-warning-text {
+  color: #92400e;
+}
+
+/* Discount Text */
+.order-confirmation-discount-text {
+  color: #22c55e;
+}
+
+/* Mandatory Field Asterisk */
+.order-confirmation-mandatory-asterisk {
+  color: #ef4444;
+}
+
+.order-confirmation-mandatory-asterisk-inline {
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+/* Payment Placeholder */
+.order-confirmation-payment-placeholder {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Location Button */
+.order-confirmation-location-button {
+  margin-left: auto;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+

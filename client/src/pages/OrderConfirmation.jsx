@@ -6,6 +6,7 @@ import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner } from "react-icons/fa";
+import "../styles/order-confirmation.css";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -289,6 +290,83 @@ export default function OrderConfirmation() {
     setIsEditingAddress(true);
   }
 
+  // Get user's current location and automatically populate address (enters edit mode)
+  async function handleUseCurrentLocation() {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLocationLoading(true);
+    setError("");
+    setIsEditingAddress(true); // Automatically enter edit mode
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use a reverse geocoding service (using OpenStreetMap Nominatim API - free, no API key needed)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'KingsmanSaddlery/1.0' // Required by Nominatim
+              }
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch address");
+          }
+
+          const data = await response.json();
+          const address = data.address || {};
+
+          // Map the response to our address structure
+          setOrderAddress({
+            street: [
+              address.road,
+              address.house_number,
+              address.building
+            ].filter(Boolean).join(" ") || "",
+            city: address.city || address.town || address.village || address.municipality || "",
+            zipCode: address.postcode || "",
+            country: address.country || "",
+            latitude: latitude,
+            longitude: longitude
+          });
+
+          setLocationLoading(false);
+        } catch (err) {
+          console.error("Geocoding error:", err);
+          setError("Failed to get address from location. Please enter it manually.");
+          setLocationLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        let errorMessage = "Failed to get your location. ";
+        if (err.code === 1) {
+          errorMessage += "Please allow location access or enter your address manually.";
+        } else if (err.code === 2) {
+          errorMessage += "Location unavailable. Please enter your address manually.";
+        } else if (err.code === 3) {
+          errorMessage += "Location request timed out. Please try again or enter your address manually.";
+        } else {
+          errorMessage += "Please enter your address manually.";
+        }
+        setError(errorMessage);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: false, // Set to false to reduce timeout issues
+        timeout: 20000, // Increased to 20 seconds
+        maximumAge: 60000 // Allow cached location up to 1 minute old
+      }
+    );
+  }
+
   // Get user's location and reverse geocode to address
   async function handleUseLocation() {
     if (!navigator.geolocation) {
@@ -546,13 +624,13 @@ export default function OrderConfirmation() {
           <h1 className="heading-1 margin-bottom-lg">Order Confirmation</h1>
 
           {discountInfo && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
+            <div className="card padding-md margin-bottom-md order-confirmation-success">
               <div className="flex items-center gap-2">
                 <div>
-                  <p style={{ color: "#16a34a", fontWeight: "600" }}>
+                  <p className="order-confirmation-success-text-bold">
                     You're eligible for a {discountInfo.percentage}% new user discount!
                   </p>
-                  <p style={{ color: "#15803d", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                  <p className="order-confirmation-success-text-secondary">
                     Save {formatPrice(discountInfo.amount)} on your first order (valid for first 3 months)
                   </p>
                 </div>
@@ -561,15 +639,15 @@ export default function OrderConfirmation() {
           )}
 
           {error && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+            <div className="card padding-md margin-bottom-md order-confirmation-error">
               <p className="text-error">{error}</p>
             </div>
           )}
 
           {emailSuccess && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
-              <p style={{ color: "#16a34a" }}>{emailSuccess}</p>
-              <p style={{ color: "#16a34a", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+            <div className="card padding-md margin-bottom-md order-confirmation-success">
+              <p className="order-confirmation-success-text">{emailSuccess}</p>
+              <p className="order-confirmation-success-text-small">
                 Payment integration with Tranzilla will be implemented next. Your order details have been saved.
               </p>
             </div>
@@ -622,7 +700,7 @@ export default function OrderConfirmation() {
                       <p className="text-sm text-muted margin-top-sm">Calculating discount...</p>
                     </div>
                   ) : discountCalculationError ? (
-                    <div className="card padding-sm margin-bottom-sm" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+                    <div className="card padding-sm margin-bottom-sm order-confirmation-error">
                       <p className="text-error text-sm">Unable to calculate discount. Please refresh the page.</p>
                     </div>
                   ) : total === null ? (
@@ -636,7 +714,7 @@ export default function OrderConfirmation() {
                         <span className="text-sm font-semibold">{formatPrice(subtotal)}</span>
                       </div>
                       {discountInfo && (
-                        <div className="flex justify-between items-center" style={{ color: "#22c55e" }}>
+                        <div className="flex justify-between items-center order-confirmation-discount-text">
                           <span className="text-sm font-semibold">
                             New User Discount ({discountInfo.percentage}%):
                           </span>
@@ -713,13 +791,30 @@ export default function OrderConfirmation() {
                     <FaMapMarkerAlt />
                     Delivery Address
                   </h2>
-                  {!isEditingAddress && (
+                  {!isEditingAddress && hasCompleteAddress && (
                     <div className="flex gap-2">
                       {isAddressChanged && (
                         <span className="text-xs text-muted flex items-center">
                           (Custom for this order)
                         </span>
                       )}
+                      <button
+                        onClick={handleUseCurrentLocation}
+                        disabled={locationLoading}
+                        className="btn btn-sm flex items-center gap-1"
+                      >
+                        {locationLoading ? (
+                          <>
+                            <FaSpinner className="animate-spin" />
+                            Getting location...
+                          </>
+                        ) : (
+                          <>
+                            <FaLocationArrow />
+                            Use My Current Location
+                          </>
+                        )}
+                      </button>
                       <button
                         onClick={handleUseDifferentAddress}
                         className="btn btn-sm flex items-center gap-1"
@@ -739,8 +834,7 @@ export default function OrderConfirmation() {
                         type="button"
                         onClick={handleUseLocation}
                         disabled={locationLoading}
-                        className="btn-secondary flex-row flex-gap-sm"
-                        style={{ marginLeft: "auto", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                        className="btn-secondary flex-row flex-gap-sm order-confirmation-location-button"
                       >
                         {locationLoading ? (
                           <>
@@ -756,34 +850,43 @@ export default function OrderConfirmation() {
                       </button>
                     </div>
                     <div>
-                      <label className="text-xs text-muted block margin-bottom-xs">Street Address</label>
+                      <label className="text-xs text-muted block margin-bottom-xs">
+                        Street Address <span className="order-confirmation-mandatory-asterisk">*</span>
+                      </label>
                       <input
                         type="text"
                         className="input"
                         value={orderAddress.street}
                         onChange={(e) => handleAddressChange("street", e.target.value)}
                         placeholder="Street address"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted block margin-bottom-xs">City</label>
+                      <label className="text-xs text-muted block margin-bottom-xs">
+                        City <span className="order-confirmation-mandatory-asterisk">*</span>
+                      </label>
                       <input
                         type="text"
                         className="input"
                         value={orderAddress.city}
                         onChange={(e) => handleAddressChange("city", e.target.value)}
                         placeholder="City"
+                        required
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-muted block margin-bottom-xs">ZIP Code</label>
+                        <label className="text-xs text-muted block margin-bottom-xs">
+                          ZIP Code <span className="order-confirmation-mandatory-asterisk">*</span>
+                        </label>
                         <input
                           type="text"
                           className="input"
                           value={orderAddress.zipCode}
                           onChange={(e) => handleAddressChange("zipCode", e.target.value)}
                           placeholder="ZIP Code"
+                          required
                         />
                       </div>
                       <div>
@@ -841,14 +944,34 @@ export default function OrderConfirmation() {
                 ) : (
                   <div className="padding-y-md">
                     <p className="text-muted text-sm margin-bottom-md">
-                      Please complete your delivery address.
+                      Please complete your delivery address. Fields marked with <span className="order-confirmation-mandatory-asterisk">*</span> are mandatory.
                     </p>
-                    <button
-                      onClick={handleUseDifferentAddress}
-                      className="btn-primary btn-sm margin-bottom-sm"
-                    >
-                      Add Address for This Order
-                    </button>
+                    <div className="flex gap-2 margin-bottom-sm">
+                      <button
+                        onClick={handleUseCurrentLocation}
+                        disabled={locationLoading}
+                        className="btn-primary btn-sm flex items-center gap-1"
+                      >
+                        {locationLoading ? (
+                          <>
+                            <FaSpinner className="animate-spin" />
+                            Getting location...
+                          </>
+                        ) : (
+                          <>
+                            <FaLocationArrow />
+                            Use My Current Location
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleUseDifferentAddress}
+                        className="btn btn-sm flex items-center gap-1"
+                      >
+                        <FaEdit />
+                        Use Different
+                      </button>
+                    </div>
                     <div className="margin-top-sm">
                       <Link to="/profile" className="text-xs text-muted underline">
                         Or update your default address in profile
@@ -873,11 +996,14 @@ export default function OrderConfirmation() {
                   </div>
                   <div className="flex items-center gap-2">
                     <FaPhone className="text-muted" />
-                    <span>{profileData.phone || "Not set"}</span>
+                    <span>
+                      {profileData.phone || "Not set"}
+                      {!profileData.phone && <span className="order-confirmation-mandatory-asterisk-inline">*</span>}
+                    </span>
                   </div>
                   {!profileData.phone && (
                     <Link to="/profile" className="btn btn-sm margin-top-sm">
-                      Add Phone Number
+                      Add Phone Number <span className="order-confirmation-mandatory-asterisk">*</span>
                     </Link>
                   )}
                 </div>
@@ -890,7 +1016,7 @@ export default function OrderConfirmation() {
                   <p className="text-muted text-sm margin-bottom-md">
                     Payment integration will be configured with Tranzilla.
                   </p>
-                  <div className="card padding-md" style={{ background: "#f3f4f6", borderColor: "#d1d5db" }}>
+                  <div className="card padding-md order-confirmation-payment-placeholder">
                     <p className="text-sm text-muted text-center">
                       Payment gateway coming soon
                     </p>
@@ -923,17 +1049,17 @@ export default function OrderConfirmation() {
           </div>
 
           {(!hasCompleteAddress || !profileData.phone) && (
-            <div className="card padding-md margin-top-md" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
-              <p className="text-sm" style={{ color: "#92400e" }}>
-                <strong>Please complete the following:</strong>{" "}
+            <div className="card padding-md margin-top-md order-confirmation-warning">
+              <p className="text-sm order-confirmation-warning-text">
+                <strong>Please fill in all mandatory fields (marked with <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
                 {deliveryType === "delivery" && !hasCompleteAddress && (
                   <>
                     {isEditingAddress 
-                      ? "Complete the delivery address fields above. "
-                      : "Add a complete delivery address. "}
+                      ? "Complete the mandatory delivery address fields above (Street Address, City, ZIP Code). "
+                      : "Add a complete delivery address with all mandatory fields. "}
                   </>
                 )}
-                {!profileData.phone && "Add a phone number. "}
+                {!profileData.phone && "Add a phone number (mandatory). "}
                 {deliveryType === "delivery" && !hasCompleteAddress && !isEditingAddress && (
                   <button onClick={handleUseDifferentAddress} className="underline">
                     Add Address for This Order
