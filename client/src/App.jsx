@@ -4,6 +4,8 @@ import SubNavbar from "./components/SubNavbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 import SocialButtons from "./components/SocialButtons";
+import SignupInvitePopup from "./components/SignupInvitePopup";
+import "./styles/signup-invite-popup.css";
 
 export default function App() {
   return (
@@ -17,6 +19,7 @@ export default function App() {
         <Outlet />
       </div>
       <Footer />
+      <SignupInvitePopup />
     </div>
   );
 }

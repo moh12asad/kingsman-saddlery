@@ -111,6 +111,60 @@ app.get("/api/test-firestore", async (_req, res) => {
 });
 
 // ---------- Routes ----------
+// Public endpoint to check if user exists (no auth required)
+app.post("/api/users/check-exists", async (req, res) => {
+  try {
+    const { adminAuth, db } = await import("./lib/firebaseAdmin.js");
+    const { email, phone } = req.body;
+    
+    if (!email && !phone) {
+      return res.status(400).json({ error: "Email or phone is required" });
+    }
+
+    let emailExists = false;
+    let phoneExists = false;
+
+    // Check email in Firebase Auth
+    if (email) {
+      try {
+        const normalizedEmail = email.trim().toLowerCase();
+        await adminAuth.getUserByEmail(normalizedEmail);
+        emailExists = true;
+      } catch (error) {
+        if (error.code !== "auth/user-not-found") {
+          console.error("Error checking email:", error);
+        }
+        emailExists = false;
+      }
+    }
+
+    // Check phone in Firestore users collection
+    if (phone) {
+      try {
+        const normalizedPhone = phone.trim();
+        const usersSnapshot = await db.collection("users")
+          .where("phone", "==", normalizedPhone)
+          .limit(1)
+          .get();
+        
+        phoneExists = !usersSnapshot.empty;
+      } catch (error) {
+        console.error("Error checking phone:", error);
+        phoneExists = false;
+      }
+    }
+
+    res.json({
+      emailExists,
+      phoneExists,
+      exists: emailExists || phoneExists
+    });
+  } catch (error) {
+    console.error("Error checking if user exists:", error);
+    res.status(500).json({ error: "Failed to check if user exists", details: error.message });
+  }
+});
+
 app.use("/api/users", verifyFirebaseToken, usersAdmin);
 // Public GET is allowed for listing products; POST/PATCH protected inside the router:
 app.use("/api/products", productsAdmin);

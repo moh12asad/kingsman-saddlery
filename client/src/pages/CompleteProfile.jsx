@@ -28,12 +28,15 @@ export default function CompleteProfile() {
   const [profileData, setProfileData] = useState({
     displayName: "",
     phone: "",
+    phoneCountryCode: "+972",
     address: {
       street: "",
       city: "",
       zipCode: "",
       country: ""
-    }
+    },
+    emailConsent: false,
+    smsConsent: false
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -74,11 +77,79 @@ export default function CompleteProfile() {
 
   useEffect(() => {
     if (user && !checkingProfile) {
-      // Pre-fill display name from Firebase Auth if available
-      setProfileData(prev => ({
-        ...prev,
-        displayName: user.displayName || ""
-      }));
+      // Load existing profile data from backend
+      (async () => {
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          if (token) {
+            const res = await fetch(`${API}/api/users/me`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              
+              // Parse phone number if it exists (extract country code and number)
+              let phone = "";
+              let phoneCountryCode = "+972";
+              if (data.phone) {
+                const phoneMatch = data.phone.match(/^(\+\d{1,4})(.+)$/);
+                if (phoneMatch) {
+                  phoneCountryCode = phoneMatch[1];
+                  phone = phoneMatch[2].replace(/\D/g, ""); // Remove any non-digits from number part
+                } else {
+                  // If no country code found, assume it's just the number
+                  phone = data.phone.replace(/\D/g, "");
+                }
+              }
+              
+              setProfileData(prev => ({
+                ...prev,
+                displayName: data.displayName || user.displayName || prev.displayName,
+                phone: phone || prev.phone,
+                phoneCountryCode: phoneCountryCode || prev.phoneCountryCode,
+                address: data.address || prev.address,
+                emailConsent: data.emailConsent !== undefined ? data.emailConsent : prev.emailConsent,
+                smsConsent: data.smsConsent !== undefined ? data.smsConsent : prev.smsConsent
+              }));
+            }
+          }
+        } catch (err) {
+          console.error("Error loading profile data:", err);
+        }
+      })();
+
+      // Check if there's signup invite data in localStorage (only if no existing phone)
+      const signupInviteData = localStorage.getItem("signupInviteData");
+      if (signupInviteData) {
+        try {
+          const data = JSON.parse(signupInviteData);
+          // Extract phone country code and number (generic regex for any country code)
+          const phoneMatch = data.phone?.match(/^(\+\d+)(.+)$/);
+          setProfileData(prev => {
+            // Only use localStorage data if phone is not already set from backend
+            if (!prev.phone) {
+              return {
+                ...prev,
+                phone: phoneMatch ? phoneMatch[2] : (data.phone || prev.phone),
+                phoneCountryCode: phoneMatch ? phoneMatch[1] : prev.phoneCountryCode,
+                emailConsent: data.emailConsent || prev.emailConsent,
+                smsConsent: data.smsConsent || prev.smsConsent
+              };
+            }
+            // If phone exists, only update consents if not already set
+            return {
+              ...prev,
+              emailConsent: prev.emailConsent || data.emailConsent || false,
+              smsConsent: prev.smsConsent || data.smsConsent || false
+            };
+          });
+          // Clear the stored data after using it
+          localStorage.removeItem("signupInviteData");
+        } catch (err) {
+          console.error("Error parsing signup invite data:", err);
+        }
+      }
     }
   }, [user, checkingProfile]);
 
@@ -172,28 +243,32 @@ export default function CompleteProfile() {
     setPasswordError("");
     setPasswordSuccess("");
     
-    // Password requirements: 6-12 characters with at least one number
-    if (!passwordData.newPassword) {
+    // Trim passwords for validation
+    const trimmedNewPassword = passwordData.newPassword ? passwordData.newPassword.trim() : "";
+    const trimmedConfirmPassword = passwordData.confirmPassword ? passwordData.confirmPassword.trim() : "";
+    
+    // Password requirements: 6-12 characters with at least one letter
+    if (!trimmedNewPassword) {
       setPasswordError("Please enter a new password");
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (trimmedNewPassword.length < 6) {
       setPasswordError("Password must be at least 6 characters long");
       return;
     }
 
-    if (passwordData.newPassword.length > 12) {
+    if (trimmedNewPassword.length > 12) {
       setPasswordError("Password must be no more than 12 characters long");
       return;
     }
 
-    if (!/\d/.test(passwordData.newPassword)) {
-      setPasswordError("Password must contain at least one number");
+    if (!/[a-zA-Z]/.test(trimmedNewPassword)) {
+      setPasswordError("Password must contain at least one letter");
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (trimmedNewPassword !== trimmedConfirmPassword) {
       setPasswordError("Passwords do not match");
       return;
     }
@@ -206,7 +281,7 @@ export default function CompleteProfile() {
         // For Google users, link email/password provider
         const credential = EmailAuthProvider.credential(
           user.email,
-          passwordData.newPassword
+          trimmedNewPassword
         );
         await linkWithCredential(user, credential);
         setPasswordSuccess("Password created successfully! You can now sign in with email and password.");
@@ -256,6 +331,9 @@ export default function CompleteProfile() {
       return;
     }
 
+    // Combine country code with phone number
+    const fullPhone = `${profileData.phoneCountryCode}${profileData.phone.trim()}`;
+
     if (!profileData.address.street || profileData.address.street.trim() === "") {
       setError("Please enter your street address");
       return;
@@ -273,6 +351,16 @@ export default function CompleteProfile() {
 
     if (!profileData.address.country || profileData.address.country.trim() === "") {
       setError("Please enter your country");
+      return;
+    }
+
+    if (!profileData.emailConsent) {
+      setError("You must agree to receive emails");
+      return;
+    }
+
+    if (!profileData.smsConsent) {
+      setError("You must agree to receive SMS messages");
       return;
     }
 
@@ -294,13 +382,15 @@ export default function CompleteProfile() {
         },
         body: JSON.stringify({
           displayName: profileData.displayName.trim(),
-          phone: profileData.phone.trim(),
+          phone: fullPhone,
           address: {
             street: profileData.address.street.trim(),
             city: profileData.address.city.trim(),
             zipCode: profileData.address.zipCode.trim(),
             country: profileData.address.country.trim()
-          }
+          },
+          emailConsent: profileData.emailConsent,
+          smsConsent: profileData.smsConsent
         })
       });
 
@@ -353,7 +443,7 @@ export default function CompleteProfile() {
             </p>
 
             {error && (
-              <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+              <div className="card card-error padding-md margin-bottom-md">
                 <p className="text-error">{error}</p>
               </div>
             )}
@@ -366,21 +456,21 @@ export default function CompleteProfile() {
                   Create Password
                 </h2>
                 
-                <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
-                  <p style={{ color: "#92400e", fontWeight: "500" }}>
+                <div className="card card-warning padding-md margin-top-md margin-bottom-md">
+                  <p className="text-warning">
                     ⚠️ <strong>Important:</strong> You must create a password before you can complete your profile.
                   </p>
                 </div>
 
                 {passwordError && (
-                  <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+                  <div className="card card-error padding-md margin-top-md margin-bottom-md">
                     <p className="text-error">{passwordError}</p>
                   </div>
                 )}
 
                 {passwordSuccess && (
-                  <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
-                    <p style={{ color: "#16a34a" }}>{passwordSuccess}</p>
+                  <div className="card card-success padding-md margin-top-md margin-bottom-md">
+                    <p className="text-success">{passwordSuccess}</p>
                   </div>
                 )}
 
@@ -389,8 +479,8 @@ export default function CompleteProfile() {
                     <label className="text-sm font-medium">
                       Password Requirements
                     </label>
-                    <p className="text-xs text-muted" style={{ marginTop: "0.25rem" }}>
-                      6-12 characters, must include at least one number
+                    <p className="text-xs text-muted label-help-text">
+                      6-12 characters, must include at least one letter
                     </p>
                   </div>
                   <div className="grid-form">
@@ -402,7 +492,7 @@ export default function CompleteProfile() {
                         <input
                           type={showPasswords.new ? "text" : "password"}
                           className="input"
-                          style={{ paddingRight: "5rem" }}
+                          className="input input-with-action"
                           value={passwordData.newPassword}
                           onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                           placeholder="Enter new password"
@@ -422,7 +512,7 @@ export default function CompleteProfile() {
                         <input
                           type={showPasswords.confirm ? "text" : "password"}
                           className="input"
-                          style={{ paddingRight: "5rem" }}
+                          className="input input-with-action"
                           value={passwordData.confirmPassword}
                           onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                           placeholder="Confirm new password"
@@ -469,18 +559,33 @@ export default function CompleteProfile() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
+                  <label className="font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaPhone />
                     Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    className="input"
-                    value={profileData.phone}
-                    onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
-                    placeholder="05XXXXXXXX"
-                    required
-                  />
+                  <div className="flex-row flex-gap-sm">
+                    <select
+                      className="select select-country-code-large"
+                      value={profileData.phoneCountryCode}
+                      onChange={e => setProfileData({ ...profileData, phoneCountryCode: e.target.value })}
+                    >
+                      <option value="+972">🇮🇱 +972</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+39">🇮🇹 +39</option>
+                      <option value="+34">🇪🇸 +34</option>
+                    </select>
+                    <input
+                      type="tel"
+                      className="input flex-1"
+                      value={profileData.phone}
+                      onChange={e => setProfileData({ ...profileData, phone: e.target.value.replace(/\D/g, "") })}
+                      placeholder="Enter phone number"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -495,7 +600,8 @@ export default function CompleteProfile() {
                     onClick={handleUseLocation}
                     disabled={locationLoading}
                     className="btn-secondary flex-row flex-gap-sm"
-                    style={{ marginLeft: "auto", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                    className="btn-sm"
+                    style={{ marginLeft: "auto" }}
                   >
                     {locationLoading ? (
                       <>
@@ -558,6 +664,45 @@ export default function CompleteProfile() {
                     placeholder="Country"
                     required
                   />
+                </div>
+              </div>
+
+              <div className="margin-top-lg margin-bottom-md">
+                <div className="card padding-md" style={{ background: "var(--brand-light)", borderColor: "var(--brand)", borderWidth: "2px" }}>
+                  <h3 className="section-title margin-bottom-md">Communication Preferences *</h3>
+                  <p className="text-sm text-muted margin-bottom-md">
+                    Please confirm your preferences to receive updates and special offers
+                  </p>
+                  
+                  <div className="margin-bottom-sm">
+                    <label className="flex-row flex-gap-sm flex-items-center checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={profileData.emailConsent}
+                        onChange={e => setProfileData({ ...profileData, emailConsent: e.target.checked })}
+                        required
+                        className="checkbox-custom"
+                      />
+                      <span className="text-sm">
+                        I agree to receive emails with updates, special offers, and promotions
+                      </span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="flex-row flex-gap-sm flex-items-center checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={profileData.smsConsent}
+                        onChange={e => setProfileData({ ...profileData, smsConsent: e.target.checked })}
+                        required
+                        className="checkbox-custom"
+                      />
+                      <span className="text-sm">
+                        I agree to receive SMS messages with updates and special offers
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
 

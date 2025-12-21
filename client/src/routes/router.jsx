@@ -8,6 +8,7 @@ import CreateOwner from "../pages/CreateOwner.jsx";
 import Owner from "../pages/Owner.jsx";
 import ForgotPassword from "../pages/ForgotPassword.jsx";
 import SignIn from "../pages/SignIn.jsx";
+import SignUp from "../pages/SignUp.jsx";
 import GuestRoute from "../components/GuestRoute.jsx";
 import OwnerView from "../pages/OwnerView.jsx";
 import OwnerRoute from "../components/OwnerRoute.jsx";
@@ -24,6 +25,11 @@ export const router = createBrowserRouter([
       { path: "shop", element: <Shop /> },
       { path: "cart", element: <Cart /> },
       { path: "signin", element: <SignIn /> },
+      { path: "signup", element: (
+        <GuestRoute>
+          <SignUp />
+        </GuestRoute>
+      ) },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "admin", element: (
         <ProtectedRoute>

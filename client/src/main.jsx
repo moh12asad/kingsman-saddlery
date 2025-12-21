@@ -7,6 +7,7 @@ import App from "./App.jsx";
 // your existing pages
 import Home from "./pages/Home.jsx"; // adjust to your actual landing page
 import SignIn from "./pages/SignIn.jsx";
+import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import Shop from "./pages/Shop.jsx";
 import Products from "./pages/Products.jsx";
@@ -64,6 +65,7 @@ const router = createBrowserRouter([
       { index: true, element: <Shop /> },
       { path: "home", element: <Home /> },
       { path: "signin", element: <SignIn /> },
+      { path: "signup", element: <SignUp /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "shop", element: <Shop /> },
       { path: "products", element: <Products /> },

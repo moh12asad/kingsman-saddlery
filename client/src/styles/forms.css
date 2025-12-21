@@ -42,5 +42,80 @@
   font-size: 0.875rem;
 }
 
+/* Input with icon/button inside */
+.input-with-action {
+  padding-right: 5rem;
+}
+
+/* Disabled/Readonly input styles */
+.input-disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+.input-readonly {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Checkbox styles */
+.checkbox-custom {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: var(--brand-dark);
+}
+
+.checkbox-label {
+  cursor: pointer;
+}
+
+/* Label with inline help text */
+.label-with-help {
+  margin-left: 0.5rem;
+}
+
+.label-help-text {
+  margin-top: 0.25rem;
+}
+
+/* Country code select */
+.select-country-code {
+  flex-shrink: 0;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+.select-country-code:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.select-country-code-large {
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+/* Ensure select elements have proper borders */
+select.select {
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+select.select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+select.select:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 
 
