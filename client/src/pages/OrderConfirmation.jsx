@@ -6,6 +6,7 @@ import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner } from "react-icons/fa";
+import "../styles/order-confirmation.css";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -623,13 +624,13 @@ export default function OrderConfirmation() {
           <h1 className="heading-1 margin-bottom-lg">Order Confirmation</h1>
 
           {discountInfo && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
+            <div className="card padding-md margin-bottom-md order-confirmation-success">
               <div className="flex items-center gap-2">
                 <div>
-                  <p style={{ color: "#16a34a", fontWeight: "600" }}>
+                  <p className="order-confirmation-success-text-bold">
                     You're eligible for a {discountInfo.percentage}% new user discount!
                   </p>
-                  <p style={{ color: "#15803d", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                  <p className="order-confirmation-success-text-secondary">
                     Save {formatPrice(discountInfo.amount)} on your first order (valid for first 3 months)
                   </p>
                 </div>
@@ -638,15 +639,15 @@ export default function OrderConfirmation() {
           )}
 
           {error && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+            <div className="card padding-md margin-bottom-md order-confirmation-error">
               <p className="text-error">{error}</p>
             </div>
           )}
 
           {emailSuccess && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
-              <p style={{ color: "#16a34a" }}>{emailSuccess}</p>
-              <p style={{ color: "#16a34a", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+            <div className="card padding-md margin-bottom-md order-confirmation-success">
+              <p className="order-confirmation-success-text">{emailSuccess}</p>
+              <p className="order-confirmation-success-text-small">
                 Payment integration with Tranzilla will be implemented next. Your order details have been saved.
               </p>
             </div>
@@ -699,7 +700,7 @@ export default function OrderConfirmation() {
                       <p className="text-sm text-muted margin-top-sm">Calculating discount...</p>
                     </div>
                   ) : discountCalculationError ? (
-                    <div className="card padding-sm margin-bottom-sm" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+                    <div className="card padding-sm margin-bottom-sm order-confirmation-error">
                       <p className="text-error text-sm">Unable to calculate discount. Please refresh the page.</p>
                     </div>
                   ) : total === null ? (
@@ -713,7 +714,7 @@ export default function OrderConfirmation() {
                         <span className="text-sm font-semibold">{formatPrice(subtotal)}</span>
                       </div>
                       {discountInfo && (
-                        <div className="flex justify-between items-center" style={{ color: "#22c55e" }}>
+                        <div className="flex justify-between items-center order-confirmation-discount-text">
                           <span className="text-sm font-semibold">
                             New User Discount ({discountInfo.percentage}%):
                           </span>
@@ -833,8 +834,7 @@ export default function OrderConfirmation() {
                         type="button"
                         onClick={handleUseLocation}
                         disabled={locationLoading}
-                        className="btn-secondary flex-row flex-gap-sm"
-                        style={{ marginLeft: "auto", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                        className="btn-secondary flex-row flex-gap-sm order-confirmation-location-button"
                       >
                         {locationLoading ? (
                           <>
@@ -851,7 +851,7 @@ export default function OrderConfirmation() {
                     </div>
                     <div>
                       <label className="text-xs text-muted block margin-bottom-xs">
-                        Street Address <span style={{ color: "#ef4444" }}>*</span>
+                        Street Address <span className="order-confirmation-mandatory-asterisk">*</span>
                       </label>
                       <input
                         type="text"
@@ -864,7 +864,7 @@ export default function OrderConfirmation() {
                     </div>
                     <div>
                       <label className="text-xs text-muted block margin-bottom-xs">
-                        City <span style={{ color: "#ef4444" }}>*</span>
+                        City <span className="order-confirmation-mandatory-asterisk">*</span>
                       </label>
                       <input
                         type="text"
@@ -878,7 +878,7 @@ export default function OrderConfirmation() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-muted block margin-bottom-xs">
-                          ZIP Code <span style={{ color: "#ef4444" }}>*</span>
+                          ZIP Code <span className="order-confirmation-mandatory-asterisk">*</span>
                         </label>
                         <input
                           type="text"
@@ -944,7 +944,7 @@ export default function OrderConfirmation() {
                 ) : (
                   <div className="padding-y-md">
                     <p className="text-muted text-sm margin-bottom-md">
-                      Please complete your delivery address. Fields marked with <span style={{ color: "#ef4444" }}>*</span> are mandatory.
+                      Please complete your delivery address. Fields marked with <span className="order-confirmation-mandatory-asterisk">*</span> are mandatory.
                     </p>
                     <div className="flex gap-2 margin-bottom-sm">
                       <button
@@ -998,12 +998,12 @@ export default function OrderConfirmation() {
                     <FaPhone className="text-muted" />
                     <span>
                       {profileData.phone || "Not set"}
-                      {!profileData.phone && <span style={{ color: "#ef4444", marginLeft: "0.25rem" }}>*</span>}
+                      {!profileData.phone && <span className="order-confirmation-mandatory-asterisk-inline">*</span>}
                     </span>
                   </div>
                   {!profileData.phone && (
                     <Link to="/profile" className="btn btn-sm margin-top-sm">
-                      Add Phone Number <span style={{ color: "#ef4444" }}>*</span>
+                      Add Phone Number <span className="order-confirmation-mandatory-asterisk">*</span>
                     </Link>
                   )}
                 </div>
@@ -1016,7 +1016,7 @@ export default function OrderConfirmation() {
                   <p className="text-muted text-sm margin-bottom-md">
                     Payment integration will be configured with Tranzilla.
                   </p>
-                  <div className="card padding-md" style={{ background: "#f3f4f6", borderColor: "#d1d5db" }}>
+                  <div className="card padding-md order-confirmation-payment-placeholder">
                     <p className="text-sm text-muted text-center">
                       Payment gateway coming soon
                     </p>
@@ -1049,9 +1049,9 @@ export default function OrderConfirmation() {
           </div>
 
           {(!hasCompleteAddress || !profileData.phone) && (
-            <div className="card padding-md margin-top-md" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
-              <p className="text-sm" style={{ color: "#92400e" }}>
-                <strong>Please fill in all mandatory fields (marked with <span style={{ color: "#ef4444" }}>*</span>):</strong>{" "}
+            <div className="card padding-md margin-top-md order-confirmation-warning">
+              <p className="text-sm order-confirmation-warning-text">
+                <strong>Please fill in all mandatory fields (marked with <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
                 {deliveryType === "delivery" && !hasCompleteAddress && (
                   <>
                     {isEditingAddress 
