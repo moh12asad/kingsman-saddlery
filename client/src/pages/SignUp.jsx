@@ -416,7 +416,7 @@ export default function SignUp() {
             </p>
 
             {error && (
-              <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+              <div className="card card-error padding-md margin-bottom-md">
                 <p className="text-error">{error}</p>
               </div>
             )}
@@ -437,7 +437,7 @@ export default function SignUp() {
                     placeholder="you@example.com"
                     readOnly={fromPopup.email}
                     disabled={fromPopup.email}
-                    style={fromPopup.email ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {}}
+                    className={fromPopup.email ? "input input-readonly" : "input"}
                     required
                   />
                 </div>
@@ -452,8 +452,7 @@ export default function SignUp() {
                   <div className="relative">
                     <input
                       type={showPasswords.password ? "text" : "password"}
-                      className="input"
-                      style={{ paddingRight: "5rem" }}
+                      className="input input-with-action"
                       value={formData.password}
                       onChange={e => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Enter password (6-12 chars, must include a letter)"
@@ -476,8 +475,7 @@ export default function SignUp() {
                   <div className="relative">
                     <input
                       type={showPasswords.confirmPassword ? "text" : "password"}
-                      className="input"
-                      style={{ paddingRight: "5rem" }}
+                      className="input input-with-action"
                       value={formData.confirmPassword}
                       onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
                       placeholder="Confirm password"
@@ -519,12 +517,7 @@ export default function SignUp() {
                   <div className="flex-row flex-gap-sm">
                     <select
                       className="input"
-                      style={{ 
-                        flexShrink: 0, 
-                        minWidth: "90px",
-                        maxWidth: "90px",
-                        ...(fromPopup.phone ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {})
-                      }}
+                      className={`select select-country-code ${fromPopup.phone ? "input-readonly" : ""}`}
                       value={formData.phoneCountryCode}
                       onChange={e => setFormData({ ...formData, phoneCountryCode: e.target.value })}
                       disabled={fromPopup.phone}
@@ -539,11 +532,8 @@ export default function SignUp() {
                     </select>
                     <input
                       type="tel"
-                      className="input"
-                      style={{ 
-                        flex: 1,
-                        ...(fromPopup.phone ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {})
-                      }}
+                      className={`input ${fromPopup.phone ? "input-readonly" : ""}`}
+                      className="flex-1"
                       value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
                       placeholder="Enter phone number"
@@ -566,8 +556,8 @@ export default function SignUp() {
                     type="button"
                     onClick={handleUseLocation}
                     disabled={locationLoading}
-                    className="btn-secondary flex-row flex-gap-sm"
-                    style={{ marginLeft: "auto", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                    className="btn-secondary btn-sm flex-row flex-gap-sm"
+                    style={{ marginLeft: "auto" }}
                   >
                     {locationLoading ? (
                       <>
@@ -635,37 +625,37 @@ export default function SignUp() {
 
               {/* Consent */}
               <div className="margin-top-lg margin-bottom-md">
-                <div className="card padding-md" style={{ background: "var(--brand-light)", borderColor: "var(--brand)", borderWidth: "2px" }}>
+                <div className="card card-brand padding-md">
                   <h3 className="section-title margin-bottom-md">Communication Preferences *</h3>
                   <p className="text-sm text-muted margin-bottom-md">
                     Please confirm your preferences to receive updates and special offers
                   </p>
                   
                   <div className="margin-bottom-sm">
-                    <label className="flex-row flex-gap-sm flex-items-center" style={{ cursor: "pointer" }}>
+                    <label className="flex-row flex-gap-sm flex-items-center checkbox-label">
                       <input
                         type="checkbox"
                         checked={formData.emailConsent}
                         onChange={e => setFormData({ ...formData, emailConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
+                        className="checkbox-custom"
                       />
-                      <span className="text-sm" style={{ color: "var(--text)" }}>
+                      <span className="text-sm">
                         I agree to receive emails with updates, special offers, and promotions
                       </span>
                     </label>
                   </div>
 
                   <div>
-                    <label className="flex-row flex-gap-sm flex-items-center" style={{ cursor: "pointer" }}>
+                    <label className="flex-row flex-gap-sm flex-items-center checkbox-label">
                       <input
                         type="checkbox"
                         checked={formData.smsConsent}
                         onChange={e => setFormData({ ...formData, smsConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
+                        className="checkbox-custom"
                       />
-                      <span className="text-sm" style={{ color: "var(--text)" }}>
+                      <span className="text-sm">
                         I agree to receive SMS messages with updates and special offers
                       </span>
                     </label>
@@ -683,19 +673,18 @@ export default function SignUp() {
             </form>
 
             <div className="margin-top-lg">
-              <div className="flex-row flex-items-center flex-gap-md" style={{ justifyContent: "center", marginBottom: "1rem" }}>
-                <div style={{ flex: 1, height: "1px", background: "var(--border)" }}></div>
+              <div className="flex-row flex-items-center flex-gap-md flex-center margin-bottom-md">
+                <div className="divider"></div>
                 <span className="text-sm text-muted">OR</span>
-                <div style={{ flex: 1, height: "1px", background: "var(--border)" }}></div>
+                <div className="divider"></div>
               </div>
 
               <button
                 onClick={onGoogle}
-                className="btn-secondary flex-row flex-items-center flex-gap-sm"
-                style={{ width: "100%", justifyContent: "center" }}
+                className="btn-secondary flex-row flex-items-center flex-gap-sm btn-icon-only"
                 disabled={loading}
               >
-                <FcGoogle style={{ fontSize: "1.25rem" }} />
+                <FcGoogle className="icon-lg" />
                 <span>Continue with Google</span>
               </button>
             </div>
@@ -703,7 +692,7 @@ export default function SignUp() {
             <div className="margin-top-md text-center">
               <p className="text-sm text-muted">
                 Already have an account?{" "}
-                <Link to="/signin" style={{ color: "var(--brand)", fontWeight: "500" }}>
+                <Link to="/signin" className="link-brand">
                   Sign in
                 </Link>
               </p>

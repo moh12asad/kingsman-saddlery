@@ -96,3 +96,36 @@
     display: inline;
   }
 }
+
+/* Flex utilities */
+.flex-center {
+  justify-content: center;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Divider */
+.divider {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Link styles */
+.link-brand {
+  color: var(--brand);
+  font-weight: 500;
+}
+
+/* Icon sizes */
+.icon-lg {
+  font-size: 1.25rem;
+}
+
+/* Button with icon */
+.btn-icon-only {
+  width: 100%;
+  justify-content: center;
+}

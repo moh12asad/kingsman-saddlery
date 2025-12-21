@@ -371,14 +371,14 @@ export default function Profile() {
           <h1 className="heading-1 margin-bottom-lg">My Profile</h1>
 
           {error && !error.includes("Password") && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+            <div className="card card-error padding-md margin-bottom-md">
               <p className="text-error">{error}</p>
             </div>
           )}
 
           {success && !success.includes("Password") && (
-            <div className="card padding-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
-              <p style={{ color: "#16a34a" }}>{success}</p>
+            <div className="card card-success padding-md margin-bottom-md">
+              <p className="text-success">{success}</p>
             </div>
           )}
 
@@ -400,7 +400,7 @@ export default function Profile() {
                   placeholder="Your name"
                   disabled={!isEditing}
                   readOnly={!isEditing}
-                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
+                  className={!isEditing ? "input input-disabled" : "input"}
                 />
               </div>
               
@@ -417,7 +417,7 @@ export default function Profile() {
                   placeholder="your@email.com"
                   disabled={!isEditing}
                   readOnly={!isEditing}
-                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
+                  className={!isEditing ? "input input-disabled" : "input"}
                 />
               </div>
 
@@ -434,7 +434,7 @@ export default function Profile() {
                   placeholder="05XXXXXXXX"
                   disabled={!isEditing}
                   readOnly={!isEditing}
-                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
+                  className={!isEditing ? "input input-disabled" : "input"}
                 />
               </div>
 
@@ -450,7 +450,7 @@ export default function Profile() {
                     value={formatDate(createdAt)}
                     disabled
                     readOnly
-                    style={{ background: '#f9fafb', cursor: 'not-allowed' }}
+                    className="input input-disabled"
                   />
                   <p className="text-xs text-muted margin-top-xs">Account creation date</p>
                 </div>
@@ -571,7 +571,7 @@ export default function Profile() {
             
             {/* Password validation errors - shown above password section */}
             {error && error.includes("Password") && (
-              <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+              <div className="card card-error padding-md margin-top-md margin-bottom-md">
                 <p className="text-error">{error}</p>
               </div>
             )}
@@ -599,7 +599,7 @@ export default function Profile() {
                       <input
                         type={showPasswords.current ? "text" : "password"}
                         className="input"
-                        style={{ paddingRight: "5rem" }}
+                        className="input input-with-action"
                         value={passwordData.currentPassword}
                         onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                         placeholder="Enter current password"
@@ -617,15 +617,14 @@ export default function Profile() {
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm">
                     New Password
-                    <span className="text-xs text-muted" style={{ marginLeft: "0.5rem" }}>
+                    <span className="text-xs text-muted label-with-help">
                       (6-12 characters, must include at least one letter)
                     </span>
                   </label>
                   <div className="relative">
                     <input
                       type={showPasswords.new ? "text" : "password"}
-                      className="input"
-                      style={{ paddingRight: "5rem" }}
+                      className="input input-with-action"
                       value={passwordData.newPassword}
                       onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                       placeholder="Enter new password"
@@ -644,8 +643,7 @@ export default function Profile() {
                   <div className="relative">
                     <input
                       type={showPasswords.confirm ? "text" : "password"}
-                      className="input"
-                      style={{ paddingRight: "5rem" }}
+                      className="input input-with-action"
                       value={passwordData.confirmPassword}
                       onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                       placeholder="Confirm new password"
@@ -689,8 +687,8 @@ export default function Profile() {
 
             {/* Password success messages - shown under password section */}
             {success && success.includes("Password:") && (
-              <div className="card padding-md margin-top-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
-                <p style={{ color: "#16a34a" }}>{success.replace("Password: ", "")}</p>
+              <div className="card card-success padding-md margin-top-md">
+                <p className="text-success">{success.replace("Password: ", "")}</p>
               </div>
             )}
           </div>

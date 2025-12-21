@@ -443,7 +443,7 @@ export default function CompleteProfile() {
             </p>
 
             {error && (
-              <div className="card padding-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+              <div className="card card-error padding-md margin-bottom-md">
                 <p className="text-error">{error}</p>
               </div>
             )}
@@ -456,21 +456,21 @@ export default function CompleteProfile() {
                   Create Password
                 </h2>
                 
-                <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
-                  <p style={{ color: "#92400e", fontWeight: "500" }}>
+                <div className="card card-warning padding-md margin-top-md margin-bottom-md">
+                  <p className="text-warning">
                     ⚠️ <strong>Important:</strong> You must create a password before you can complete your profile.
                   </p>
                 </div>
 
                 {passwordError && (
-                  <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#fee2e2", borderColor: "#ef4444" }}>
+                  <div className="card card-error padding-md margin-top-md margin-bottom-md">
                     <p className="text-error">{passwordError}</p>
                   </div>
                 )}
 
                 {passwordSuccess && (
-                  <div className="card padding-md margin-top-md margin-bottom-md" style={{ background: "#dcfce7", borderColor: "#22c55e" }}>
-                    <p style={{ color: "#16a34a" }}>{passwordSuccess}</p>
+                  <div className="card card-success padding-md margin-top-md margin-bottom-md">
+                    <p className="text-success">{passwordSuccess}</p>
                   </div>
                 )}
 
@@ -479,7 +479,7 @@ export default function CompleteProfile() {
                     <label className="text-sm font-medium">
                       Password Requirements
                     </label>
-                    <p className="text-xs text-muted" style={{ marginTop: "0.25rem" }}>
+                    <p className="text-xs text-muted label-help-text">
                       6-12 characters, must include at least one letter
                     </p>
                   </div>
@@ -492,7 +492,7 @@ export default function CompleteProfile() {
                         <input
                           type={showPasswords.new ? "text" : "password"}
                           className="input"
-                          style={{ paddingRight: "5rem" }}
+                          className="input input-with-action"
                           value={passwordData.newPassword}
                           onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                           placeholder="Enter new password"
@@ -512,7 +512,7 @@ export default function CompleteProfile() {
                         <input
                           type={showPasswords.confirm ? "text" : "password"}
                           className="input"
-                          style={{ paddingRight: "5rem" }}
+                          className="input input-with-action"
                           value={passwordData.confirmPassword}
                           onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                           placeholder="Confirm new password"
@@ -565,8 +565,7 @@ export default function CompleteProfile() {
                   </label>
                   <div className="flex-row flex-gap-sm">
                     <select
-                      className="input"
-                      style={{ flexShrink: 0, minWidth: "120px" }}
+                      className="select select-country-code-large"
                       value={profileData.phoneCountryCode}
                       onChange={e => setProfileData({ ...profileData, phoneCountryCode: e.target.value })}
                     >
@@ -580,8 +579,7 @@ export default function CompleteProfile() {
                     </select>
                     <input
                       type="tel"
-                      className="input"
-                      style={{ flex: 1 }}
+                      className="input flex-1"
                       value={profileData.phone}
                       onChange={e => setProfileData({ ...profileData, phone: e.target.value.replace(/\D/g, "") })}
                       placeholder="Enter phone number"
@@ -602,7 +600,8 @@ export default function CompleteProfile() {
                     onClick={handleUseLocation}
                     disabled={locationLoading}
                     className="btn-secondary flex-row flex-gap-sm"
-                    style={{ marginLeft: "auto", fontSize: "0.875rem", padding: "0.5rem 1rem" }}
+                    className="btn-sm"
+                    style={{ marginLeft: "auto" }}
                   >
                     {locationLoading ? (
                       <>
@@ -676,30 +675,30 @@ export default function CompleteProfile() {
                   </p>
                   
                   <div className="margin-bottom-sm">
-                    <label className="flex-row flex-gap-sm flex-items-center" style={{ cursor: "pointer" }}>
+                    <label className="flex-row flex-gap-sm flex-items-center checkbox-label">
                       <input
                         type="checkbox"
                         checked={profileData.emailConsent}
                         onChange={e => setProfileData({ ...profileData, emailConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
+                        className="checkbox-custom"
                       />
-                      <span className="text-sm" style={{ color: "var(--text)" }}>
+                      <span className="text-sm">
                         I agree to receive emails with updates, special offers, and promotions
                       </span>
                     </label>
                   </div>
 
                   <div>
-                    <label className="flex-row flex-gap-sm flex-items-center" style={{ cursor: "pointer" }}>
+                    <label className="flex-row flex-gap-sm flex-items-center checkbox-label">
                       <input
                         type="checkbox"
                         checked={profileData.smsConsent}
                         onChange={e => setProfileData({ ...profileData, smsConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
+                        className="checkbox-custom"
                       />
-                      <span className="text-sm" style={{ color: "var(--text)" }}>
+                      <span className="text-sm">
                         I agree to receive SMS messages with updates and special offers
                       </span>
                     </label>
