@@ -185,8 +185,21 @@
 
 @media (max-width: 768px) {
   .promotional-banner {
-    margin: 1.5rem 1rem;
+    margin: 1.5rem 0;
     height: 320px;
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+  }
+  
+  /* Ensure parent doesn't cause overflow */
+  .shop-page {
+    overflow-x: hidden;
   }
 
   /* Image styling removed - now uses background on slide */
