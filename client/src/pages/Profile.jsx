@@ -171,28 +171,33 @@ export default function Profile() {
     // Clear previous errors
     setError("");
     
-    // Password requirements: 6-12 characters with at least one number
-    if (!passwordData.newPassword) {
+    // Trim passwords for validation
+    const trimmedNewPassword = passwordData.newPassword ? passwordData.newPassword.trim() : "";
+    const trimmedConfirmPassword = passwordData.confirmPassword ? passwordData.confirmPassword.trim() : "";
+    const trimmedCurrentPassword = passwordData.currentPassword ? passwordData.currentPassword.trim() : "";
+    
+    // Password requirements: 6-12 characters with at least one letter
+    if (!trimmedNewPassword) {
       setError("Password: Please enter a new password");
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (trimmedNewPassword.length < 6) {
       setError("Password: Password must be at least 6 characters long");
       return;
     }
 
-    if (passwordData.newPassword.length > 12) {
+    if (trimmedNewPassword.length > 12) {
       setError("Password: Password must be no more than 12 characters long");
       return;
     }
 
-    if (!/\d/.test(passwordData.newPassword)) {
-      setError("Password: Password must contain at least one number");
+    if (!/[a-zA-Z]/.test(trimmedNewPassword)) {
+      setError("Password: Password must contain at least one letter");
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (trimmedNewPassword !== trimmedConfirmPassword) {
       setError("Password: Passwords do not match");
       return;
     }
@@ -208,7 +213,7 @@ export default function Profile() {
         try {
           const credential = EmailAuthProvider.credential(
             user.email,
-            passwordData.newPassword
+            trimmedNewPassword
           );
           await linkWithCredential(user, credential);
           setSuccess("Password: Password created successfully! You can now sign in with email and password.");
@@ -217,10 +222,10 @@ export default function Profile() {
             // Password provider already exists, just update password
             const credential = EmailAuthProvider.credential(
               user.email,
-              passwordData.newPassword
+              trimmedNewPassword
             );
             await reauthenticateWithCredential(user, credential);
-            await updatePassword(user, passwordData.newPassword);
+            await updatePassword(user, trimmedNewPassword);
             setSuccess("Password: Password updated successfully!");
           } else if (linkErr.code === "auth/requires-recent-login") {
             setError("Password: For security, please sign out and sign in again, then try creating your password.");
@@ -231,16 +236,16 @@ export default function Profile() {
         }
       } else {
         // For existing password users, need to reauthenticate first
-        if (!passwordData.currentPassword) {
+        if (!trimmedCurrentPassword) {
           setError("Password: Please enter your current password");
           return;
         }
         const credential = EmailAuthProvider.credential(
           user.email,
-          passwordData.currentPassword
+          trimmedCurrentPassword
         );
         await reauthenticateWithCredential(user, credential);
-        await updatePassword(user, passwordData.newPassword);
+        await updatePassword(user, trimmedNewPassword);
         setSuccess("Password: Password updated successfully!");
       }
 
@@ -459,6 +464,7 @@ export default function Profile() {
               </label>
               <div className="grid-form margin-top-sm">
                 <div className="grid-col-span-full">
+                  <label className="text-sm font-medium margin-bottom-sm">Street Address</label>
                   <input
                     type="text"
                     className="input"
@@ -473,45 +479,54 @@ export default function Profile() {
                     style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                   />
                 </div>
-                <input
-                  type="text"
-                  className="input"
-                  value={profileData.address.city}
-                  onChange={e => setProfileData({
-                    ...profileData,
-                    address: { ...profileData.address, city: e.target.value }
-                  })}
-                  placeholder="City"
-                  disabled={!isEditing}
-                  readOnly={!isEditing}
-                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
-                />
-                <input
-                  type="text"
-                  className="input"
-                  value={profileData.address.zipCode}
-                  onChange={e => setProfileData({
-                    ...profileData,
-                    address: { ...profileData.address, zipCode: e.target.value }
-                  })}
-                  placeholder="ZIP/Postal Code"
-                  disabled={!isEditing}
-                  readOnly={!isEditing}
-                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
-                />
-                <input
-                  type="text"
-                  className="input"
-                  value={profileData.address.country}
-                  onChange={e => setProfileData({
-                    ...profileData,
-                    address: { ...profileData.address, country: e.target.value }
-                  })}
-                  placeholder="Country"
-                  disabled={!isEditing}
-                  readOnly={!isEditing}
-                  style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
-                />
+                <div>
+                  <label className="text-sm font-medium margin-bottom-sm">City</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={profileData.address.city}
+                    onChange={e => setProfileData({
+                      ...profileData,
+                      address: { ...profileData.address, city: e.target.value }
+                    })}
+                    placeholder="City"
+                    disabled={!isEditing}
+                    readOnly={!isEditing}
+                    style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium margin-bottom-sm">ZIP/Postal Code</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={profileData.address.zipCode}
+                    onChange={e => setProfileData({
+                      ...profileData,
+                      address: { ...profileData.address, zipCode: e.target.value }
+                    })}
+                    placeholder="ZIP/Postal Code"
+                    disabled={!isEditing}
+                    readOnly={!isEditing}
+                    style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium margin-bottom-sm">Country</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={profileData.address.country}
+                    onChange={e => setProfileData({
+                      ...profileData,
+                      address: { ...profileData.address, country: e.target.value }
+                    })}
+                    placeholder="Country"
+                    disabled={!isEditing}
+                    readOnly={!isEditing}
+                    style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
+                  />
+                </div>
               </div>
             </div>
 
@@ -603,7 +618,7 @@ export default function Profile() {
                   <label className="text-sm font-medium margin-bottom-sm">
                     New Password
                     <span className="text-xs text-muted" style={{ marginLeft: "0.5rem" }}>
-                      (6-12 characters, must include at least one number)
+                      (6-12 characters, must include at least one letter)
                     </span>
                   </label>
                   <div className="relative">

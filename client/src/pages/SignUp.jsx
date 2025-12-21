@@ -36,6 +36,10 @@ export default function SignUp() {
     emailConsent: false,
     smsConsent: false
   });
+  const [fromPopup, setFromPopup] = useState({
+    email: false,
+    phone: false
+  });
 
   // Pre-fill data from signup invite popup if available
   useEffect(() => {
@@ -43,16 +47,91 @@ export default function SignUp() {
     if (signupInviteData) {
       try {
         const data = JSON.parse(signupInviteData);
+        console.log("Signup invite data loaded:", data);
+        
         // Extract phone country code and number
-        const phoneMatch = data.phone?.match(/^(\+\d+)(.+)$/);
+        let phone = "";
+        let phoneCountryCode = "+972";
+        
+        if (data.phone) {
+          // Clean the phone number first
+          const cleanPhone = data.phone.trim();
+          
+          // List of known country codes (ordered from longest to shortest to avoid partial matches)
+          const countryCodes = [
+            "+972", "+44", "+33", "+49", "+39", "+34", "+27", "+55", "+52", "+31", 
+            "+46", "+47", "+45", "+41", "+86", "+91", "+61", "+81", "+7", "+1"
+          ];
+          
+          // Try to match known country codes first (check longest first)
+          let matched = false;
+          for (const code of countryCodes) {
+            if (cleanPhone.startsWith(code)) {
+              phoneCountryCode = code;
+              phone = cleanPhone.substring(code.length).replace(/\D/g, "");
+              matched = true;
+              console.log("Parsed phone using known country code - country code:", phoneCountryCode, "number:", phone);
+              break;
+            }
+          }
+          
+          // If no known country code matched, try regex pattern
+          if (!matched) {
+            // Try to match country code pattern (1-3 digits after +)
+            const phoneMatch = cleanPhone.match(/^(\+\d{1,3})(.+)$/);
+            
+            if (phoneMatch) {
+              phoneCountryCode = phoneMatch[1];
+              phone = phoneMatch[2].replace(/\D/g, "");
+              console.log("Parsed phone using regex - country code:", phoneCountryCode, "number:", phone);
+            } else {
+              // If no country code found, check if it's all digits or starts with 0
+              const digitsOnly = cleanPhone.replace(/\D/g, "");
+              if (digitsOnly === cleanPhone || cleanPhone.startsWith("0")) {
+                phone = digitsOnly;
+              } else {
+                // Try to find + anywhere in the string
+                const plusIndex = cleanPhone.indexOf("+");
+                if (plusIndex >= 0) {
+                  const afterPlus = cleanPhone.substring(plusIndex);
+                  const afterMatch = afterPlus.match(/^(\+\d{1,3})(.+)$/);
+                  if (afterMatch) {
+                    phoneCountryCode = afterMatch[1];
+                    phone = afterMatch[2].replace(/\D/g, "");
+                  } else {
+                    phone = cleanPhone.replace(/\D/g, "");
+                  }
+                } else {
+                  phone = cleanPhone.replace(/\D/g, "");
+                }
+              }
+              console.log("Phone without country code - using default:", phoneCountryCode, "number:", phone);
+            }
+          }
+        }
+        
         setFormData(prev => ({
           ...prev,
           email: data.email || prev.email,
-          phone: phoneMatch ? phoneMatch[2] : (data.phone || prev.phone),
-          phoneCountryCode: phoneMatch ? phoneMatch[1] : prev.phoneCountryCode,
-          emailConsent: data.emailConsent || false,
-          smsConsent: data.smsConsent || false
+          phone: phone || prev.phone,
+          phoneCountryCode: phoneCountryCode || prev.phoneCountryCode,
+          emailConsent: data.emailConsent !== undefined ? data.emailConsent : prev.emailConsent,
+          smsConsent: data.smsConsent !== undefined ? data.smsConsent : prev.smsConsent
         }));
+        
+        // Mark which fields came from popup
+        const popupFields = {
+          email: !!data.email,
+          phone: !!data.phone
+        };
+        setFromPopup(popupFields);
+        
+        console.log("Form data updated from popup:", {
+          email: data.email || "none",
+          phone: phone || "none",
+          phoneCountryCode: phoneCountryCode || "none",
+          fromPopup: popupFields
+        });
       } catch (err) {
         console.error("Error parsing signup invite data:", err);
       }
@@ -139,27 +218,31 @@ export default function SignUp() {
       return;
     }
 
-    if (!formData.password || formData.password.trim() === "") {
+    // Trim passwords for validation
+    const trimmedPassword = formData.password ? formData.password.trim() : "";
+    const trimmedConfirmPassword = formData.confirmPassword ? formData.confirmPassword.trim() : "";
+
+    if (!trimmedPassword) {
       setError("Please enter a password");
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (trimmedPassword.length < 6) {
       setError("Password must be at least 6 characters long");
       return;
     }
 
-    if (formData.password.length > 12) {
+    if (trimmedPassword.length > 12) {
       setError("Password must be no more than 12 characters long");
       return;
     }
 
-    if (!/\d/.test(formData.password)) {
-      setError("Password must contain at least one number");
+    if (!/[a-zA-Z]/.test(trimmedPassword)) {
+      setError("Password must contain at least one letter");
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (trimmedPassword !== trimmedConfirmPassword) {
       setError("Passwords do not match");
       return;
     }
@@ -208,11 +291,11 @@ export default function SignUp() {
       setLoading(true);
       setError("");
 
-      // Create Firebase Auth user
+      // Create Firebase Auth user (use trimmed password)
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email.trim().toLowerCase(),
-        formData.password
+        trimmedPassword
       );
 
       const newUser = userCredential.user;
@@ -352,6 +435,9 @@ export default function SignUp() {
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                     placeholder="you@example.com"
+                    readOnly={fromPopup.email}
+                    disabled={fromPopup.email}
+                    style={fromPopup.email ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {}}
                     required
                   />
                 </div>
@@ -370,7 +456,7 @@ export default function SignUp() {
                       style={{ paddingRight: "5rem" }}
                       value={formData.password}
                       onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Enter password (6-12 chars, must include a number)"
+                      placeholder="Enter password (6-12 chars, must include a letter)"
                       required
                     />
                     <button
@@ -382,7 +468,7 @@ export default function SignUp() {
                     </button>
                   </div>
                   <p className="text-xs text-muted margin-top-sm">
-                    6-12 characters, must include at least one number
+                    6-12 characters, must include at least one letter
                   </p>
                 </div>
                 <div>
@@ -426,16 +512,22 @@ export default function SignUp() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
+                  <label className="font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaPhone />
                     Phone Number *
                   </label>
                   <div className="flex-row flex-gap-sm">
                     <select
                       className="input"
-                      style={{ flexShrink: 0, minWidth: "120px" }}
+                      style={{ 
+                        flexShrink: 0, 
+                        minWidth: "90px",
+                        maxWidth: "90px",
+                        ...(fromPopup.phone ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {})
+                      }}
                       value={formData.phoneCountryCode}
                       onChange={e => setFormData({ ...formData, phoneCountryCode: e.target.value })}
+                      disabled={fromPopup.phone}
                     >
                       <option value="+972">🇮🇱 +972</option>
                       <option value="+1">🇺🇸 +1</option>
@@ -448,10 +540,15 @@ export default function SignUp() {
                     <input
                       type="tel"
                       className="input"
-                      style={{ flex: 1 }}
+                      style={{ 
+                        flex: 1,
+                        ...(fromPopup.phone ? { backgroundColor: "#f3f4f6", cursor: "not-allowed" } : {})
+                      }}
                       value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
                       placeholder="Enter phone number"
+                      readOnly={fromPopup.phone}
+                      disabled={fromPopup.phone}
                       required
                     />
                   </div>
@@ -538,7 +635,7 @@ export default function SignUp() {
 
               {/* Consent */}
               <div className="margin-top-lg margin-bottom-md">
-                <div className="card padding-md" style={{ background: "#f0f9ff", borderColor: "#0ea5e9" }}>
+                <div className="card padding-md" style={{ background: "var(--brand-light)", borderColor: "var(--brand)", borderWidth: "2px" }}>
                   <h3 className="section-title margin-bottom-md">Communication Preferences *</h3>
                   <p className="text-sm text-muted margin-bottom-md">
                     Please confirm your preferences to receive updates and special offers
@@ -551,9 +648,9 @@ export default function SignUp() {
                         checked={formData.emailConsent}
                         onChange={e => setFormData({ ...formData, emailConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand)" }}
+                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
                       />
-                      <span className="text-sm">
+                      <span className="text-sm" style={{ color: "var(--text)" }}>
                         I agree to receive emails with updates, special offers, and promotions
                       </span>
                     </label>
@@ -566,9 +663,9 @@ export default function SignUp() {
                         checked={formData.smsConsent}
                         onChange={e => setFormData({ ...formData, smsConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand)" }}
+                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
                       />
-                      <span className="text-sm">
+                      <span className="text-sm" style={{ color: "var(--text)" }}>
                         I agree to receive SMS messages with updates and special offers
                       </span>
                     </label>

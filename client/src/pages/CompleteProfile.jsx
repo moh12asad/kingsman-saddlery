@@ -243,28 +243,32 @@ export default function CompleteProfile() {
     setPasswordError("");
     setPasswordSuccess("");
     
-    // Password requirements: 6-12 characters with at least one number
-    if (!passwordData.newPassword) {
+    // Trim passwords for validation
+    const trimmedNewPassword = passwordData.newPassword ? passwordData.newPassword.trim() : "";
+    const trimmedConfirmPassword = passwordData.confirmPassword ? passwordData.confirmPassword.trim() : "";
+    
+    // Password requirements: 6-12 characters with at least one letter
+    if (!trimmedNewPassword) {
       setPasswordError("Please enter a new password");
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (trimmedNewPassword.length < 6) {
       setPasswordError("Password must be at least 6 characters long");
       return;
     }
 
-    if (passwordData.newPassword.length > 12) {
+    if (trimmedNewPassword.length > 12) {
       setPasswordError("Password must be no more than 12 characters long");
       return;
     }
 
-    if (!/\d/.test(passwordData.newPassword)) {
-      setPasswordError("Password must contain at least one number");
+    if (!/[a-zA-Z]/.test(trimmedNewPassword)) {
+      setPasswordError("Password must contain at least one letter");
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (trimmedNewPassword !== trimmedConfirmPassword) {
       setPasswordError("Passwords do not match");
       return;
     }
@@ -277,7 +281,7 @@ export default function CompleteProfile() {
         // For Google users, link email/password provider
         const credential = EmailAuthProvider.credential(
           user.email,
-          passwordData.newPassword
+          trimmedNewPassword
         );
         await linkWithCredential(user, credential);
         setPasswordSuccess("Password created successfully! You can now sign in with email and password.");
@@ -476,7 +480,7 @@ export default function CompleteProfile() {
                       Password Requirements
                     </label>
                     <p className="text-xs text-muted" style={{ marginTop: "0.25rem" }}>
-                      6-12 characters, must include at least one number
+                      6-12 characters, must include at least one letter
                     </p>
                   </div>
                   <div className="grid-form">
@@ -555,7 +559,7 @@ export default function CompleteProfile() {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
+                  <label className="font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaPhone />
                     Phone Number *
                   </label>
@@ -665,7 +669,7 @@ export default function CompleteProfile() {
               </div>
 
               <div className="margin-top-lg margin-bottom-md">
-                <div className="card padding-md" style={{ background: "#f0f9ff", borderColor: "#0ea5e9" }}>
+                <div className="card padding-md" style={{ background: "var(--brand-light)", borderColor: "var(--brand)", borderWidth: "2px" }}>
                   <h3 className="section-title margin-bottom-md">Communication Preferences *</h3>
                   <p className="text-sm text-muted margin-bottom-md">
                     Please confirm your preferences to receive updates and special offers
@@ -678,9 +682,9 @@ export default function CompleteProfile() {
                         checked={profileData.emailConsent}
                         onChange={e => setProfileData({ ...profileData, emailConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand)" }}
+                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
                       />
-                      <span className="text-sm">
+                      <span className="text-sm" style={{ color: "var(--text)" }}>
                         I agree to receive emails with updates, special offers, and promotions
                       </span>
                     </label>
@@ -693,9 +697,9 @@ export default function CompleteProfile() {
                         checked={profileData.smsConsent}
                         onChange={e => setProfileData({ ...profileData, smsConsent: e.target.checked })}
                         required
-                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand)" }}
+                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand-dark)" }}
                       />
-                      <span className="text-sm">
+                      <span className="text-sm" style={{ color: "var(--text)" }}>
                         I agree to receive SMS messages with updates and special offers
                       </span>
                     </label>

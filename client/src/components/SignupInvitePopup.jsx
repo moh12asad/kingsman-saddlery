@@ -117,6 +117,7 @@ export default function SignupInvitePopup() {
         smsConsent: true,
         signupInviteDate: new Date().toISOString()
       };
+      console.log("Storing signup invite data:", signupData);
       localStorage.setItem("signupInviteData", JSON.stringify(signupData));
       
       // Mark popup as shown
