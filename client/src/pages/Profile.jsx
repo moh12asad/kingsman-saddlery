@@ -428,13 +428,12 @@ export default function Profile() {
                 </label>
                 <input
                   type="tel"
-                  className="input"
+                  className={!isEditing ? "input input-disabled" : "input"}
                   value={profileData.phone}
                   onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
                   placeholder="05XXXXXXXX"
                   disabled={!isEditing}
                   readOnly={!isEditing}
-                  className={!isEditing ? "input input-disabled" : "input"}
                 />
               </div>
 

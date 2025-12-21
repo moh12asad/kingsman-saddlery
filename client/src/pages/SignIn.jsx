@@ -219,6 +219,14 @@ export default function SignIn() {
                         Forgot password?
                     </Link>
                 </div>
+                <div className="mt-4 text-center">
+                    <p className="text-sm text-muted">
+                        Don't have an account?{" "}
+                        <Link to="/signup" className="link-brand">
+                            Sign up
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );

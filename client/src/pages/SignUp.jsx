@@ -516,7 +516,6 @@ export default function SignUp() {
                   </label>
                   <div className="flex-row flex-gap-sm">
                     <select
-                      className="input"
                       className={`select select-country-code ${fromPopup.phone ? "input-readonly" : ""}`}
                       value={formData.phoneCountryCode}
                       onChange={e => setFormData({ ...formData, phoneCountryCode: e.target.value })}
@@ -532,8 +531,7 @@ export default function SignUp() {
                     </select>
                     <input
                       type="tel"
-                      className={`input ${fromPopup.phone ? "input-readonly" : ""}`}
-                      className="flex-1"
+                      className={`input flex-1 ${fromPopup.phone ? "input-readonly" : ""}`}
                       value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
                       placeholder="Enter phone number"

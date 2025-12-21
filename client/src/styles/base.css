@@ -61,7 +61,7 @@ html {
   transform: translateY(-1px);
 }
 
-.input, .select {
+.input, .select, select.select, select.input {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
@@ -71,7 +71,7 @@ html {
   color: var(--text);
 }
 
-.input:focus, .select:focus {
+.input:focus, .select:focus, select.select:focus, select.input:focus {
   outline: none;
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);

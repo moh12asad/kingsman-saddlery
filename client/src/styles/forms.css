@@ -96,4 +96,26 @@
   min-width: 120px;
 }
 
+/* Ensure select elements have proper borders */
+select.select {
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+select.select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+select.select:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 
