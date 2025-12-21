@@ -54,17 +54,21 @@ export async function checkProfileComplete(user, retries = 3) {
         data.address.city && data.address.city.trim() !== "" &&
         data.address.zipCode && data.address.zipCode.trim() !== "" &&
         data.address.country && data.address.country.trim() !== "";
+      const hasEmailConsent = data.emailConsent === true;
+      const hasSmsConsent = data.smsConsent === true;
 
       console.log("checkProfileComplete: Validation results:", {
         hasName,
         hasPhone,
         hasAddress,
+        hasEmailConsent,
+        hasSmsConsent,
         name: data.displayName,
         phone: data.phone,
         address: data.address
       });
 
-      const isComplete = hasName && hasPhone && hasAddress;
+      const isComplete = hasName && hasPhone && hasAddress && hasEmailConsent && hasSmsConsent;
       console.log("checkProfileComplete: Profile complete:", isComplete);
       
       return isComplete;

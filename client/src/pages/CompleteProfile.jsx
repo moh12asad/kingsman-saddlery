@@ -28,12 +28,15 @@ export default function CompleteProfile() {
   const [profileData, setProfileData] = useState({
     displayName: "",
     phone: "",
+    phoneCountryCode: "+972",
     address: {
       street: "",
       city: "",
       zipCode: "",
       country: ""
-    }
+    },
+    emailConsent: false,
+    smsConsent: false
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -74,11 +77,79 @@ export default function CompleteProfile() {
 
   useEffect(() => {
     if (user && !checkingProfile) {
-      // Pre-fill display name from Firebase Auth if available
-      setProfileData(prev => ({
-        ...prev,
-        displayName: user.displayName || ""
-      }));
+      // Load existing profile data from backend
+      (async () => {
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          if (token) {
+            const res = await fetch(`${API}/api/users/me`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              
+              // Parse phone number if it exists (extract country code and number)
+              let phone = "";
+              let phoneCountryCode = "+972";
+              if (data.phone) {
+                const phoneMatch = data.phone.match(/^(\+\d{1,4})(.+)$/);
+                if (phoneMatch) {
+                  phoneCountryCode = phoneMatch[1];
+                  phone = phoneMatch[2].replace(/\D/g, ""); // Remove any non-digits from number part
+                } else {
+                  // If no country code found, assume it's just the number
+                  phone = data.phone.replace(/\D/g, "");
+                }
+              }
+              
+              setProfileData(prev => ({
+                ...prev,
+                displayName: data.displayName || user.displayName || prev.displayName,
+                phone: phone || prev.phone,
+                phoneCountryCode: phoneCountryCode || prev.phoneCountryCode,
+                address: data.address || prev.address,
+                emailConsent: data.emailConsent !== undefined ? data.emailConsent : prev.emailConsent,
+                smsConsent: data.smsConsent !== undefined ? data.smsConsent : prev.smsConsent
+              }));
+            }
+          }
+        } catch (err) {
+          console.error("Error loading profile data:", err);
+        }
+      })();
+
+      // Check if there's signup invite data in localStorage (only if no existing phone)
+      const signupInviteData = localStorage.getItem("signupInviteData");
+      if (signupInviteData) {
+        try {
+          const data = JSON.parse(signupInviteData);
+          // Extract phone country code and number (generic regex for any country code)
+          const phoneMatch = data.phone?.match(/^(\+\d+)(.+)$/);
+          setProfileData(prev => {
+            // Only use localStorage data if phone is not already set from backend
+            if (!prev.phone) {
+              return {
+                ...prev,
+                phone: phoneMatch ? phoneMatch[2] : (data.phone || prev.phone),
+                phoneCountryCode: phoneMatch ? phoneMatch[1] : prev.phoneCountryCode,
+                emailConsent: data.emailConsent || prev.emailConsent,
+                smsConsent: data.smsConsent || prev.smsConsent
+              };
+            }
+            // If phone exists, only update consents if not already set
+            return {
+              ...prev,
+              emailConsent: prev.emailConsent || data.emailConsent || false,
+              smsConsent: prev.smsConsent || data.smsConsent || false
+            };
+          });
+          // Clear the stored data after using it
+          localStorage.removeItem("signupInviteData");
+        } catch (err) {
+          console.error("Error parsing signup invite data:", err);
+        }
+      }
     }
   }, [user, checkingProfile]);
 
@@ -256,6 +327,9 @@ export default function CompleteProfile() {
       return;
     }
 
+    // Combine country code with phone number
+    const fullPhone = `${profileData.phoneCountryCode}${profileData.phone.trim()}`;
+
     if (!profileData.address.street || profileData.address.street.trim() === "") {
       setError("Please enter your street address");
       return;
@@ -273,6 +347,16 @@ export default function CompleteProfile() {
 
     if (!profileData.address.country || profileData.address.country.trim() === "") {
       setError("Please enter your country");
+      return;
+    }
+
+    if (!profileData.emailConsent) {
+      setError("You must agree to receive emails");
+      return;
+    }
+
+    if (!profileData.smsConsent) {
+      setError("You must agree to receive SMS messages");
       return;
     }
 
@@ -294,13 +378,15 @@ export default function CompleteProfile() {
         },
         body: JSON.stringify({
           displayName: profileData.displayName.trim(),
-          phone: profileData.phone.trim(),
+          phone: fullPhone,
           address: {
             street: profileData.address.street.trim(),
             city: profileData.address.city.trim(),
             zipCode: profileData.address.zipCode.trim(),
             country: profileData.address.country.trim()
-          }
+          },
+          emailConsent: profileData.emailConsent,
+          smsConsent: profileData.smsConsent
         })
       });
 
@@ -473,14 +559,31 @@ export default function CompleteProfile() {
                     <FaPhone />
                     Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    className="input"
-                    value={profileData.phone}
-                    onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
-                    placeholder="05XXXXXXXX"
-                    required
-                  />
+                  <div className="flex-row flex-gap-sm">
+                    <select
+                      className="input"
+                      style={{ flexShrink: 0, minWidth: "120px" }}
+                      value={profileData.phoneCountryCode}
+                      onChange={e => setProfileData({ ...profileData, phoneCountryCode: e.target.value })}
+                    >
+                      <option value="+972">🇮🇱 +972</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+39">🇮🇹 +39</option>
+                      <option value="+34">🇪🇸 +34</option>
+                    </select>
+                    <input
+                      type="tel"
+                      className="input"
+                      style={{ flex: 1 }}
+                      value={profileData.phone}
+                      onChange={e => setProfileData({ ...profileData, phone: e.target.value.replace(/\D/g, "") })}
+                      placeholder="Enter phone number"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -558,6 +661,45 @@ export default function CompleteProfile() {
                     placeholder="Country"
                     required
                   />
+                </div>
+              </div>
+
+              <div className="margin-top-lg margin-bottom-md">
+                <div className="card padding-md" style={{ background: "#f0f9ff", borderColor: "#0ea5e9" }}>
+                  <h3 className="section-title margin-bottom-md">Communication Preferences *</h3>
+                  <p className="text-sm text-muted margin-bottom-md">
+                    Please confirm your preferences to receive updates and special offers
+                  </p>
+                  
+                  <div className="margin-bottom-sm">
+                    <label className="flex-row flex-gap-sm flex-items-center" style={{ cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={profileData.emailConsent}
+                        onChange={e => setProfileData({ ...profileData, emailConsent: e.target.checked })}
+                        required
+                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand)" }}
+                      />
+                      <span className="text-sm">
+                        I agree to receive emails with updates, special offers, and promotions
+                      </span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="flex-row flex-gap-sm flex-items-center" style={{ cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={profileData.smsConsent}
+                        onChange={e => setProfileData({ ...profileData, smsConsent: e.target.checked })}
+                        required
+                        style={{ width: "1.25rem", height: "1.25rem", cursor: "pointer", accentColor: "var(--brand)" }}
+                      />
+                      <span className="text-sm">
+                        I agree to receive SMS messages with updates and special offers
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
 

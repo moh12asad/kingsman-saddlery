@@ -184,7 +184,7 @@ router.get("/", async (_req, res) => {
 router.put("/me", async (req, res) => {
   try {
     const { uid } = req.user;
-    const { displayName, email, phone, address } = req.body;
+    const { displayName, email, phone, address, emailConsent, smsConsent } = req.body;
 
     // Get existing user document to check if role is already set
     const userDoc = await db.collection("users").doc(uid).get();
@@ -198,6 +198,8 @@ router.put("/me", async (req, res) => {
     if (displayName !== undefined) updateData.displayName = displayName;
     if (phone !== undefined) updateData.phone = phone;
     if (address !== undefined) updateData.address = address;
+    if (emailConsent !== undefined) updateData.emailConsent = emailConsent;
+    if (smsConsent !== undefined) updateData.smsConsent = smsConsent;
 
     // Automatically assign CUSTOMER role if user doesn't have a role yet
     // Only assign CUSTOMER if they don't already have ADMIN, STAFF, or other roles
