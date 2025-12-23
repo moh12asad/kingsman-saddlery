@@ -31,12 +31,12 @@ export default function EditProduct() {
       const data = await response.json();
       const found = (data.products || []).find(p => p.id === id);
       if (!found) {
-        setError("Product not found");
+        setError(t('admin.editProduct.notFound'));
         return;
       }
       setProduct(found);
     } catch (err) {
-      setError(err.message || "Failed to load product");
+      setError(err.message || t('admin.editProduct.errors.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -59,18 +59,18 @@ export default function EditProduct() {
   async function uploadImage(file, customKey = "") {
     // Ensure user is authenticated
     if (!auth.currentUser) {
-      throw new Error("You must be signed in to upload images");
+      throw new Error(t('admin.createProduct.errors.mustSignInUpload'));
     }
 
     // Check if user is admin
     const isAdmin = await checkAdmin();
     if (!isAdmin) {
-      throw new Error("Only administrators can upload product images");
+      throw new Error(t('admin.createProduct.errors.onlyAdminUpload'));
     }
     
     // Verify file type
     if (!file.type.startsWith("image/")) {
-      throw new Error("File must be an image");
+      throw new Error(t('admin.createProduct.errors.fileMustBeImage'));
     }
     
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
@@ -107,7 +107,7 @@ export default function EditProduct() {
     // Check file size (e.g., max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      setError("Image size must be less than 5MB");
+      setError(t('admin.categories.errors.imageSizeLimit'));
       return;
     }
     
@@ -117,7 +117,7 @@ export default function EditProduct() {
       const publicUrl = await uploadImage(file);
       setProduct(prev => ({ ...prev, image: publicUrl }));
     } catch (err) {
-      setError(err.message || "Failed to upload image");
+      setError(err.message || t('admin.createProduct.errors.uploadFailed'));
       console.error("Image upload error:", err);
     } finally {
       setUploadingImage(false);
@@ -194,7 +194,7 @@ export default function EditProduct() {
       setSaving(true);
       setError("");
       const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
+      if (!token) throw new Error(t('admin.editProduct.errors.mustSignIn'));
 
       const payload = {
         name: product.name,
@@ -250,9 +250,9 @@ export default function EditProduct() {
     return (
       <div className="card">
         <div className="text-center padding-y-lg">
-          <p className="text-error">{error || "Product not found"}</p>
+          <p className="text-error">{error || t('admin.editProduct.notFound')}</p>
           <button onClick={() => navigate("/admin/products")} className="btn btn-primary margin-top-md">
-            Back to Products
+            {t('common.back')}
           </button>
         </div>
       </div>
@@ -262,9 +262,9 @@ export default function EditProduct() {
   return (
     <div className="spacing-y-lg">
       <div className="flex-row-between">
-        <h2 className="section-title">Edit Product</h2>
+        <h2 className="section-title">{t('admin.editProduct.title')}</h2>
         <button onClick={() => navigate("/admin/products")} className="btn btn-sm">
-          ← Back to Products
+          ← {t('common.back')}
         </button>
       </div>
 

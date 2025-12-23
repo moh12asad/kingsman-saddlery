@@ -67,18 +67,18 @@ export default function CreateProduct(){
   async function uploadImage(file, key = "") {
     // Ensure user is authenticated
     if (!auth.currentUser) {
-      throw new Error("You must be signed in to upload images");
+      throw new Error(t('admin.createProduct.errors.mustSignInUpload'));
     }
 
     // Check if user is admin
     const isAdmin = await checkAdmin();
     if (!isAdmin) {
-      throw new Error("Only administrators can upload product images");
+      throw new Error(t('admin.createProduct.errors.onlyAdminUpload'));
     }
     
     // Verify file type
     if (!file.type.startsWith("image/")) {
-      throw new Error("File must be an image");
+      throw new Error(t('admin.createProduct.errors.fileMustBeImage'));
     }
     
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
@@ -98,11 +98,11 @@ export default function CreateProduct(){
     } catch (error) {
       console.error("Upload error:", error);
       if (error.code === 'storage/unauthorized') {
-        throw new Error("You don't have permission to upload images. Please check Firebase Storage rules.");
+        throw new Error(t('admin.createProduct.errors.uploadPermissionDenied'));
       } else if (error.code === 'storage/canceled') {
-        throw new Error("Upload was canceled");
+        throw new Error(t('admin.createProduct.errors.uploadCanceled'));
       } else if (error.code) {
-        throw new Error(`Upload failed: ${error.message}`);
+        throw new Error(t('admin.createProduct.errors.uploadFailed'));
       }
       throw error;
     }
@@ -112,7 +112,7 @@ export default function CreateProduct(){
     try {
       setError("");
       const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
+      if (!token) throw new Error(t('admin.createProduct.errors.mustSignIn'));
 
       const payload = {
         name: form.name,
@@ -142,13 +142,13 @@ export default function CreateProduct(){
       });
       if (!res.ok) {
         const data = await res.json().catch(()=>({error:"Failed to create product"}));
-        throw new Error(data.error || "Failed to create product");
+        throw new Error(data.error || t('admin.createProduct.errors.failedToCreate'));
       }
 
       // Navigate back to products list
       navigate("/admin/products");
     } catch (err) {
-      setError(err.message || "Unable to create product");
+      setError(err.message || t('admin.createProduct.errors.failedToCreate'));
     }
   }
 
@@ -159,7 +159,7 @@ export default function CreateProduct(){
     // Check file size (e.g., max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      setError("Image size must be less than 5MB");
+      setError(t('admin.createProduct.errors.imageSizeLimit') || "Image size must be less than 5MB");
       return;
     }
     
@@ -252,12 +252,12 @@ export default function CreateProduct(){
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="section-title">Create Product</h2>
+        <h2 className="section-title">{t('admin.createProduct.title')}</h2>
         <button 
           className="btn btn-secondary btn-sm"
           onClick={() => navigate("/admin/products")}
         >
-          Back to Products
+          {t('common.back')}
         </button>
       </div>
       
@@ -265,14 +265,14 @@ export default function CreateProduct(){
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 mb-3">
           <input 
             className="input" 
-            placeholder="Product name" 
+            placeholder={t('admin.createProduct.namePlaceholder')} 
             value={form.name} 
             onChange={e=>setForm({...form,name:e.target.value})}
           />
           <input 
             className="input" 
             type="number" 
-            placeholder="Price (₪ ILS)" 
+            placeholder={t('admin.createProduct.pricePlaceholder')} 
             value={form.price || ""} 
             onChange={e=>setForm({...form,price:Number(e.target.value)})}
           />
@@ -282,7 +282,7 @@ export default function CreateProduct(){
             onChange={e=>setForm({...form, category: e.target.value, subCategory: ""})}
             required
           >
-            <option value="">Select category...</option>
+            <option value="">{t('admin.createProduct.selectCategory')}</option>
             {categories.map(cat => (
               <option key={cat.id} value={cat.name}>{cat.name}</option>
             ))}
@@ -293,7 +293,7 @@ export default function CreateProduct(){
               value={form.subCategory} 
               onChange={e=>setForm({...form, subCategory: e.target.value})}
             >
-              <option value="">Select sub-category (optional)...</option>
+              <option value="">{t('admin.createProduct.selectSubCategory')}</option>
               {availableSubCategories.map((sub, idx) => (
                 <option key={idx} value={sub.name}>{sub.name}</option>
               ))}
@@ -306,11 +306,11 @@ export default function CreateProduct(){
             onChange={e=>setForm({...form,image:e.target.value})}
           />
           <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition text-sm">
-            <span>Upload Main Image</span>
+            <span>{t('admin.createProduct.uploadImage')}</span>
             <input type="file" accept="image/*" className="hidden" onChange={handleFormImageChange} />
           </label>
           <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition text-sm">
-            <span>Upload Multiple Images</span>
+            <span>{t('admin.createProduct.uploadAdditionalImages')}</span>
             <input type="file" accept="image/*" multiple className="hidden" onChange={handleMultipleImagesChange} />
           </label>
           {uploadingImage && <span className="text-sm text-gray-500 flex items-center">Uploading main image...</span>}
@@ -321,52 +321,52 @@ export default function CreateProduct(){
           )}
           <textarea
             className="input md:col-span-2 lg:col-span-3"
-            placeholder="Product description (optional)"
+            placeholder={t('admin.createProduct.descriptionPlaceholder')}
             rows="3"
             value={form.description}
             onChange={e=>setForm({...form,description:e.target.value})}
           />
           <input 
             className="input" 
-            placeholder="SKU (optional)" 
+            placeholder={t('admin.createProduct.skuPlaceholder')} 
             value={form.sku} 
             onChange={e=>setForm({...form,sku:e.target.value})}
           />
           <input 
             className="input" 
-            placeholder="Brand (optional)" 
+            placeholder={t('admin.createProduct.brandPlaceholder')} 
             value={form.brand} 
             onChange={e=>setForm({...form,brand:e.target.value})}
           />
           <textarea
             className="input md:col-span-2 lg:col-span-3"
-            placeholder="Technical Details (optional, one per line)"
+            placeholder={t('admin.createProduct.technicalDetailsPlaceholder')}
             rows="3"
             value={form.technicalDetails}
             onChange={e=>setForm({...form,technicalDetails:e.target.value})}
           />
           <textarea
             className="input md:col-span-2 lg:col-span-3"
-            placeholder="Additional Details (optional, one per line)"
+            placeholder={t('admin.createProduct.additionalDetailsPlaceholder')}
             rows="3"
             value={form.additionalDetails}
             onChange={e=>setForm({...form,additionalDetails:e.target.value})}
           />
           <input 
             className="input" 
-            placeholder="Warranty (optional)" 
+            placeholder={t('admin.createProduct.warrantyPlaceholder')} 
             value={form.warranty} 
             onChange={e=>setForm({...form,warranty:e.target.value})}
           />
           <input 
             className="input" 
-            placeholder="Shipping Info (optional)" 
+            placeholder={t('admin.createProduct.shippingInfoPlaceholder')} 
             value={form.shippingInfo} 
             onChange={e=>setForm({...form,shippingInfo:e.target.value})}
           />
           <input 
             className="input md:col-span-2 lg:col-span-3" 
-            placeholder="Video URL (optional)" 
+            placeholder={t('admin.createProduct.videoUrlPlaceholder')} 
             value={form.videoUrl} 
             onChange={e=>setForm({...form,videoUrl:e.target.value})}
           />
@@ -417,7 +417,7 @@ export default function CreateProduct(){
               onChange={e=>setForm({...form,available:e.target.checked})}
               className="w-4 h-4"
             />
-            <span className="text-sm">Available</span>
+            <span className="text-sm">{t('admin.createProduct.available')}</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input 
@@ -431,7 +431,7 @@ export default function CreateProduct(){
           <input 
             className="input" 
             type="number" 
-            placeholder="Sale price (₪ ILS)" 
+            placeholder={t('admin.createProduct.salePricePlaceholder')} 
             value={form.sale_proce || ""} 
             onChange={e=>setForm({...form,sale_proce:Number(e.target.value)})}
           />
@@ -451,13 +451,13 @@ export default function CreateProduct(){
             disabled={!canSubmit} 
             onClick={create}
           >
-            Create Product
+            {t('admin.createProduct.create')}
           </button>
           <button 
             className="btn btn-secondary btn-sm"
             onClick={() => navigate("/admin/products")}
           >
-            Cancel
+            {t('admin.products.cancel')}
           </button>
         </div>
         {error && <p className="text-sm text-red-600 mt-4">{error}</p>}

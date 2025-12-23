@@ -18,7 +18,7 @@ export default function AdminDashboard(){
       setRoleMessage("");
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        setRoleMessage("Error: Not signed in");
+        setRoleMessage(t('admin.dashboard.errorNotSignedIn'));
         return;
       }
 
@@ -33,10 +33,10 @@ export default function AdminDashboard(){
 
       const result = await response.json();
       if (result.ok) {
-        setRoleMessage("✓ Admin role set! You can now create products.");
+        setRoleMessage(t('admin.dashboard.adminRoleSet'));
         setTimeout(() => setRoleMessage(""), 5000);
       } else {
-        setRoleMessage(`Error: ${result.error || "Failed to set role"}`);
+        setRoleMessage(`${t('admin.dashboard.errorFailedToSetRole')}: ${result.error || ""}`);
       }
     } catch (error) {
       setRoleMessage(`Error: ${error.message}`);
@@ -53,7 +53,7 @@ export default function AdminDashboard(){
       
       const idToken = await auth.currentUser?.getIdToken(true);
       if (!idToken) {
-        setTokenError("Error: Not signed in. Please sign in first.");
+        setTokenError(t('admin.dashboard.errorNotSignedInToken'));
         return;
       }
       
@@ -68,9 +68,9 @@ export default function AdminDashboard(){
   function copyToken() {
     if (token) {
       navigator.clipboard.writeText(token).then(() => {
-        alert("Token copied to clipboard!");
+        alert(t('admin.dashboard.copyToken'));
       }).catch(() => {
-        alert("Failed to copy. Please select and copy manually.");
+        alert(t('admin.dashboard.copyToken'));
       });
     }
   }
@@ -78,16 +78,16 @@ export default function AdminDashboard(){
   return (
     <div className="space-y-6">
       <div className="card">
-        <div className="section-title">Quick Setup</div>
+        <div className="section-title">{t('admin.dashboard.quickSetup')}</div>
         <p className="text-gray-600 text-sm mb-4">
-          If you're getting "Insufficient permissions" errors, click below to set your admin role:
+          {t('admin.dashboard.quickSetupMessage')}
         </p>
         <button
           onClick={setMyRole}
           disabled={settingRole}
           className="btn btn-primary"
         >
-          {settingRole ? "Setting role..." : "Set My Role to ADMIN"}
+          {settingRole ? t('admin.dashboard.settingRole') : t('admin.dashboard.setMyRoleToAdmin')}
         </button>
         {roleMessage && (
           <p className={`mt-3 text-sm ${roleMessage.startsWith("✓") ? "text-green-600" : "text-red-600"}`}>
@@ -97,16 +97,16 @@ export default function AdminDashboard(){
       </div>
 
       <div className="card">
-        <div className="section-title">Firebase ID Token (for Postman)</div>
+        <div className="section-title">{t('admin.dashboard.firebaseIdToken')}</div>
         <p className="text-gray-600 text-sm mb-4">
-          Get your Firebase ID token to use in Postman for API requests. Tokens expire after 1 hour.
+          {t('admin.dashboard.firebaseIdTokenMessage')}
         </p>
         <button
           onClick={showToken}
           disabled={loadingToken}
           className="btn btn-primary"
         >
-          {loadingToken ? "Loading..." : "Show Token"}
+          {loadingToken ? t('admin.dashboard.loading') : t('admin.dashboard.showToken')}
         </button>
         {tokenError && (
           <p className="mt-3 text-sm text-red-600">{tokenError}</p>
@@ -118,9 +118,9 @@ export default function AdminDashboard(){
                 onClick={copyToken}
                 className="btn btn-sm btn-secondary"
               >
-                Copy Token
+                {t('admin.dashboard.copyToken')}
               </button>
-              <span className="text-xs text-gray-500">Click to copy to clipboard</span>
+              <span className="text-xs text-gray-500">{t('admin.dashboard.clickToCopy')}</span>
             </div>
             <div className="p-3 bg-gray-100 rounded border border-gray-300">
               <pre className="text-xs break-all whitespace-pre-wrap font-mono text-gray-800">
@@ -128,7 +128,7 @@ export default function AdminDashboard(){
               </pre>
             </div>
             <p className="mt-2 text-xs text-gray-500">
-              ⚠️ Keep this token secure. It expires in ~1 hour. Use it in Postman Authorization → Bearer Token.
+              {t('admin.dashboard.keepTokenSecure')}
             </p>
           </div>
         )}
@@ -136,16 +136,16 @@ export default function AdminDashboard(){
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card">
-          <div className="section-title">Overview</div>
-          <p className="text-gray-600 text-sm">Key stats and quick links will go here.</p>
+          <div className="section-title">{t('admin.dashboard.overview')}</div>
+          <p className="text-gray-600 text-sm">{t('admin.dashboard.overviewMessage')}</p>
         </div>
         <div className="card">
-          <div className="section-title">Orders</div>
-          <p className="text-gray-600 text-sm">Recent orders summary.</p>
+          <div className="section-title">{t('admin.dashboard.orders')}</div>
+          <p className="text-gray-600 text-sm">{t('admin.dashboard.ordersMessage')}</p>
         </div>
         <div className="card">
-          <div className="section-title">Inventory</div>
-          <p className="text-gray-600 text-sm">Low-stock alerts and {t("products.productsOnSale")}.</p>
+          <div className="section-title">{t('admin.dashboard.inventory')}</div>
+          <p className="text-gray-600 text-sm">{t('admin.dashboard.inventoryMessage')}</p>
         </div>
       </div>
     </div>

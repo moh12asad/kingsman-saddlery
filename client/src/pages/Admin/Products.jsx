@@ -76,7 +76,7 @@ export default function AdminProducts(){
       setConfirmDelete(null);
       await load();
     } catch (err) {
-      setError(err.message || "Failed to delete product");
+      setError(err.message || t('admin.products.failedToDelete'));
     } finally {
       setDeletingId(null);
     }
@@ -88,19 +88,19 @@ export default function AdminProducts(){
       {/* Products Table */}
       <div className="card">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <h2 className="section-title">Products ({filteredRows.length})</h2>
+          <h2 className="section-title">{t('admin.products.title')} ({filteredRows.length})</h2>
           <div className="flex items-center gap-3 flex-wrap">
             <button 
               className="btn btn-primary btn-sm"
               onClick={() => navigate("/admin/products/create")}
             >
-              Create Product
+              {t('admin.products.createProduct')}
             </button>
             {/* Search Bar */}
             <div className="relative flex-1 min-w-[200px] max-w-[300px]">
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder={t('admin.products.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="input w-full pl-10"
@@ -124,13 +124,13 @@ export default function AdminProducts(){
                 </button>
               )}
             </div>
-            <label className="text-sm font-medium text-gray-700">Filter by Category:</label>
+            <label className="text-sm font-medium text-gray-700">{t('admin.products.filterByCategory')}</label>
             <select 
               className="select select-min-width" 
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t('admin.products.allCategories')}</option>
               {productCategories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
@@ -143,7 +143,7 @@ export default function AdminProducts(){
                   setSearchQuery("");
                 }}
               >
-                Clear Filters
+                {t('admin.products.clearFilters')}
               </button>
             )}
           </div>
@@ -152,18 +152,18 @@ export default function AdminProducts(){
           <table className="table admin-products-table w-full">
             <thead>
               <tr>
-                <th className="min-w-[80px]">Image</th>
-                <th className="min-w-[150px]">Name</th>
-                <th className="min-w-[100px]">Price</th>
-                <th className="min-w-[120px]">Category</th>
-                <th className="min-w-[120px]">Sub-Category</th>
-                <th className="min-w-[200px]">Description</th>
-                <th className="min-w-[100px]">Brand</th>
-                <th className="min-w-[100px]">SKU</th>
-                <th className="min-w-[100px]">Status</th>
-                <th className="min-w-[120px]">Sale</th>
-                <th className="min-w-[100px]">Featured</th>
-                <th className="min-w-[150px]">Actions</th>
+                <th className="min-w-[80px]">{t('admin.products.image')}</th>
+                <th className="min-w-[150px]">{t('admin.products.name')}</th>
+                <th className="min-w-[100px]">{t('admin.products.price')}</th>
+                <th className="min-w-[120px]">{t('admin.products.category')}</th>
+                <th className="min-w-[120px]">{t('admin.products.subCategory')}</th>
+                <th className="min-w-[200px]">{t('admin.products.description')}</th>
+                <th className="min-w-[100px]">{t('admin.products.brand')}</th>
+                <th className="min-w-[100px]">{t('admin.products.sku')}</th>
+                <th className="min-w-[100px]">{t('admin.products.status')}</th>
+                <th className="min-w-[120px]">{t('admin.products.sale')}</th>
+                <th className="min-w-[100px]">{t('admin.products.featured')}</th>
+                <th className="min-w-[150px]">{t('admin.products.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,8 +171,8 @@ export default function AdminProducts(){
                 <tr>
                   <td colSpan="12" className="text-center py-8 text-gray-500">
                     {selectedCategory === "all" 
-                      ? "No products yet. Create your first product!"
-                      : `No products found in category "${selectedCategory}".`}
+                      ? t('admin.products.noProducts')
+                      : `${t('admin.products.noProductsInCategory')} "${selectedCategory}".`}
                   </td>
                 </tr>
               ) : (
@@ -182,7 +182,7 @@ export default function AdminProducts(){
                       {p.image ? (
                         <img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
                       ) : (
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">No image</div>
+                        <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">{t('admin.products.noImage')}</div>
                       )}
                     </td>
                     <td className="font-medium">{p.name || "-"}</td>
@@ -198,7 +198,7 @@ export default function AdminProducts(){
                     <td className="text-sm text-gray-600">{p.sku || "-"}</td>
                     <td>
                       <span className={p.available ? "badge badge-success" : "badge badge-danger"}>
-                        {p.available ? "Available" : "Unavailable"}
+                        {p.available ? t('admin.products.available') : t('admin.products.unavailable')}
                       </span>
                     </td>
                     <td>
@@ -215,7 +215,7 @@ export default function AdminProducts(){
                     </td>
                     <td>
                       {p.featured ? (
-                        <span className="badge badge-success">Yes</span>
+                        <span className="badge badge-success">{t('admin.products.yes')}</span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
@@ -226,7 +226,7 @@ export default function AdminProducts(){
                           className="btn btn-primary btn-sm" 
                           onClick={() => navigate(`/admin/products/edit/${p.id}`)}
                         >
-                          Edit
+                          {t('admin.products.edit')}
                         </button>
                         {confirmDelete === p.id ? (
                           <div className="flex gap-1">
@@ -235,13 +235,13 @@ export default function AdminProducts(){
                               onClick={()=>deleteProduct(p.id)}
                               disabled={deletingId === p.id}
                             >
-                              {deletingId === p.id ? "..." : "Confirm"}
+                              {deletingId === p.id ? "..." : t('admin.products.confirm')}
                             </button>
                             <button 
                               className="btn btn-sm" 
                               onClick={()=>setConfirmDelete(null)}
                             >
-                              Cancel
+                              {t('admin.products.cancel')}
                             </button>
                           </div>
                         ) : (
@@ -250,7 +250,7 @@ export default function AdminProducts(){
                             onClick={()=>setConfirmDelete(p.id)}
                             disabled={deletingId === p.id}
                           >
-                            Delete
+                            {t('admin.products.delete')}
                           </button>
                         )}
                       </div>

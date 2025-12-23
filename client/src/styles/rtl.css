@@ -157,3 +157,70 @@
   margin-right: 0;
 }
 
+/* Admin tables RTL support */
+[dir="rtl"] .table {
+  direction: rtl;
+}
+
+[dir="rtl"] .table th,
+[dir="rtl"] .table td {
+  text-align: right;
+}
+
+[dir="rtl"] .admin-products-table th,
+[dir="rtl"] .admin-products-table td {
+  text-align: right;
+}
+
+/* Admin container RTL */
+[dir="rtl"] .admin-container {
+  direction: rtl;
+}
+
+[dir="rtl"] .admin-shell {
+  direction: rtl;
+}
+
+/* Admin sidebar RTL */
+[dir="rtl"] .sidebar {
+  direction: rtl;
+}
+
+[dir="rtl"] .sidebar nav {
+  direction: rtl;
+}
+
+/* Admin card RTL */
+[dir="rtl"] .admin-container .card {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Table overflow RTL */
+[dir="rtl"] .overflow-x-auto {
+  direction: rtl;
+}
+
+/* Admin form elements RTL */
+[dir="rtl"] .admin-container .input,
+[dir="rtl"] .admin-container .select,
+[dir="rtl"] .admin-container textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Admin buttons RTL */
+[dir="rtl"] .admin-container .btn {
+  direction: rtl;
+}
+
+/* Admin flex containers RTL */
+[dir="rtl"] .admin-container .flex {
+  direction: rtl;
+}
+
+/* Admin grid RTL */
+[dir="rtl"] .admin-container .grid {
+  direction: rtl;
+}
+

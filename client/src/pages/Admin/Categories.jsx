@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
@@ -7,6 +8,7 @@ import { checkAdmin } from "../../utils/checkAdmin";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminCategories() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ export default function AdminCategories() {
     try {
       setLoading(true);
       const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
+      if (!token) throw new Error(t('admin.categories.errors.mustSignIn'));
 
       const res = await fetch(`${API}/api/categories`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -88,7 +90,7 @@ export default function AdminCategories() {
     
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      setError("Image size must be less than 5MB");
+      setError(t('admin.categories.errors.imageSizeLimit'));
       return;
     }
     
@@ -133,7 +135,7 @@ export default function AdminCategories() {
     
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      setError("Image size must be less than 5MB");
+      setError(t('admin.categories.errors.imageSizeLimit'));
       return;
     }
     
@@ -155,7 +157,7 @@ export default function AdminCategories() {
       setSubmitting(true);
       setError("");
       const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
+      if (!token) throw new Error(t('admin.categories.errors.mustSignIn'));
 
       const res = await fetch(`${API}/api/categories`, {
         method: "POST",
@@ -182,13 +184,13 @@ export default function AdminCategories() {
 
 
   async function deleteCategory(id) {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+    if (!confirm(t('admin.categories.confirmDelete'))) return;
 
     try {
       setSubmitting(true);
       setError("");
       const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
+      if (!token) throw new Error(t('admin.categories.errors.mustSignIn'));
 
       const res = await fetch(`${API}/api/categories/${id}`, {
         method: "DELETE",
@@ -212,18 +214,18 @@ export default function AdminCategories() {
   return (
     <div className="space-y-6">
       <form className="card space-y-4" onSubmit={createCategory}>
-        <div className="section-title">Create Category</div>
+        <div className="section-title">{t('admin.categories.createCategory')}</div>
         <div className="grid md:grid-cols-2 gap-4">
           <input
             className="input"
-            placeholder="Category name *"
+            placeholder={t('admin.categories.name') + ' *'}
             value={form.name}
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
             required
           />
           <input
             className="input"
-            placeholder="Description (optional)"
+            placeholder={t('admin.categories.description') + ' (optional)'}
             value={form.description}
             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
           />
@@ -257,7 +259,7 @@ export default function AdminCategories() {
               className="btn btn-sm"
               onClick={addSubCategory}
             >
-              + Add Sub-Category
+              + {t('admin.categories.addSubCategory')}
             </button>
           </div>
           {form.subCategories && form.subCategories.length > 0 && (
@@ -292,7 +294,7 @@ export default function AdminCategories() {
                       className="btn btn-danger btn-sm"
                       onClick={() => removeSubCategory(index)}
                     >
-                      Remove
+                      {t('admin.categories.removeSubCategory')}
                     </button>
                   </div>
                   {sub.image && (
@@ -310,26 +312,26 @@ export default function AdminCategories() {
 
         <div className="flex gap-2">
           <button className="btn btn-primary" type="submit" disabled={submitting || uploadingImage}>
-            {submitting ? "Saving..." : "Create Category"}
+            {submitting ? t('admin.categories.creating') : t('admin.categories.create')}
           </button>
         </div>
       </form>
 
       <div className="card">
-        <div className="section-title">Categories</div>
+        <div className="section-title">{t('admin.categories.title')}</div>
         {loading ? (
-          <div className="text-gray-500 text-sm">Loading categories…</div>
+          <div className="text-gray-500 text-sm">{t('admin.categories.loading')}</div>
         ) : categories.length === 0 ? (
-          <div className="text-gray-500 text-sm">No categories yet. Create one above.</div>
+          <div className="text-gray-500 text-sm">{t('admin.categories.noCategories')}</div>
         ) : (
           <table className="table text-sm">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left' }}>Image</th>
-                <th style={{ textAlign: 'left' }}>Name</th>
-                <th style={{ textAlign: 'left' }}>Description</th>
-                <th style={{ textAlign: 'left' }}>Sub-Categories</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
+                <th style={{ textAlign: 'left' }}>{t('admin.categories.image')}</th>
+                <th style={{ textAlign: 'left' }}>{t('admin.categories.name')}</th>
+                <th style={{ textAlign: 'left' }}>{t('admin.categories.description')}</th>
+                <th style={{ textAlign: 'left' }}>{t('admin.categories.subCategories')}</th>
+                <th style={{ textAlign: 'right' }}>{t('admin.categories.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -374,14 +376,14 @@ export default function AdminCategories() {
                         onClick={() => navigate(`/admin/categories/edit/${category.id}`)}
                         disabled={submitting}
                       >
-                        Edit
+                        {t('admin.categories.edit')}
                       </button>
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => deleteCategory(category.id)}
                         disabled={submitting}
                       >
-                        Delete
+                        {t('admin.categories.delete')}
                       </button>
                     </div>
                   </td>
