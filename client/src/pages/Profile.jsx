@@ -411,7 +411,6 @@ export default function Profile() {
                 </label>
                 <input
                   type="email"
-                  className="input"
                   value={profileData.email}
                   onChange={e => setProfileData({ ...profileData, email: e.target.value })}
                   placeholder="your@email.com"
@@ -445,7 +444,6 @@ export default function Profile() {
                   </label>
                   <input
                     type="text"
-                    className="input"
                     value={formatDate(createdAt)}
                     disabled
                     readOnly
@@ -597,7 +595,6 @@ export default function Profile() {
                     <div className="relative">
                       <input
                         type={showPasswords.current ? "text" : "password"}
-                        className="input"
                         className="input input-with-action"
                         value={passwordData.currentPassword}
                         onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}

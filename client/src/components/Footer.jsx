@@ -1,25 +1,32 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaTiktok, FaFacebook, FaInstagram, FaEnvelope, FaMapMarkerAlt, FaPhone, FaWhatsapp, FaClock } from "react-icons/fa";
+import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function Footer() {
   const [categories, setCategories] = useState([]);
+  const [storeInfo, setStoreInfo] = useState(null);
 
   useEffect(() => {
-    async function loadCategories() {
+    async function loadData() {
       try {
-        const response = await fetch(`${API}/api/categories`);
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data.categories || []);
+        // Load categories
+        const categoriesResponse = await fetch(`${API}/api/categories`);
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          setCategories(categoriesData.categories || []);
         }
+
+        // Load store info
+        const storeData = await getStoreInfo();
+        setStoreInfo(storeData);
       } catch (err) {
-        console.error("Failed to load categories for footer:", err);
+        console.error("Failed to load footer data:", err);
       }
     }
-    loadCategories();
+    loadData();
   }, []);
 
   return (
@@ -90,40 +97,57 @@ export default function Footer() {
         <div className="footer-column">
           <h3 className="footer-title">Contact Us</h3>
           <ul className="footer-contact">
-            <li>
-              <a href="tel:+972548740666" className="footer-contact-item">
-                <FaPhone className="footer-icon" />
-                <span>0548740666</span>
-              </a>
-            </li>
-            <li>
-              <a href="https://wa.me/+972548740666" className="footer-contact-item" target="_blank" rel="noopener noreferrer">
-                <FaWhatsapp className="footer-icon" />
-                <span>WhatsApp: 0548740666</span>
-              </a>
-            </li>
-            <li>
-              <a href="mailto:info@kingsmansaddlery.com" className="footer-contact-item">
-                <FaEnvelope className="footer-icon" />
-                <span>info@kingsmansaddlery.com</span>
-              </a>
-            </li>
-            <li>
-              <div className="footer-contact-item">
-                <FaMapMarkerAlt className="footer-icon" />
-                <span>123 Saddlery Lane<br />Horse Country, ST 12345</span>
-              </div>
-            </li>
-            <li>
-              <div className="footer-contact-item">
-                <FaClock className="footer-icon" />
-                <span>
-                  Monday - Friday: 9:00 AM - 6:00 PM<br />
-                  Saturday: 10:00 AM - 4:00 PM<br />
-                  Sunday: Closed
-                </span>
-              </div>
-            </li>
+            {storeInfo?.storePhone && (
+              <li>
+                <a href={`tel:${storeInfo.storePhone}`} className="footer-contact-item">
+                  <FaPhone className="footer-icon" />
+                  <span>{storeInfo.storePhone}</span>
+                </a>
+              </li>
+            )}
+            {storeInfo?.whatsappNumber && (
+              <li>
+                <a href={getWhatsAppLink(storeInfo.whatsappNumber)} className="footer-contact-item" target="_blank" rel="noopener noreferrer">
+                  <FaWhatsapp className="footer-icon" />
+                  <span>WhatsApp: {storeInfo.whatsappNumber}</span>
+                </a>
+              </li>
+            )}
+            {storeInfo?.storeEmail && (
+              <li>
+                <a href={`mailto:${storeInfo.storeEmail}`} className="footer-contact-item">
+                  <FaEnvelope className="footer-icon" />
+                  <span>{storeInfo.storeEmail}</span>
+                </a>
+              </li>
+            )}
+            {storeInfo?.location && formatAddress(storeInfo.location) && (
+              <li>
+                <div className="footer-contact-item">
+                  <FaMapMarkerAlt className="footer-icon" />
+                  <span>
+                    {formatAddress(storeInfo.location).split(', ').map((part, idx, arr) => (
+                      <span key={idx}>
+                        {part}
+                        {idx < arr.length - 1 && <br />}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              </li>
+            )}
+            {storeInfo?.workingHours && (
+              <li>
+                <div className="footer-contact-item">
+                  <FaClock className="footer-icon" />
+                  <span>
+                    {formatWorkingHours(storeInfo.workingHours).map((line, idx) => (
+                      <span key={idx}>{line}{idx < formatWorkingHours(storeInfo.workingHours).length - 1 && <br />}</span>
+                    ))}
+                  </span>
+                </div>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -131,15 +155,17 @@ export default function Footer() {
         <div className="footer-column">
           <h3 className="footer-title">Follow Us</h3>
           <div className="footer-social">
-            <a 
-              href="https://wa.me/+972548740666" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="footer-social-link"
-              aria-label="WhatsApp"
-            >
-              <FaWhatsapp className="footer-social-icon" />
-            </a>
+            {storeInfo?.whatsappNumber && (
+              <a 
+                href={getWhatsAppLink(storeInfo.whatsappNumber)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="footer-social-link"
+                aria-label="WhatsApp"
+              >
+                <FaWhatsapp className="footer-social-icon" />
+              </a>
+            )}
             <a 
               href="https://www.facebook.com/profile.php?id=100063785065499" 
               target="_blank" 
@@ -167,13 +193,15 @@ export default function Footer() {
             >
               <FaTiktok className="footer-social-icon" />
             </a>
-            <a 
-              href="mailto:info@kingsmansaddlery.com"
-              className="footer-social-link"
-              aria-label="Email"
-            >
-              <FaEnvelope className="footer-social-icon" />
-            </a>
+            {storeInfo?.storeEmail && (
+              <a 
+                href={`mailto:${storeInfo.storeEmail}`}
+                className="footer-social-link"
+                aria-label="Email"
+              >
+                <FaEnvelope className="footer-social-icon" />
+              </a>
+            )}
             <a 
               href="https://www.google.com/maps/dir/32.3977216,35.045376/32.86528,35.30071/@32.865443,35.3005489,19.75z/data=!4m4!4m3!1m1!4e1!1m0?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D" 
               target="_blank" 

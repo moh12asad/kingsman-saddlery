@@ -37,6 +37,7 @@ export default function AdminLayout(){
               <NavLink to="ads" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>Ad</NavLink>
               <NavLink to="brands" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>Brands</NavLink>
               <NavLink to="users" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>Users</NavLink>
+              <NavLink to="contact-submissions" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>Contact Submissions</NavLink>
               <NavLink to="settings" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>Settings</NavLink>
             </nav>
           </aside>
