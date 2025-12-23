@@ -18,6 +18,8 @@ export default function AdminBrands() {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editingBrand, setEditingBrand] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
 
   async function loadBrands() {
     try {
@@ -103,6 +105,18 @@ export default function AdminBrands() {
     }
   }
 
+  function startEdit(brand) {
+    setEditingBrand(brand);
+    setForm({ name: brand.name, logo: brand.logo });
+    setError("");
+  }
+
+  function cancelEdit() {
+    setEditingBrand(null);
+    setForm({ name: "", logo: "" });
+    setError("");
+  }
+
   async function createBrand(e) {
     e?.preventDefault();
     try {
@@ -139,9 +153,52 @@ export default function AdminBrands() {
     }
   }
 
+  async function updateBrand(e) {
+    e?.preventDefault();
+    if (!editingBrand) return;
+    
+    try {
+      setError("");
+      setUpdatingId(editingBrand.id);
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("You must be signed in");
+
+      if (!form.name || form.name.trim() === "") {
+        throw new Error("Brand name is required");
+      }
+
+      if (!form.logo || form.logo.trim() === "") {
+        throw new Error("Brand logo is required");
+      }
+
+      const res = await fetch(`${API}/api/brands/${editingBrand.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to update brand");
+      }
+
+      setForm({ name: "", logo: "" });
+      setEditingBrand(null);
+      setUpdatingId(null);
+      await loadBrands();
+    } catch (err) {
+      setError(err.message || "Failed to update brand");
+      setUpdatingId(null);
+    }
+  }
+
   async function deleteBrand(id) {
     try {
       setError("");
+      setDeletingId(id);
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
@@ -162,6 +219,7 @@ export default function AdminBrands() {
       setDeletingId(null);
     } catch (err) {
       setError(err.message || "Failed to delete brand");
+      setDeletingId(null);
     }
   }
 
@@ -175,10 +233,12 @@ export default function AdminBrands() {
         </div>
       )}
 
-      {/* Create Brand Form */}
+      {/* Create/Edit Brand Form */}
       <div className="card margin-bottom-lg">
-        <h2 className="heading-3 margin-bottom-md">Add New Brand</h2>
-        <form onSubmit={createBrand}>
+        <h2 className="heading-3 margin-bottom-md">
+          {editingBrand ? "Edit Brand" : "Add New Brand"}
+        </h2>
+        <form onSubmit={editingBrand ? updateBrand : createBrand}>
           <div className="form-group">
             <label htmlFor="brand-name">Brand Name</label>
             <input
@@ -194,6 +254,7 @@ export default function AdminBrands() {
           <div className="form-group">
             <label htmlFor="brand-logo">Brand Logo</label>
             <input
+              key={editingBrand?.id || "new"}
               id="brand-logo"
               type="file"
               accept="image/*"
@@ -208,17 +269,40 @@ export default function AdminBrands() {
                   alt="Brand logo preview"
                   style={{ maxWidth: "200px", maxHeight: "100px", objectFit: "contain" }}
                 />
+                {editingBrand && (
+                  <p className="text-small text-muted margin-top-xs">
+                    Leave file input empty to keep current logo, or upload a new one to replace it.
+                  </p>
+                )}
               </div>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={uploadingImage || !form.name || !form.logo}
-          >
-            {uploadingImage ? "Uploading..." : "Create Brand"}
-          </button>
+          <div className="flex-row flex-gap-md">
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={uploadingImage || !form.name || !form.logo || updatingId === editingBrand?.id}
+            >
+              {updatingId === editingBrand?.id
+                ? "Updating..."
+                : uploadingImage
+                ? "Uploading..."
+                : editingBrand
+                ? "Update Brand"
+                : "Create Brand"}
+            </button>
+            {editingBrand && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={cancelEdit}
+                disabled={updatingId === editingBrand.id}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -231,18 +315,18 @@ export default function AdminBrands() {
           <p className="text-muted">No brands found. Create your first brand above.</p>
         ) : (
           <div className="table-responsive">
-            <table className="table">
+            <table className="table brands-table">
               <thead>
                 <tr>
-                  <th>Logo</th>
+                  <th style={{ width: "150px" }}>Logo</th>
                   <th>Name</th>
-                  <th>Actions</th>
+                  <th style={{ width: "200px", textAlign: "left" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {brands.map((brand) => (
                   <tr key={brand.id}>
-                    <td>
+                    <td style={{ verticalAlign: "middle" }}>
                       {brand.logo ? (
                         <img
                           src={brand.logo}
@@ -253,17 +337,26 @@ export default function AdminBrands() {
                         <span className="text-muted">No logo</span>
                       )}
                     </td>
-                    <td>{brand.name}</td>
-                    <td>
-                      <button
-                        className="btn-secondary btn-small"
-                        onClick={() => {
-                          setDeletingId(brand.id);
-                          setConfirmDelete(brand);
-                        }}
-                      >
-                        Delete
-                      </button>
+                    <td style={{ verticalAlign: "middle" }}>{brand.name}</td>
+                    <td style={{ verticalAlign: "middle", textAlign: "left" }}>
+                      <div className="flex-row flex-gap-sm">
+                        <button
+                          className="btn-primary btn-small"
+                          onClick={() => startEdit(brand)}
+                          disabled={deletingId === brand.id || updatingId === brand.id}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn-secondary btn-small"
+                          onClick={() => {
+                            setConfirmDelete(brand);
+                          }}
+                          disabled={deletingId === brand.id || updatingId === brand.id}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
