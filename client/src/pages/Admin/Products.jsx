@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminProducts(){
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [rows, setRows] = useState([]);
   const [allRows, setAllRows] = useState([]); // Store all products
   const [categories, setCategories] = useState([]);
@@ -202,7 +204,7 @@ export default function AdminProducts(){
                     <td>
                       {p.sale ? (
                         <div className="flex flex-col gap-1">
-                          <span className="badge badge-danger">On Sale</span>
+                          <span className="badge badge-danger">{t("products.onSale")}</span>
                           {p.sale_proce > 0 && (
                             <span className="text-sm text-red-600 font-semibold">₪{p.sale_proce.toFixed(2)}</span>
                           )}

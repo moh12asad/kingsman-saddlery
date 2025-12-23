@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminDashboard(){
+  const { t } = useTranslation();
   const [settingRole, setSettingRole] = useState(false);
   const [roleMessage, setRoleMessage] = useState("");
   const [token, setToken] = useState("");
@@ -143,7 +145,7 @@ export default function AdminDashboard(){
         </div>
         <div className="card">
           <div className="section-title">Inventory</div>
-          <p className="text-gray-600 text-sm">Low-stock alerts and products on sale.</p>
+          <p className="text-gray-600 text-sm">Low-stock alerts and {t("products.productsOnSale")}.</p>
         </div>
       </div>
     </div>

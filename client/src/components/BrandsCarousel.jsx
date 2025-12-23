@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -9,6 +10,7 @@ export default function BrandsCarousel() {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
+  const { t } = useTranslation();
   const scrollRef = useRef(null);
   const autoScrollIntervalRef = useRef(null);
 
@@ -110,7 +112,7 @@ export default function BrandsCarousel() {
     return (
       <section className="brands-carousel-section">
         <div className="text-center py-8">
-          <p className="text-gray-500">Loading brands...</p>
+          <p className="text-gray-500">{t("shop.brands.loading")}</p>
         </div>
       </section>
     );
@@ -130,7 +132,7 @@ export default function BrandsCarousel() {
             e.stopPropagation();
             scroll('left');
           }}
-          aria-label="Scroll left"
+          aria-label={t("shop.common.scrollLeft")}
           type="button"
         >
           <FaChevronLeft />
@@ -142,7 +144,7 @@ export default function BrandsCarousel() {
             e.stopPropagation();
             scroll('right');
           }}
-          aria-label="Scroll right"
+          aria-label={t("shop.common.scrollRight")}
           type="button"
         >
           <FaChevronRight />
@@ -170,12 +172,12 @@ export default function BrandsCarousel() {
               {brand.logo ? (
                 <img
                   src={brand.logo}
-                  alt={brand.name || "Brand"}
+                  alt={brand.name || t("shop.brands.brand")}
                   className="brand-logo"
                 />
               ) : (
                 <div className="brand-placeholder">
-                  {brand.name || "Brand"}
+                  {brand.name || t("shop.brands.brand")}
                 </div>
               )}
             </div>

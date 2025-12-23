@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
@@ -8,6 +9,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function CreateProduct(){
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
     name: "",
@@ -424,7 +426,7 @@ export default function CreateProduct(){
               onChange={e=>setForm({...form,sale:e.target.checked})}
               className="w-4 h-4"
             />
-            <span className="text-sm">On Sale</span>
+            <span className="text-sm">{t("products.onSale")}</span>
           </label>
           <input 
             className="input" 

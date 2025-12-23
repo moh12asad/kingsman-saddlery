@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -8,6 +9,7 @@ export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   // Fetch hero slides from API
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function HeroCarousel() {
             <div className="hero-slide-overlay">
               <div className="container-main">
                 <div className="hero-content">
-                  <p className="text-white">Loading...</p>
+                  <p className="text-white">{t("shop.hero.loading")}</p>
                 </div>
               </div>
             </div>
@@ -123,14 +125,14 @@ export default function HeroCarousel() {
           <button
             className="hero-nav hero-nav-prev"
             onClick={goToPrevious}
-            aria-label="Previous slide"
+            aria-label={t("shop.hero.previousSlide")}
           >
             <FaChevronLeft />
           </button>
           <button
             className="hero-nav hero-nav-next"
             onClick={goToNext}
-            aria-label="Next slide"
+            aria-label={t("shop.hero.nextSlide")}
           >
             <FaChevronRight />
           </button>
@@ -145,7 +147,7 @@ export default function HeroCarousel() {
               key={index}
               className={`hero-indicator ${index === currentSlide ? "active" : ""}`}
               onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
+              aria-label={`${t("shop.hero.goToSlide")} ${index + 1}`}
             />
           ))}
         </div>

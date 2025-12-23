@@ -6,11 +6,15 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
+import "../styles/language-switcher.css";
 
 export default function Navbar() {
   const { user } = useAuth();
   const { getTotalItems } = useCart();
   const { getFavoriteCount } = useFavorites();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const cartCount = getTotalItems();
   const favoriteCount = getFavoriteCount();
@@ -102,10 +106,11 @@ export default function Navbar() {
           </div>
         </Link>
         <div className="navbar-links">
+          <LanguageSwitcher />
           <button
             onClick={handleSearchClick}
             className="nav-link relative flex-row-center"
-            title="Search"
+            title={t("navbar.search")}
           >
             <FaSearch className="w-5 h-5" />
           </button>
@@ -151,7 +156,7 @@ export default function Navbar() {
                     to="/signin"
                     className="btn-link"
                 >
-                    Sign in
+                    {t("navbar.signIn")}
                 </NavLink>
             ) : (
                 <div className="flex-row flex-gap-md profile-menu-container" ref={profileMenuRef}>
@@ -190,7 +195,7 @@ export default function Navbar() {
                                 onClick={() => setShowProfileMenu(false)}
                             >
                                 <FaUser className="w-4 h-4" />
-                                <span>Profile</span>
+                                <span>{t("navbar.profile")}</span>
                             </NavLink>
                             <NavLink
                                 to="/orders"
@@ -198,7 +203,7 @@ export default function Navbar() {
                                 onClick={() => setShowProfileMenu(false)}
                             >
                                 <FaShoppingBag className="w-4 h-4" />
-                                <span>My Orders</span>
+                                <span>{t("navbar.orders")}</span>
                             </NavLink>
                             <div className="profile-dropdown-divider"></div>
                             <button
@@ -210,7 +215,7 @@ export default function Navbar() {
                                 className="profile-dropdown-item"
                                 style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
                             >
-                                Sign out
+                                {t("navbar.signOut")}
                             </button>
                         </div>
                     )}
@@ -256,7 +261,7 @@ export default function Navbar() {
                                     style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                                 >
                                     <FaUser className="w-4 h-4" />
-                                    <span>Profile</span>
+                                    <span>{t("navbar.profile")}</span>
                                 </NavLink>
                                 <NavLink
                                     to="/orders"
@@ -268,7 +273,7 @@ export default function Navbar() {
                                     style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                                 >
                                     <FaShoppingBag className="w-4 h-4" />
-                                    <span>My Orders</span>
+                                    <span>{t("navbar.orders")}</span>
                                 </NavLink>
                                 <div className="profile-dropdown-divider"></div>
                                 <button
@@ -289,7 +294,7 @@ export default function Navbar() {
                                         pointerEvents: 'auto'
                                     }}
                                 >
-                                    Sign out
+                                    {t("navbar.signOut")}
                                 </button>
                             </div>
                         </>,

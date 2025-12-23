@@ -4,6 +4,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, signInWithGoogle } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext"; // assumes you expose user + loading
 import { resolveRole } from "../utils/resolveRole";
 import { checkProfileComplete } from "../utils/checkProfileComplete";
@@ -18,6 +19,7 @@ export default function SignIn() {
     const [searchParams] = useSearchParams();
     const redirectTo = searchParams.get("redirect") || null;
     const hasRedirected = useRef(false); // Prevent multiple redirects
+    const { t } = useTranslation();
 
     const { user, loading: authLoading } = useAuth?.() ?? { user: null, loading: false };
 
@@ -87,18 +89,18 @@ export default function SignIn() {
             // Redirect will be handled by the useEffect hook when user state updates
         } catch (e) {
             const code = e.code || "";
-            let errorMessage = e.message || "Sign-in failed.";
+            let errorMessage = e.message || t("signIn.errors.failed");
             
             if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
-                errorMessage = "Incorrect email or password.";
+                errorMessage = t("signIn.errors.invalidCredentials");
             } else if (code === "auth/user-not-found") {
-                errorMessage = "No account for this email.";
+                errorMessage = t("signIn.errors.userNotFound");
             } else if (code === "auth/too-many-requests") {
-                errorMessage = "Too many attempts. Try again later.";
+                errorMessage = t("signIn.errors.tooManyRequests");
             } else if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
                 errorMessage = "Firebase project configuration not found. Please check your .env file and ensure the Firebase project exists and Authentication is enabled.";
             } else if (code === "auth/network-request-failed") {
-                errorMessage = "Network error. Please check your internet connection.";
+                errorMessage = t("signIn.errors.networkError");
             }
             
             console.error("Sign-in error:", code, errorMessage);
@@ -116,17 +118,17 @@ export default function SignIn() {
             // Redirect will be handled by the useEffect hook when user state updates
         } catch (e) {
             const code = e.code || "";
-            let errorMessage = e.message || "Google sign-in failed.";
+            let errorMessage = e.message || t("signIn.errors.failed");
             
             // Handle specific Firebase configuration errors
             if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
                 errorMessage = "Firebase Authentication configuration not found. This usually means:\n\n1. ❌ Your API key doesn't match the project ID\n   → Check that VITE_FIREBASE_API_KEY belongs to the 'kingsman-saddlery' project\n\n2. ❌ Authentication is not enabled in Firebase Console\n   → Go to Firebase Console → Authentication → Get Started\n\n3. ❌ API key restrictions in Google Cloud Console\n   → Check Google Cloud Console → APIs & Services → Credentials\n\n4. ❌ Wrong project configuration\n   → Make sure ALL .env values are from the SAME Firebase project\n\nTo fix: Get a fresh config from Firebase Console → Project Settings → General → Your apps";
             } else if (code === "auth/popup-closed-by-user") {
-                errorMessage = "Sign-in popup was closed.";
+                errorMessage = t("signIn.errors.popupClosed");
             } else if (code === "auth/popup-blocked") {
-                errorMessage = "Sign-in popup was blocked. Please allow popups for this site.";
+                errorMessage = t("signIn.errors.popupBlocked");
             } else if (code === "auth/cancelled-popup-request") {
-                errorMessage = "Only one popup request is allowed at a time.";
+                errorMessage = t("signIn.errors.popupCancelled");
             }
             
             console.error("Sign-in error:", code, errorMessage);
@@ -138,13 +140,13 @@ export default function SignIn() {
 
     return (
         <div className="max-w-md mx-auto px-4 py-12 signin-page-container">
-            <h1 className="text-2xl font-bold mb-6">Sign in</h1>
+            <h1 className="text-2xl font-bold mb-6">{t("signIn.title")}</h1>
 
             <form onSubmit={onSubmit} className="space-y-4">
                 <input
                     type="email"
                     className="w-full p-2 border rounded-lg"
-                    placeholder="you@example.com"
+                    placeholder={t("signIn.emailPlaceholder")}
                     value={email}
                     onChange={e=>setEmail(e.target.value)}
                     required
@@ -153,7 +155,7 @@ export default function SignIn() {
                     <input
                         type={show ? "text" : "password"}
                         className="w-full p-2 border rounded-lg pr-20"
-                        placeholder="Your password"
+                        placeholder={t("signIn.passwordPlaceholder")}
                         value={password}
                         onChange={e=>setPassword(e.target.value)}
                         required
@@ -163,7 +165,7 @@ export default function SignIn() {
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600"
                         onClick={()=>setShow(s=>!s)}
                     >
-                        {show ? "Hide" : "Show"}
+                        {show ? t("common.hide") : t("common.show")}
                     </button>
                 </div>
 
@@ -188,7 +190,7 @@ export default function SignIn() {
                     }}
                     disabled={loading}
                 >
-                    {loading ? "Signing in..." : "Sign in"}
+                    {loading ? t("signIn.signingIn") : t("signIn.signInButton")}
                 </button>
             </form>
 
@@ -211,19 +213,19 @@ export default function SignIn() {
                         disabled={loading}
                     >
                         <FcGoogle className="text-xl" />
-                        <span>Continue with Google</span>
+                        <span>{t("signIn.continueWithGoogle")}</span>
                     </button>
                 </div>
                 <div className="mt-4 text-sm">
                     <Link to="/forgot-password" style={{ color: 'var(--brand)' }} className="hover:underline">
-                        Forgot password?
+                        {t("signIn.forgotPassword")}
                     </Link>
                 </div>
                 <div className="mt-4 text-center">
                     <p className="text-sm text-muted">
-                        Don't have an account?{" "}
+                        {t("signIn.noAccount")}{" "}
                         <Link to="/signup" className="link-brand">
-                            Sign up
+                            {t("signIn.signUp")}
                         </Link>
                     </p>
                 </div>

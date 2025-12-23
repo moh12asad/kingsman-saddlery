@@ -23,6 +23,10 @@ import SubCategories from "./pages/SubCategories.jsx";
 import "./styles/index.css";
 // Generic CSS additions
 import "./styles/generic.css";
+// i18n initialization
+import "./lib/i18n";
+// RTL support
+import "./styles/rtl.css";
 // admin pages you added
 import AdminLayout from "./pages/Admin/index.jsx";
 import AdminUsers from "./pages/Admin/Users.jsx";
@@ -57,6 +61,7 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { FavoritesProvider } from "./context/FavoritesContext.jsx";
 import { CurrencyProvider } from "./context/CurrencyContext.jsx";
+import { LanguageProvider } from "./context/LanguageContext.jsx";
 
 const router = createBrowserRouter([
   {
@@ -132,14 +137,16 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <CurrencyProvider>
-      <AuthProvider>
-        <CartProvider>
-          <FavoritesProvider>
-            <RouterProvider router={router} />
-          </FavoritesProvider>
-        </CartProvider>
-      </AuthProvider>
-    </CurrencyProvider>
+    <LanguageProvider>
+      <CurrencyProvider>
+        <AuthProvider>
+          <CartProvider>
+            <FavoritesProvider>
+              <RouterProvider router={router} />
+            </FavoritesProvider>
+          </CartProvider>
+        </AuthProvider>
+      </CurrencyProvider>
+    </LanguageProvider>
   </React.StrictMode>
 );

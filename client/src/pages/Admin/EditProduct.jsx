@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
@@ -9,6 +10,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function EditProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -536,7 +538,7 @@ export default function EditProduct() {
                 onChange={e => setProduct({ ...product, sale: e.target.checked })}
                 className="w-4 h-4"
               />
-              <span className="text-small">On Sale</span>
+              <span className="text-small">{t("products.onSale")}</span>
             </label>
 
             <label className="flex-row flex-gap-sm cursor-pointer">

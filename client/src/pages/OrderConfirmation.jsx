@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
@@ -15,6 +16,7 @@ export default function OrderConfirmation() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
   
   const [profileData, setProfileData] = useState({
     displayName: "",
@@ -606,7 +608,7 @@ export default function OrderConfirmation() {
         <div className="container-main padding-y-xl">
           <div className="text-center padding-y-lg">
             <div className="loading-spinner mx-auto"></div>
-            <p className="margin-top-md text-muted">Loading order details...</p>
+            <p className="margin-top-md text-muted">{t("orderConfirmation.loading")}</p>
           </div>
         </div>
       </main>
@@ -621,17 +623,17 @@ export default function OrderConfirmation() {
     <AuthRoute>
       <main className="page-with-navbar">
         <div className="container-main padding-y-xl">
-          <h1 className="heading-1 margin-bottom-lg">Order Confirmation</h1>
+          <h1 className="heading-1 margin-bottom-lg">{t("orderConfirmation.title")}</h1>
 
           {discountInfo && (
             <div className="card padding-md margin-bottom-md order-confirmation-success">
               <div className="flex items-center gap-2">
                 <div>
                   <p className="order-confirmation-success-text-bold">
-                    You're eligible for a {discountInfo.percentage}% new user discount!
+                    {t("orderConfirmation.eligibleForDiscount")} {discountInfo.percentage}{t("orderConfirmation.newUserDiscountMessage")}
                   </p>
                   <p className="order-confirmation-success-text-secondary">
-                    Save {formatPrice(discountInfo.amount)} on your first order (valid for first 3 months)
+                    {t("orderConfirmation.saveOnFirstOrder")} {formatPrice(discountInfo.amount)} {t("orderConfirmation.onYourFirstOrder")}
                   </p>
                 </div>
               </div>
@@ -661,7 +663,7 @@ export default function OrderConfirmation() {
                 <div className="flex items-center justify-between margin-bottom-md">
                   <h2 className="section-title flex items-center gap-2">
                     <FaShoppingBag />
-                    Order Items ({cartItems.length})
+                    {t("orderConfirmation.orderItems")} ({cartItems.length})
                   </h2>
                 </div>
                 <div className="space-y-3">
@@ -675,7 +677,7 @@ export default function OrderConfirmation() {
                         />
                       ) : (
                         <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">
-                          No image
+                          {t("orderConfirmation.noImage")}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -684,7 +686,7 @@ export default function OrderConfirmation() {
                           <p className="text-xs text-muted">{item.category}</p>
                         )}
                         <div className="flex items-center gap-2 margin-top-xs">
-                          <span className="text-sm text-muted">Qty: {item.quantity}</span>
+                          <span className="text-sm text-muted">{t("orderConfirmation.qty")} {item.quantity}</span>
                           <span className="text-sm font-semibold">
                             {formatPrice(item.price * item.quantity)}
                           </span>
@@ -697,26 +699,26 @@ export default function OrderConfirmation() {
                   {calculatingDiscount ? (
                     <div className="flex justify-center items-center padding-y-md">
                       <div className="loading-spinner mx-auto"></div>
-                      <p className="text-sm text-muted margin-top-sm">Calculating discount...</p>
+                      <p className="text-sm text-muted margin-top-sm">{t("orderConfirmation.calculatingDiscountMessage")}</p>
                     </div>
                   ) : discountCalculationError ? (
                     <div className="card padding-sm margin-bottom-sm order-confirmation-error">
-                      <p className="text-error text-sm">Unable to calculate discount. Please refresh the page.</p>
+                      <p className="text-error text-sm">{t("orderConfirmation.errors.unableToCalculateDiscountRefresh")}</p>
                     </div>
                   ) : total === null ? (
                     <div className="flex justify-center items-center padding-y-md">
-                      <p className="text-sm text-muted">Loading order total...</p>
+                      <p className="text-sm text-muted">{t("orderConfirmation.loadingOrderTotal")}</p>
                     </div>
                   ) : (
                     <>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted">Subtotal:</span>
+                        <span className="text-sm text-muted">{t("orderConfirmation.subtotal")}</span>
                         <span className="text-sm font-semibold">{formatPrice(subtotal)}</span>
                       </div>
                       {discountInfo && (
                         <div className="flex justify-between items-center order-confirmation-discount-text">
                           <span className="text-sm font-semibold">
-                            New User Discount ({discountInfo.percentage}%):
+                            {t("orderConfirmation.newUserDiscountMessage")} ({discountInfo.percentage}%):
                           </span>
                           <span className="text-sm font-semibold">
                             -{formatPrice(discountInfo.amount)}
@@ -725,18 +727,18 @@ export default function OrderConfirmation() {
                       )}
                       {discountInfo && (
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted">Subtotal after discount:</span>
+                          <span className="text-sm text-muted">{t("orderConfirmation.subtotalAfterDiscount")}</span>
                           <span className="text-sm font-semibold">{formatPrice(subtotalAfterDiscount)}</span>
                         </div>
                       )}
                       {deliveryType === "delivery" && (
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted">Delivery:</span>
+                          <span className="text-sm text-muted">{t("orderConfirmation.delivery")}</span>
                           <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center padding-top-sm border-top">
-                        <span className="font-semibold">Total:</span>
+                        <span className="font-semibold">{t("orderConfirmation.total")}</span>
                         <span className="text-lg font-bold">{formatPrice(total)}</span>
                       </div>
                     </>
@@ -749,7 +751,7 @@ export default function OrderConfirmation() {
             <div className="space-y-6">
               {/* Delivery/Pickup Selection */}
               <div className="card">
-                <h2 className="section-title margin-bottom-md">Delivery Options</h2>
+                <h2 className="section-title margin-bottom-md">{t("orderConfirmation.deliveryOptions")}</h2>
                 <div className="space-y-3">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
@@ -761,9 +763,9 @@ export default function OrderConfirmation() {
                       className="w-4 h-4"
                     />
                     <div className="flex-1">
-                      <span className="font-semibold">Delivery</span>
+                      <span className="font-semibold">{t("orderConfirmation.delivery")}</span>
                       <span className="text-sm text-muted ml-2">({formatPrice(DELIVERY_COST)})</span>
-                      <p className="text-xs text-muted mt-1">We'll deliver your order to your address</p>
+                      <p className="text-xs text-muted mt-1">{t("orderConfirmation.deliveryDescription")}</p>
                     </div>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -776,8 +778,8 @@ export default function OrderConfirmation() {
                       className="w-4 h-4"
                     />
                     <div className="flex-1">
-                      <span className="font-semibold">Store Pickup</span>
-                      <p className="text-xs text-muted mt-1">Pick up your order from our store</p>
+                      <span className="font-semibold">{t("orderConfirmation.storePickup")}</span>
+                      <p className="text-xs text-muted mt-1">{t("orderConfirmation.pickupDescription")}</p>
                     </div>
                   </label>
                 </div>
@@ -789,13 +791,13 @@ export default function OrderConfirmation() {
                 <div className="flex items-center justify-between margin-bottom-md">
                   <h2 className="section-title flex items-center gap-2">
                     <FaMapMarkerAlt />
-                    Delivery Address
+                    {t("orderConfirmation.deliveryAddress")}
                   </h2>
                   {!isEditingAddress && hasCompleteAddress && (
                     <div className="flex gap-2">
                       {isAddressChanged && (
                         <span className="text-xs text-muted flex items-center">
-                          (Custom for this order)
+                          {t("orderConfirmation.customForThisOrder")}
                         </span>
                       )}
                       <button
@@ -806,12 +808,12 @@ export default function OrderConfirmation() {
                         {locationLoading ? (
                           <>
                             <FaSpinner className="animate-spin" />
-                            Getting location...
+                            {t("orderConfirmation.gettingLocation")}
                           </>
                         ) : (
                           <>
                             <FaLocationArrow />
-                            Use My Current Location
+                            {t("orderConfirmation.useMyCurrentLocation")}
                           </>
                         )}
                       </button>
@@ -820,7 +822,7 @@ export default function OrderConfirmation() {
                         className="btn btn-sm flex items-center gap-1"
                       >
                         <FaEdit />
-                        {isAddressChanged ? "Change" : "Use Different"}
+                        {isAddressChanged ? t("orderConfirmation.change") : t("orderConfirmation.useDifferent")}
                       </button>
                     </div>
                   )}
@@ -829,7 +831,7 @@ export default function OrderConfirmation() {
                 {isEditingAddress ? (
                   <div className="space-y-3">
                     <div className="flex-row flex-gap-sm flex-items-center margin-bottom-sm">
-                      <label className="text-xs text-muted">Address</label>
+                      <label className="text-xs text-muted">{t("orderConfirmation.address")}</label>
                       <button
                         type="button"
                         onClick={handleUseLocation}
@@ -839,64 +841,64 @@ export default function OrderConfirmation() {
                         {locationLoading ? (
                           <>
                             <FaSpinner className="animate-spin" />
-                            Getting location...
+                            {t("orderConfirmation.gettingLocation")}
                           </>
                         ) : (
                           <>
                             <FaLocationArrow />
-                            Use My Location
+                            {t("orderConfirmation.useMyLocation")}
                           </>
                         )}
                       </button>
                     </div>
                     <div>
                       <label className="text-xs text-muted block margin-bottom-xs">
-                        Street Address <span className="order-confirmation-mandatory-asterisk">*</span>
+                        {t("orderConfirmation.streetAddress")} <span className="order-confirmation-mandatory-asterisk">*</span>
                       </label>
                       <input
                         type="text"
                         className="input"
                         value={orderAddress.street}
                         onChange={(e) => handleAddressChange("street", e.target.value)}
-                        placeholder="Street address"
+                        placeholder={t("signUp.street")}
                         required
                       />
                     </div>
                     <div>
                       <label className="text-xs text-muted block margin-bottom-xs">
-                        City <span className="order-confirmation-mandatory-asterisk">*</span>
+                        {t("orderConfirmation.city")} <span className="order-confirmation-mandatory-asterisk">*</span>
                       </label>
                       <input
                         type="text"
                         className="input"
                         value={orderAddress.city}
                         onChange={(e) => handleAddressChange("city", e.target.value)}
-                        placeholder="City"
+                        placeholder={t("signUp.city")}
                         required
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-muted block margin-bottom-xs">
-                          ZIP Code <span className="order-confirmation-mandatory-asterisk">*</span>
+                          {t("orderConfirmation.zipCode")} <span className="order-confirmation-mandatory-asterisk">*</span>
                         </label>
                         <input
                           type="text"
                           className="input"
                           value={orderAddress.zipCode}
                           onChange={(e) => handleAddressChange("zipCode", e.target.value)}
-                          placeholder="ZIP Code"
+                          placeholder={t("signUp.zipCode")}
                           required
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-muted block margin-bottom-xs">Country</label>
+                        <label className="text-xs text-muted block margin-bottom-xs">{t("orderConfirmation.country")}</label>
                         <input
                           type="text"
                           className="input"
                           value={orderAddress.country}
                           onChange={(e) => handleAddressChange("country", e.target.value)}
-                          placeholder="Country"
+                          placeholder={t("signUp.country")}
                         />
                       </div>
                     </div>
@@ -906,14 +908,14 @@ export default function OrderConfirmation() {
                         className="btn-primary btn-sm flex items-center gap-1"
                       >
                         <FaCheck />
-                        Save Address
+                        {t("orderConfirmation.saveAddress")}
                       </button>
                       <button
                         onClick={handleCancelEdit}
                         className="btn btn-sm flex items-center gap-1"
                       >
                         <FaTimes />
-                        Cancel
+                        {t("orderConfirmation.cancel")}
                       </button>
                     </div>
                   </div>
@@ -929,7 +931,7 @@ export default function OrderConfirmation() {
                     )}
                     {isAddressChanged && (
                       <p className="text-xs text-muted margin-top-sm">
-                        This address is different from your profile address and will only be used for this order.
+                        {t("orderConfirmation.addressDifferentMessage")}
                       </p>
                     )}
                     <div className="margin-top-sm">
@@ -937,14 +939,14 @@ export default function OrderConfirmation() {
                         to="/profile"
                         className="text-xs text-muted underline"
                       >
-                        Update default address in profile
+                        {t("orderConfirmation.updateDefaultAddress")}
                       </Link>
                     </div>
                   </div>
                 ) : (
                   <div className="padding-y-md">
                     <p className="text-muted text-sm margin-bottom-md">
-                      Please complete your delivery address. Fields marked with <span className="order-confirmation-mandatory-asterisk">*</span> are mandatory.
+                      {t("orderConfirmation.completeAddressMessage")} <span className="order-confirmation-mandatory-asterisk">*</span> {t("orderConfirmation.areMandatory")}
                     </p>
                     <div className="flex gap-2 margin-bottom-sm">
                       <button
@@ -955,12 +957,12 @@ export default function OrderConfirmation() {
                         {locationLoading ? (
                           <>
                             <FaSpinner className="animate-spin" />
-                            Getting location...
+                            {t("orderConfirmation.gettingLocation")}
                           </>
                         ) : (
                           <>
                             <FaLocationArrow />
-                            Use My Current Location
+                            {t("orderConfirmation.useMyCurrentLocation")}
                           </>
                         )}
                       </button>
@@ -969,12 +971,12 @@ export default function OrderConfirmation() {
                         className="btn btn-sm flex items-center gap-1"
                       >
                         <FaEdit />
-                        Use Different
+                        {t("orderConfirmation.useDifferent")}
                       </button>
                     </div>
                     <div className="margin-top-sm">
                       <Link to="/profile" className="text-xs text-muted underline">
-                        Or update your default address in profile
+                        {t("orderConfirmation.orUpdateProfile")}
                       </Link>
                     </div>
                   </div>
@@ -984,26 +986,26 @@ export default function OrderConfirmation() {
 
               {/* Contact Information */}
               <div className="card">
-                <h2 className="section-title margin-bottom-md">Contact Information</h2>
+                <h2 className="section-title margin-bottom-md">{t("orderConfirmation.contactInformation")}</h2>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <FaUser className="text-muted" />
-                    <span>{profileData.displayName || "Not set"}</span>
+                    <span>{profileData.displayName || t("orderConfirmation.notSet")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FaEnvelope className="text-muted" />
-                    <span>{profileData.email || "Not set"}</span>
+                    <span>{profileData.email || t("orderConfirmation.notSet")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FaPhone className="text-muted" />
                     <span>
-                      {profileData.phone || "Not set"}
+                      {profileData.phone || t("orderConfirmation.notSet")}
                       {!profileData.phone && <span className="order-confirmation-mandatory-asterisk-inline">*</span>}
                     </span>
                   </div>
                   {!profileData.phone && (
                     <Link to="/profile" className="btn btn-sm margin-top-sm">
-                      Add Phone Number <span className="order-confirmation-mandatory-asterisk">*</span>
+                      {t("orderConfirmation.addPhoneNumber")} <span className="order-confirmation-mandatory-asterisk">*</span>
                     </Link>
                   )}
                 </div>
@@ -1011,14 +1013,14 @@ export default function OrderConfirmation() {
 
               {/* Payment Section - Placeholder for Tranzilla */}
               <div className="card">
-                <h2 className="section-title margin-bottom-md">Payment</h2>
+                <h2 className="section-title margin-bottom-md">{t("orderConfirmation.payment")}</h2>
                 <div className="padding-y-md">
                   <p className="text-muted text-sm margin-bottom-md">
-                    Payment integration will be configured with Tranzilla.
+                    {t("orderConfirmation.paymentMessage")}
                   </p>
                   <div className="card padding-md order-confirmation-payment-placeholder">
                     <p className="text-sm text-muted text-center">
-                      Payment gateway coming soon
+                      {t("orderConfirmation.paymentGatewayComingSoon")}
                     </p>
                   </div>
                 </div>
@@ -1029,7 +1031,7 @@ export default function OrderConfirmation() {
           {/* Action Buttons */}
           <div className="flex gap-4 margin-top-lg">
             <Link to="/cart" className="btn btn-secondary">
-              Back to Cart
+              {t("orderConfirmation.backToCart")}
             </Link>
             <button
               className="btn-primary"
@@ -1037,39 +1039,39 @@ export default function OrderConfirmation() {
               onClick={handleProceedToPayment}
             >
               {sendingEmail 
-                ? "Processing..."
+                ? t("orderConfirmation.processing")
                 : calculatingDiscount
-                ? "Calculating Discount..."
+                ? t("orderConfirmation.calculatingDiscount")
                 : !canProceedToPayment
-                ? "Loading Order Total..."
+                ? t("orderConfirmation.loadingOrderTotal")
                 : !hasCompleteAddress || !profileData.phone
-                ? "Complete Information to Continue"
-                : `Proceed to Payment (${formatPrice(total)})`}
+                ? t("orderConfirmation.completeInformationToContinue")
+                : `${t("orderConfirmation.proceedToPayment")} (${formatPrice(total)})`}
             </button>
           </div>
 
           {(!hasCompleteAddress || !profileData.phone) && (
             <div className="card padding-md margin-top-md order-confirmation-warning">
               <p className="text-sm order-confirmation-warning-text">
-                <strong>Please fill in all mandatory fields (marked with <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
+                <strong>{t("orderConfirmation.pleaseFillMandatoryFields")} <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
                 {deliveryType === "delivery" && !hasCompleteAddress && (
                   <>
                     {isEditingAddress 
-                      ? "Complete the mandatory delivery address fields above (Street Address, City, ZIP Code). "
-                      : "Add a complete delivery address with all mandatory fields. "}
+                      ? t("orderConfirmation.completeMandatoryAddress")
+                      : t("orderConfirmation.addCompleteDeliveryAddress")}
                   </>
                 )}
-                {!profileData.phone && "Add a phone number (mandatory). "}
+                {!profileData.phone && t("orderConfirmation.addPhoneNumberMandatory")}
                 {deliveryType === "delivery" && !hasCompleteAddress && !isEditingAddress && (
                   <button onClick={handleUseDifferentAddress} className="underline">
-                    Add Address for This Order
+                    {t("orderConfirmation.addAddressForThisOrder")}
                   </button>
                 )}
                 {!profileData.phone && (
                   <>
-                    {" "}or{" "}
+                    {" "}{t("orderConfirmation.or")}{" "}
                     <Link to="/profile" className="underline">
-                      Update Profile
+                      {t("orderConfirmation.updateProfile")}
                     </Link>
                   </>
                 )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FaTiktok, FaFacebook, FaInstagram, FaEnvelope, FaMapMarkerAlt, FaPhone, FaWhatsapp, FaClock } from "react-icons/fa";
 import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
 
@@ -8,6 +9,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function Footer() {
   const [categories, setCategories] = useState([]);
   const [storeInfo, setStoreInfo] = useState(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function loadData() {
@@ -34,41 +36,41 @@ export default function Footer() {
       <div className="footer-content">
         {/* Site Map Column */}
         <div className="footer-column">
-          <h3 className="footer-title">Site Map</h3>
+          <h3 className="footer-title">{t("footer.siteMap")}</h3>
           <ul className="footer-links">
             <li>
-              <Link to="/shop">Shop</Link>
+              <Link to="/shop">{t("footer.links.shop")}</Link>
             </li>
             <li>
-              <Link to="/favorites">Favorites</Link>
+              <Link to="/favorites">{t("footer.links.favorites")}</Link>
             </li>
             <li>
-              <Link to="/cart">Cart</Link>
+              <Link to="/cart">{t("footer.links.cart")}</Link>
             </li>
             <li>
-              <Link to="/profile">My Account</Link>
+              <Link to="/profile">{t("footer.links.myAccount")}</Link>
             </li>
             <li>
-              <Link to="/about">About Us</Link>
+              <Link to="/about">{t("footer.links.aboutUs")}</Link>
             </li>
             <li>
-              <Link to="/contact">Contact Us</Link>
+              <Link to="/contact">{t("footer.links.contactUs")}</Link>
             </li>
             <li>
-              <Link to="/shipping">Shipping & Returns</Link>
+              <Link to="/shipping">{t("footer.links.shippingReturns")}</Link>
             </li>
             <li>
-              <Link to="/terms">Terms & Conditions</Link>
+              <Link to="/terms">{t("footer.links.termsConditions")}</Link>
             </li>
             <li>
-              <Link to="/privacy">Privacy Policy</Link>
+              <Link to="/privacy">{t("footer.links.privacyPolicy")}</Link>
             </li>
           </ul>
         </div>
 
         {/* Main Categories Column */}
         <div className="footer-column">
-          <h3 className="footer-title">Main Categories</h3>
+          <h3 className="footer-title">{t("footer.mainCategories")}</h3>
           <ul className="footer-links">
             {categories.length > 0 ? (
               categories.slice(0, 10).map((category) => {
@@ -83,7 +85,7 @@ export default function Footer() {
               })
             ) : (
               <>
-                <li><Link to="/shop">All Products</Link></li>
+                <li><Link to="/shop">{t("footer.links.allProducts")}</Link></li>
                 <li><Link to="/shop">Saddles</Link></li>
                 <li><Link to="/shop">Bridles</Link></li>
                 <li><Link to="/shop">Tack</Link></li>
@@ -95,7 +97,7 @@ export default function Footer() {
 
         {/* Contact Us Column */}
         <div className="footer-column">
-          <h3 className="footer-title">Contact Us</h3>
+          <h3 className="footer-title">{t("footer.contactUs")}</h3>
           <ul className="footer-contact">
             {storeInfo?.storePhone && (
               <li>
@@ -153,7 +155,7 @@ export default function Footer() {
 
         {/* Welcome / Social Media Column */}
         <div className="footer-column">
-          <h3 className="footer-title">Follow Us</h3>
+          <h3 className="footer-title">{t("footer.followUs")}</h3>
           <div className="footer-social">
             {storeInfo?.whatsappNumber && (
               <a 
@@ -213,8 +215,8 @@ export default function Footer() {
             </a>
           </div>
           <div className="footer-welcome">
-            <p>Welcome to visit our store!</p>
-            <p className="footer-welcome-subtitle">Experience quality saddlery and tack</p>
+            <p>{t("footer.welcome")}</p>
+            <p className="footer-welcome-subtitle">{t("footer.welcomeSubtitle")}</p>
           </div>
         </div>
       </div>
@@ -223,11 +225,11 @@ export default function Footer() {
       <div className="footer-bottom">
         <div className="footer-bottom-content">
           <div className="footer-bottom-left">
-            <span>© {new Date().getFullYear()} Kingsman Saddlery. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} Kingsman Saddlery. {t("footer.allRightsReserved")}</span>
           </div>
           <div className="footer-bottom-right">
             <div className="footer-payment-icons">
-              <span className="footer-payment-text">We accept:</span>
+              <span className="footer-payment-text">{t("footer.weAccept")}</span>
               <div className="footer-payment-logos">
                 <span className="footer-payment-logo">VISA</span>
                 <span className="footer-payment-logo">MasterCard</span>
