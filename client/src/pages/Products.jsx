@@ -23,6 +23,7 @@ export default function Products() {
 
   const categoryParam = searchParams.get("category");
   const subcategoryParam = searchParams.get("subcategory");
+  const brandParam = searchParams.get("brand");
   const shouldFocusSearch = searchParams.get("search") === "true";
   const searchInputRef = useRef(null);
 
@@ -66,9 +67,15 @@ export default function Products() {
     }
   }, [shouldFocusSearch, searchParams, navigate]);
 
-  // Filter products based on search, category, and sub-category
+  // Filter products based on search, category, sub-category, and brand
   const filteredProducts = useMemo(() => {
     let filtered = allProducts;
+
+    // Filter by brand
+    if (brandParam) {
+      const decodedBrand = decodeURIComponent(brandParam);
+      filtered = filtered.filter(p => p.brand === decodedBrand);
+    }
 
     // Filter by category
     if (categoryParam) {
@@ -88,7 +95,8 @@ export default function Products() {
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(query) ||
         (p.category && p.category.toLowerCase().includes(query)) ||
-        (p.subCategory && p.subCategory.toLowerCase().includes(query))
+        (p.subCategory && p.subCategory.toLowerCase().includes(query)) ||
+        (p.brand && p.brand.toLowerCase().includes(query))
       );
     }
 
@@ -112,7 +120,7 @@ export default function Products() {
       saleProducts, 
       productsByCategory 
     };
-  }, [allProducts, categoryParam, subcategoryParam, searchQuery]);
+  }, [allProducts, categoryParam, subcategoryParam, brandParam, searchQuery]);
 
   const handleAddToCart = (product) => {
     setConfirmProduct(product);
@@ -178,13 +186,20 @@ export default function Products() {
             ← Back to Shop
           </button>
           <h1 className="text-3xl font-bold">
-            {subcategoryParam 
+            {brandParam
+              ? `${decodeURIComponent(brandParam)} Products`
+              : subcategoryParam 
               ? decodeURIComponent(subcategoryParam)
               : categoryParam 
               ? decodeURIComponent(categoryParam)
               : "All Products"}
           </h1>
-          {categoryParam && subcategoryParam && (
+          {brandParam && (
+            <p className="text-gray-600 mt-2">
+              Showing products from brand: <strong>{decodeURIComponent(brandParam)}</strong>
+            </p>
+          )}
+          {categoryParam && subcategoryParam && !brandParam && (
             <p className="text-gray-600 mt-2">
               {decodeURIComponent(categoryParam)} → {decodeURIComponent(subcategoryParam)}
             </p>
@@ -243,7 +258,7 @@ export default function Products() {
             <button
               onClick={() => {
                 setSearchQuery("");
-                navigate("/shop");
+                navigate("/products");
               }}
               className="btn-link"
             >

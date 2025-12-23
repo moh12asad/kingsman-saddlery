@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function BrandsCarousel() {
+  const navigate = useNavigate();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
@@ -153,7 +155,18 @@ export default function BrandsCarousel() {
         >
           {/* Duplicate brands for seamless infinite scroll */}
           {[...brands, ...brands, ...brands].map((brand, index) => (
-            <div key={`${brand.id}-${index}`} className="brand-card">
+            <div 
+              key={`${brand.id}-${index}`} 
+              className="brand-card"
+              onClick={(e) => {
+                // Don't navigate if clicking on scroll arrows
+                if (e.target.closest('.brands-carousel-arrow')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                navigate(`/products?brand=${encodeURIComponent(brand.name)}`);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               {brand.logo ? (
                 <img
                   src={brand.logo}

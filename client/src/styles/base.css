@@ -138,9 +138,24 @@ html {
   background: rgba(251, 191, 36, 0.05);
 }
 
+/* Brands table - Actions column left-aligned */
+.brands-table th:last-child,
+.brands-table td:last-child {
+  text-align: left;
+}
+
+.brands-table td:first-child {
+  text-align: center;
+}
+
+.brands-table td:first-child img {
+  display: block;
+  margin: 0 auto;
+}
+
 /* Default: last column right-aligned for other tables */
-.table:not(.admin-products-table) th:last-child,
-.table:not(.admin-products-table) td:last-child {
+.table:not(.admin-products-table):not(.brands-table) th:last-child,
+.table:not(.admin-products-table):not(.brands-table) td:last-child {
   text-align: right;
 }
 
