@@ -431,7 +431,6 @@ export default function SignUp() {
                   </label>
                   <input
                     type="email"
-                    className="input"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                     placeholder="you@example.com"

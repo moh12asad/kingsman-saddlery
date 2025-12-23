@@ -491,7 +491,6 @@ export default function CompleteProfile() {
                       <div className="relative">
                         <input
                           type={showPasswords.new ? "text" : "password"}
-                          className="input"
                           className="input input-with-action"
                           value={passwordData.newPassword}
                           onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
@@ -511,7 +510,6 @@ export default function CompleteProfile() {
                       <div className="relative">
                         <input
                           type={showPasswords.confirm ? "text" : "password"}
-                          className="input"
                           className="input input-with-action"
                           value={passwordData.confirmPassword}
                           onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
@@ -599,8 +597,7 @@ export default function CompleteProfile() {
                     type="button"
                     onClick={handleUseLocation}
                     disabled={locationLoading}
-                    className="btn-secondary flex-row flex-gap-sm"
-                    className="btn-sm"
+                    className="btn-secondary flex-row flex-gap-sm btn-sm"
                     style={{ marginLeft: "auto" }}
                   >
                     {locationLoading ? (

@@ -1,5 +1,6 @@
 // Email service using nodemailer
 import nodemailer from "nodemailer";
+import { db } from "./firebaseAdmin.js";
 
 // Create reusable transporter
 let transporter = null;
@@ -61,7 +62,9 @@ function getTransporter() {
 /**
  * Generate HTML email template for order confirmation
  */
-export function generateOrderEmailTemplate(orderData) {
+export async function generateOrderEmailTemplate(orderData) {
+  // Get store info for email template
+  const storeInfo = await getStoreInfo();
   const {
     orderNumber,
     customerName,
@@ -78,6 +81,11 @@ export function generateOrderEmailTemplate(orderData) {
     orderDate,
     status = "pending"
   } = orderData;
+
+  const storeName = storeInfo?.storeName || "Kingsman Saddlery";
+  const storeEmail = storeInfo?.storeEmail || process.env.SMTP_USER || "";
+  const storePhone = storeInfo?.storePhone || "";
+  const whatsappNumber = storeInfo?.whatsappNumber || "";
 
   const itemsHtml = items.map(item => `
     <tr>
@@ -107,12 +115,12 @@ export function generateOrderEmailTemplate(orderData) {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Order Confirmation - Kingsman Saddlery</title>
+      <title>Order Confirmation - ${storeName}</title>
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
       <div style="background: #000000; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
         <h1 style="margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 2px 4px rgba(255, 215, 0, 0.3);">
-          KINGSMANSADDLERY
+          ${storeName.toUpperCase().replace(/\s+/g, '')}
         </h1>
         <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
         <p style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #FFFFFF; margin-top: 10px;">
@@ -199,8 +207,17 @@ export function generateOrderEmailTemplate(orderData) {
         
         <p style="font-size: 16px; margin-top: 20px; color: #000000;">
           Best regards,<br>
-          <strong style="color: #000000;">Kingsman Saddlery Team</strong>
+          <strong style="color: #000000;">${storeName} Team</strong>
         </p>
+        
+        ${storeEmail || storePhone || whatsappNumber ? `
+        <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <h3 style="color: #000000; font-size: 16px; margin-top: 0; margin-bottom: 10px; font-weight: 700;">Contact Us</h3>
+          ${storeEmail ? `<p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">Email: <a href="mailto:${storeEmail}" style="color: #000000; text-decoration: underline;">${storeEmail}</a></p>` : ""}
+          ${storePhone ? `<p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">Phone: <a href="tel:${storePhone}" style="color: #000000; text-decoration: underline;">${storePhone}</a></p>` : ""}
+          ${whatsappNumber ? `<p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">WhatsApp: <a href="https://wa.me/${whatsappNumber.replace(/[^\d+]/g, '')}" style="color: #000000; text-decoration: underline;">${whatsappNumber}</a></p>` : ""}
+        </div>
+        ` : ""}
       </div>
       
       <div style="text-align: center; margin-top: 20px; padding: 20px; color: #000000; font-size: 12px; border-top: 1px solid #FCD34D;">
@@ -260,13 +277,18 @@ export async function sendOrderConfirmationEmail(orderData) {
       textEmail += `Delivery: ${orderData.deliveryCost.toFixed(2)} ILS\n`;
     }
     
-    textEmail += `\nTotal: ${orderData.total.toFixed(2)} ILS\n\nBest regards,\nKingsman Saddlery Team`;
+    // Get store info for text email
+    // Get store info for email
+    const storeInfo = await getStoreInfo();
+    const storeName = storeInfo?.storeName || "Kingsman Saddlery";
+    
+    textEmail += `\nTotal: ${orderData.total.toFixed(2)} ILS\n\nBest regards,\n${storeName} Team`;
 
     const mailOptions = {
-      from: `"Kingsman Saddlery" <${process.env.SMTP_USER}>`,
+      from: `"${storeName}" <${process.env.SMTP_USER}>`,
       to: customerEmail,
-      subject: `Order Confirmation #${orderNumber} - Kingsman Saddlery`,
-      html: generateOrderEmailTemplate(orderData),
+      subject: `Order Confirmation #${orderNumber} - ${storeName}`,
+      html: await generateOrderEmailTemplate(orderData),
       text: textEmail,
     };
 
@@ -368,6 +390,210 @@ export async function sendOrderConfirmationEmail(orderData) {
       console.error(`[EMAIL]   Message: ${error.response || 'N/A'}`);
     }
     
+    console.error(`[EMAIL] ===== End Error Details =====`);
+    
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get store information from settings
+ */
+async function getStoreInfo() {
+  try {
+    const settingsDoc = await db.collection("settings").doc("general").get();
+    
+    if (settingsDoc.exists) {
+      return settingsDoc.data();
+    }
+    
+    // Return defaults if no settings exist
+    return {
+      storeName: "Kingsman Saddlery",
+      storeEmail: process.env.SMTP_USER || "",
+      storePhone: "",
+      whatsappNumber: "",
+      location: {
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching store info:", error);
+    return {
+      storeName: "Kingsman Saddlery",
+      storeEmail: process.env.SMTP_USER || "",
+      storePhone: "",
+      whatsappNumber: "",
+      location: {
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
+      },
+    };
+  }
+}
+
+/**
+ * Generate HTML email template for contact form submission
+ */
+function generateContactFormEmailTemplate(contactData, storeInfo) {
+  const { name, email, phone, subject, message, id } = contactData;
+  const storeName = storeInfo?.storeName || "Kingsman Saddlery";
+  const storeEmail = storeInfo?.storeEmail || process.env.SMTP_USER || "";
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Contact Form Submission - ${storeName}</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+      <div style="background: #000000; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 2px 4px rgba(255, 215, 0, 0.3);">
+          ${storeName.toUpperCase().replace(/\s+/g, '')}
+        </h1>
+        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
+        <p style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #FFFFFF; margin-top: 10px;">
+          NEW CONTACT FORM SUBMISSION
+        </p>
+        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
+      </div>
+      
+      <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+        <h2 style="color: #000000; margin-top: 0; font-size: 24px; font-weight: 700; border-bottom: 3px solid #FCD34D; padding-bottom: 10px; display: inline-block;">Contact Form Submission</h2>
+        
+        <div style="background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%); padding: 20px; border-radius: 6px; margin: 20px 0; border: 2px solid #000000;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 14px; color: #000000; text-transform: uppercase; letter-spacing: 1px;">SUBMISSION ID</p>
+          <p style="margin: 0; font-size: 24px; font-weight: 900; color: #000000;">#${id}</p>
+          <p style="margin: 8px 0 0 0; font-size: 14px; color: #000000; font-weight: 600;">Date: ${new Date().toLocaleString()}</p>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #ffffff; border: 2px solid #FCD34D; border-radius: 6px;">
+          <h3 style="color: #000000; font-size: 18px; margin-top: 0; margin-bottom: 15px; font-weight: 700; border-bottom: 2px solid #FCD34D; padding-bottom: 8px; display: inline-block;">Contact Information</h3>
+          
+          <div style="margin: 12px 0;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
+              <strong>Name:</strong> ${name}
+            </p>
+          </div>
+          
+          <div style="margin: 12px 0;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
+              <strong>Email:</strong> <a href="mailto:${email}" style="color: #000000; text-decoration: underline;">${email}</a>
+            </p>
+          </div>
+          
+          ${phone ? `
+          <div style="margin: 12px 0;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
+              <strong>Phone:</strong> <a href="tel:${phone}" style="color: #000000; text-decoration: underline;">${phone}</a>
+            </p>
+          </div>
+          ` : ""}
+          
+          <div style="margin: 12px 0;">
+            <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
+              <strong>Subject:</strong> ${subject}
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 20px; background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%); border: 2px solid #000000; border-radius: 6px;">
+          <h3 style="color: #000000; font-size: 18px; margin-top: 0; margin-bottom: 15px; font-weight: 700; border-bottom: 2px solid #000000; padding-bottom: 8px; display: inline-block;">Message</h3>
+          <p style="margin: 0; font-size: 14px; color: #000000; font-weight: 600; white-space: pre-wrap;">${message}</p>
+        </div>
+
+        <p style="font-size: 16px; margin-top: 30px; color: #000000;">
+          Please respond to this inquiry at your earliest convenience.
+        </p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 20px; padding: 20px; color: #000000; font-size: 12px; border-top: 1px solid #FCD34D;">
+        <p style="margin: 0; font-weight: 600;">This is an automated email from ${storeName} contact form.</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Send contact form email notification
+ */
+export async function sendContactFormEmail(contactData) {
+  const startTime = Date.now();
+  const timestamp = new Date().toISOString();
+  
+  try {
+    console.log(`[EMAIL] ===== Contact Form Email Started at ${timestamp} =====`);
+    console.log(`[EMAIL] Submission ID: ${contactData.id}`);
+    console.log(`[EMAIL] From: ${contactData.email}`);
+    
+    const emailTransporter = getTransporter();
+    
+    if (!emailTransporter) {
+      console.warn("[EMAIL] Email service not configured. Email not sent.");
+      return { success: false, error: "Email service not configured" };
+    }
+
+    if (!contactData.email) {
+      throw new Error("Contact email is required");
+    }
+
+    // Get store info
+    const storeInfo = await getStoreInfo();
+    const recipientEmail = storeInfo.storeEmail || process.env.SMTP_USER;
+
+    if (!recipientEmail) {
+      throw new Error("Store email not configured");
+    }
+
+    // Generate plain text version
+    const textEmail = `New Contact Form Submission #${contactData.id}\n\n` +
+      `Name: ${contactData.name}\n` +
+      `Email: ${contactData.email}\n` +
+      (contactData.phone ? `Phone: ${contactData.phone}\n` : "") +
+      `Subject: ${contactData.subject}\n\n` +
+      `Message:\n${contactData.message}\n\n` +
+      `Date: ${new Date().toLocaleString()}`;
+
+    const mailOptions = {
+      from: `"${storeInfo.storeName || 'Kingsman Saddlery'}" <${process.env.SMTP_USER}>`,
+      to: recipientEmail,
+      replyTo: contactData.email,
+      subject: `New Contact Form: ${contactData.subject} - ${storeInfo.storeName || 'Kingsman Saddlery'}`,
+      html: generateContactFormEmailTemplate(contactData, storeInfo),
+      text: textEmail,
+    };
+
+    console.log(`[EMAIL] Sending contact form email to ${recipientEmail}...`);
+    const sendStartTime = Date.now();
+    
+    const info = await emailTransporter.sendMail(mailOptions);
+    const sendTime = Date.now() - sendStartTime;
+    const totalTime = Date.now() - startTime;
+    
+    console.log(`[EMAIL] ✓ Contact form email sent successfully!`);
+    console.log(`[EMAIL]   Message ID: ${info.messageId}`);
+    console.log(`[EMAIL]   Send Time: ${sendTime}ms`);
+    console.log(`[EMAIL]   Total Time: ${totalTime}ms`);
+    console.log(`[EMAIL] ===== Contact Form Email Completed =====`);
+    
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    const totalTime = Date.now() - startTime;
+    console.error(`[EMAIL] ===== Contact Form Email Failed after ${totalTime}ms =====`);
+    console.error(`[EMAIL] Error Type: ${error.constructor.name}`);
+    console.error(`[EMAIL] Error Code: ${error.code || 'N/A'}`);
+    console.error(`[EMAIL] Error Message: ${error.message}`);
+    console.error(`[EMAIL] Error Stack: ${error.stack}`);
     console.error(`[EMAIL] ===== End Error Details =====`);
     
     return { success: false, error: error.message };

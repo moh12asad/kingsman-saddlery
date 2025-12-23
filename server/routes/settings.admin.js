@@ -19,10 +19,47 @@ router.get("/", async (_req, res) => {
           storeName: "",
           storeEmail: "",
           storePhone: "",
+          location: {
+            address: "",
+            city: "",
+            state: "",
+            zipCode: "",
+            country: "",
+          },
+          workingHours: {
+            monday: { open: "", close: "", closed: false },
+            tuesday: { open: "", close: "", closed: false },
+            wednesday: { open: "", close: "", closed: false },
+            thursday: { open: "", close: "", closed: false },
+            friday: { open: "", close: "", closed: false },
+            saturday: { open: "", close: "", closed: false },
+            sunday: { open: "", close: "", closed: false },
+          },
         } 
       });
     }
-    res.json({ settings: settingsDoc.data() });
+    const data = settingsDoc.data();
+    // Ensure location and workingHours exist with defaults
+    const settings = {
+      ...data,
+      location: data.location || {
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
+      },
+      workingHours: data.workingHours || {
+        monday: { open: "", close: "", closed: false },
+        tuesday: { open: "", close: "", closed: false },
+        wednesday: { open: "", close: "", closed: false },
+        thursday: { open: "", close: "", closed: false },
+        friday: { open: "", close: "", closed: false },
+        saturday: { open: "", close: "", closed: false },
+        sunday: { open: "", close: "", closed: false },
+      },
+    };
+    res.json({ settings });
   } catch (error) {
     console.error("Error fetching settings:", error);
     res.status(500).json({ error: "Failed to fetch settings", details: error.message });
