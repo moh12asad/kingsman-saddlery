@@ -394,7 +394,6 @@ export default function Profile() {
                 <label className="text-sm font-medium margin-bottom-sm">Display Name</label>
                 <input
                   type="text"
-                  className="input"
                   value={profileData.displayName}
                   onChange={e => setProfileData({ ...profileData, displayName: e.target.value })}
                   placeholder="Your name"
