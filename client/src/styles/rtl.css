@@ -5,6 +5,12 @@
   text-align: right;
 }
 
+/* CRITICAL: All images must remain LTR to prevent flipping */
+[dir="rtl"] img {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
 [dir="ltr"] {
   direction: ltr;
   text-align: left;
@@ -221,6 +227,112 @@
 
 /* Admin grid RTL */
 [dir="rtl"] .admin-container .grid {
+  direction: rtl;
+}
+
+/* Product cards RTL - prevent image flipping and fix positioning */
+[dir="rtl"] .card-product-carousel {
+  direction: ltr; /* Keep product cards LTR to preserve image orientation */
+}
+
+[dir="rtl"] .card-product-image-wrapper {
+  direction: ltr; /* Keep image wrapper LTR */
+}
+
+[dir="rtl"] .card-product-image {
+  transform: none !important; /* Prevent any image flipping */
+  direction: ltr; /* Keep image LTR */
+  unicode-bidi: embed; /* Prevent text direction from affecting image */
+}
+
+/* Prevent all images from being flipped in RTL */
+[dir="rtl"] img {
+  direction: ltr;
+  unicode-bidi: embed;
+  transform: none !important;
+}
+
+/* Category card images RTL */
+[dir="rtl"] .aspect-square img,
+[dir="rtl"] .category-card img {
+  direction: ltr;
+  unicode-bidi: embed;
+  transform: none !important;
+}
+
+/* Category card container RTL - keep LTR for images */
+[dir="rtl"] .aspect-square {
+  direction: ltr;
+}
+
+[dir="rtl"] .aspect-square.relative {
+  direction: ltr;
+}
+
+/* Ensure all image containers maintain LTR */
+[dir="rtl"] .relative img,
+[dir="rtl"] .group img {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Prevent image flipping on hover scale */
+[dir="rtl"] .transform.hover\:scale-105 img {
+  transform: scale(1.05) !important;
+  direction: ltr;
+}
+
+/* Ensure object-fit and object-position work correctly in RTL */
+[dir="rtl"] img[class*="object-cover"],
+[dir="rtl"] img[class*="object-contain"] {
+  object-position: center;
+  direction: ltr;
+}
+
+/* Fix for category grid cards */
+[dir="rtl"] .grid img {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Ensure overflow doesn't cause image cutoff */
+[dir="rtl"] .overflow-hidden img {
+  direction: ltr;
+  transform-origin: center center;
+}
+
+[dir="rtl"] .card-product-favorite {
+  right: auto;
+  left: 0.75rem; /* Move favorite button to left in RTL */
+}
+
+[dir="rtl"] .card-product-badge {
+  left: auto;
+  right: 0.75rem; /* Move badge to right in RTL */
+}
+
+/* Product carousel arrows RTL */
+[dir="rtl"] .product-carousel-arrow-left {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] .product-carousel-arrow-right {
+  right: auto;
+  left: 0;
+}
+
+/* Product carousel container RTL */
+[dir="rtl"] .product-carousel-container {
+  direction: rtl; /* Container can be RTL for scrolling direction */
+}
+
+[dir="rtl"] .product-carousel {
+  direction: rtl; /* Carousel scroll direction RTL */
+}
+
+/* Product grid RTL */
+[dir="rtl"] .product-grid {
   direction: rtl;
 }
 

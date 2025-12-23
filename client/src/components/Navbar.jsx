@@ -62,12 +62,20 @@ export default function Navbar() {
       };
 
       updatePosition();
+      
+      // Listen to scroll on window, document, and all scrollable containers
       window.addEventListener('resize', updatePosition);
       window.addEventListener('scroll', updatePosition, true);
+      document.addEventListener('scroll', updatePosition, true);
+      document.documentElement.addEventListener('scroll', updatePosition, true);
+      document.body.addEventListener('scroll', updatePosition, true);
 
       return () => {
         window.removeEventListener('resize', updatePosition);
         window.removeEventListener('scroll', updatePosition, true);
+        document.removeEventListener('scroll', updatePosition, true);
+        document.documentElement.removeEventListener('scroll', updatePosition, true);
+        document.body.removeEventListener('scroll', updatePosition, true);
       };
     }
   }, [showProfileMenu, isMobile]);
