@@ -2,6 +2,8 @@
 .language-switcher {
   position: relative;
   display: inline-block;
+  overflow: visible;
+  z-index: 10000;
 }
 
 .language-switcher-button {
@@ -42,19 +44,32 @@
 }
 
 .language-switcher-dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
   min-width: 180px;
+  width: max-content;
   background: #FFFFFF;
   border: 2px solid #E5E7EB;
   border-radius: 0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(252, 211, 77, 0.1);
-  z-index: 9999;
+  z-index: 1011;
   overflow: hidden;
   animation: dropdownFadeIn 0.15s ease;
   pointer-events: auto;
   touch-action: manipulation;
+  display: flex;
+  flex-direction: column;
+  contain: none;
+  /* Ensure all options are visible */
+  min-height: fit-content;
+}
+
+/* Desktop dropdown variant (using createPortal) */
+.language-switcher-dropdown-desktop {
+  position: fixed;
+  z-index: 1011;
+  display: flex;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 [dir="rtl"] .language-switcher-dropdown {
@@ -78,6 +93,9 @@
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  /* Ensure options are fully visible */
+  flex-shrink: 0;
+  min-height: 2.5rem;
 }
 
 [dir="rtl"] .language-switcher-option {
@@ -161,33 +179,17 @@
 
 /* Mobile dropdown variant (using createPortal) */
 .language-switcher-dropdown-mobile {
-  min-width: 180px !important;
-  max-width: calc(100vw - 1rem) !important;
-  background: #FFFFFF !important;
-  border: 2px solid #E5E7EB !important;
-  border-radius: 0.5rem !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-  z-index: 1011 !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  overflow: hidden !important;
-  position: fixed !important;
+  min-width: 180px;
+  max-width: calc(100vw - 1rem);
+  position: fixed;
+  z-index: 1011;
+  display: flex;
+  flex-direction: column;
 }
 
 .language-switcher-dropdown-mobile .language-switcher-option {
-  pointer-events: auto !important;
-  cursor: pointer !important;
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1) !important;
-  min-height: 48px !important;
-  padding: 1rem !important;
-  font-size: 0.9375rem !important;
-}
-
-[dir="rtl"] .language-switcher-dropdown-mobile {
-  right: auto !important;
-  left: auto !important;
+  min-height: 48px;
+  padding: 1rem;
+  font-size: 0.9375rem;
 }
 

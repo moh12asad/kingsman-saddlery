@@ -29,16 +29,34 @@
   justify-content: flex-start;
 }
 
-[dir="rtl"] .navbar-left {
-  order: 3;
+/* Desktop RTL navbar order */
+@media (min-width: 769px) {
+  [dir="rtl"] .navbar-left {
+    order: 3;
+  }
+
+  [dir="rtl"] .navbar-brand-center {
+    order: 2;
+  }
+
+  [dir="rtl"] .navbar-links {
+    order: 1;
+  }
 }
 
-[dir="rtl"] .navbar-brand-center {
-  order: 2;
-}
+/* Mobile: Keep brand first, links second regardless of RTL */
+@media (max-width: 768px) {
+  [dir="rtl"] .navbar-left {
+    order: 3;
+  }
 
-[dir="rtl"] .navbar-links {
-  order: 1;
+  [dir="rtl"] .navbar-brand-center {
+    order: 1 !important;
+  }
+
+  [dir="rtl"] .navbar-links {
+    order: 2 !important;
+  }
 }
 
 /* Form inputs RTL */
