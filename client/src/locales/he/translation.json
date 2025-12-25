@@ -107,7 +107,8 @@
     "signInRequiredMessage": "אנא התחבר כדי להמשיך לתשלום.",
     "signInToCheckout": "התחבר לתשלום",
     "total": "סה\"כ:",
-    "proceedToCheckout": "המשך לתשלום"
+    "proceedToCheckout": "המשך לתשלום",
+    "items": "פריטים"
   },
   "favorites": {
     "title": "המועדפים שלי",

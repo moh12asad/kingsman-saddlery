@@ -596,15 +596,17 @@
 
 @media (max-width: 768px) {
   .subnavbar-spacer {
-    /* Height will be dynamically calculated: navbar height + subnavbar height */
+    /* Height accounts for fixed navbar + subnavbar */
     /* Navbar on mobile is ~120-140px (two rows), subnavbar is ~40px */
-    min-height: 10rem; /* ~160px total to be safe */
+    min-height: 10rem; /* ~160px total - this is the actual space needed for fixed navbars */
+    margin-bottom: 0; /* No extra margin - spacer height is enough */
   }
 }
 
 @media (max-width: 480px) {
   .subnavbar-spacer {
     min-height: 11rem; /* ~176px total for very small screens */
+    margin-bottom: 0; /* No extra margin - spacer height is enough */
   }
 }
 
@@ -688,19 +690,19 @@
   }
 
   .page-with-navbar {
-    padding-top: 8rem; /* Adjust for navbar + subnavbar on mobile */
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
   }
 
   .signin-page-container {
-    padding-top: 8rem; /* Adjust for navbar + subnavbar on mobile */
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
   }
 
   .cart-page {
-    padding-top: 8rem; /* Adjust for navbar + subnavbar on mobile */
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
   }
 
   .loading-container {
-    padding-top: 8rem; /* Adjust for navbar + subnavbar on mobile */
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
   }
 }
 
@@ -714,6 +716,20 @@
 
 .page-with-navbar {
   padding-top: 9rem; /* Account for navbar (6rem) + subnavbar (3rem) */
+}
+
+@media (max-width: 480px) {
+  .page-with-navbar {
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
+  }
+
+  .signin-page-container {
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
+  }
+
+  .loading-container {
+    padding-top: 0; /* Spacer handles the space, no extra padding needed */
+  }
 }
 
 /* ============================================

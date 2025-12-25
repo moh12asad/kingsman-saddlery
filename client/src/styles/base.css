@@ -15,6 +15,18 @@ html {
   padding-top: 9rem;
 }
 
+@media (max-width: 768px) {
+  .max-w-7xl[class*="py-12"] {
+    padding-top: 0; /* Spacer handles the space */
+  }
+}
+
+@media (max-width: 480px) {
+  .max-w-7xl[class*="py-12"] {
+    padding-top: 0; /* Spacer handles the space */
+  }
+}
+
 .container-page {
   max-width: 72rem;
   margin-left: auto;

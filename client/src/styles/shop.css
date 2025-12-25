@@ -13,6 +13,7 @@
   z-index: 0;
 }
 
+
 .shop-brand-header {
   margin-left: 280px;
   width: calc(100% - 280px);
@@ -140,7 +141,15 @@
 
 @media (max-width: 768px) {
   .shop-page {
-    padding-top: 120px; /* More padding on mobile for taller navbar */
+    padding-top: 0; /* Remove desktop padding on mobile */
+    margin-top: 0; /* No extra margin */
+  }
+}
+
+@media (max-width: 480px) {
+  .shop-page {
+    padding-top: 0; /* Remove desktop padding on mobile */
+    margin-top: 0; /* No extra margin */
   }
 }
 
