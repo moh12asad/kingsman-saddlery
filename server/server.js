@@ -35,43 +35,6 @@ app.use(morgan("dev"));
 // ---------- Health ----------
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
-// ---------- Helper endpoint to set user role (admin only, one-time setup) ----------
-app.post("/api/set-user-role", verifyFirebaseToken, async (req, res) => {
-  try {
-    const { uid } = req.user;
-    const { role, targetUid } = req.body;
-    
-    // Allow setting your own role OR if you're already an admin, set others
-    const targetUserId = targetUid || uid;
-    
-    // Check if requester is admin (if setting someone else)
-    if (targetUserId !== uid) {
-      const requesterSnap = await admin.firestore().collection("users").doc(uid).get();
-      const requesterRole = requesterSnap.data()?.role;
-      if (requesterRole !== "ADMIN") {
-        return res.status(403).json({ error: "Only admins can set other users' roles" });
-      }
-    }
-    
-    // Create or update user document
-    await admin.firestore().collection("users").doc(targetUserId).set({
-      role: role || "ADMIN",
-      active: true,
-      email: req.user.email,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
-    
-    res.json({ 
-      ok: true, 
-      message: `Role "${role || 'ADMIN'}" set for user ${targetUserId}`,
-      uid: targetUserId
-    });
-  } catch (error) {
-    console.error("set-user-role error:", error);
-    res.status(500).json({ error: "Failed to set user role", details: error.message });
-  }
-});
-
 // ---------- Diagnostic endpoint to test service account ----------
 app.get("/api/test-firestore", async (_req, res) => {
   try {
