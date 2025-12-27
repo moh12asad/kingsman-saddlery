@@ -31,13 +31,22 @@ export default function AdminProducts(){
     load(); 
   },[]);
 
+  // Helper function to extract English name from translation object or string
+  function getEnglishName(field) {
+    if (typeof field === 'string') return field;
+    if (typeof field === 'object' && field !== null) {
+      return field.en || field.ar || field.he || '';
+    }
+    return '';
+  }
+
   // Filter products by category and search query
   const filteredRows = useMemo(() => {
     let filtered = allRows;
 
     // Filter by category
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(p => p.category === selectedCategory);
+      filtered = filtered.filter(p => getEnglishName(p.category) === selectedCategory);
     }
 
     // Filter by search query
@@ -76,7 +85,11 @@ export default function AdminProducts(){
 
   // Get unique categories from products for filter dropdown
   const productCategories = useMemo(() => {
-    const cats = new Set(allRows.map(p => p.category).filter(Boolean));
+    const cats = new Set(
+      allRows
+        .map(p => getEnglishName(p.category))
+        .filter(Boolean)
+    );
     return Array.from(cats).sort();
   }, [allRows]);
 

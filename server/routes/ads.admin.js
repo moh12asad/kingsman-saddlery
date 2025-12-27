@@ -134,10 +134,33 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
         if (existingData[field] && typeof existingData[field] === 'object' && 
             updates[field] && typeof updates[field] === 'object') {
           updates[field] = mergeTranslations(existingData[field], updates[field]);
+        } else if (typeof updates[field] === 'string') {
+          // If update is a string (empty or not)
+          const updateValue = updates[field].trim();
+          
+          // If empty string and existing data has translations, preserve existing translations
+          if (updateValue === '' && existingData[field] && typeof existingData[field] === 'object') {
+            // Don't update this field - preserve existing translations
+            delete updates[field];
+          } else if (updateValue !== '') {
+            // Non-empty string: convert to translation object
+            const prepared = prepareAdForStorage({ [field]: updateValue });
+            updates[field] = prepared[field];
+          } else {
+            // Empty string and no existing translations: set to empty translation object
+            const prepared = prepareAdForStorage({ [field]: '' });
+            updates[field] = prepared[field];
+          }
         } else {
-          // Otherwise, prepare for storage (converts strings to translation objects)
-          const prepared = prepareAdForStorage({ [field]: updates[field] });
-          updates[field] = prepared[field];
+          // Handle other cases (null, undefined, etc.)
+          // If existing has translations, preserve them
+          if (existingData[field] && typeof existingData[field] === 'object') {
+            delete updates[field];
+          } else {
+            // No existing translations, set to empty
+            const prepared = prepareAdForStorage({ [field]: '' });
+            updates[field] = prepared[field];
+          }
         }
       }
     }
