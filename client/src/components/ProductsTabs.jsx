@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useTranslation } from "react-i18next";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import FlyToCartAnimation from "./FlyToCartAnimation";
 
@@ -14,6 +15,7 @@ export default function ProductsTabs() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { t } = useTranslation();
   const scrollRef = useRef(null);
   const [animationTrigger, setAnimationTrigger] = useState(null);
 
@@ -130,7 +132,7 @@ export default function ProductsTabs() {
     return (
       <section className="products-tabs-section">
         <div className="text-center py-12">
-          <p className="text-gray-500">Loading products...</p>
+          <p className="text-gray-500">{t("products.loading")}</p>
         </div>
       </section>
     );
@@ -144,19 +146,19 @@ export default function ProductsTabs() {
             className={`products-tab-button ${activeTab === "suggested" ? "active" : ""}`}
             onClick={() => setActiveTab("suggested")}
           >
-            Suggested
+            {t("shop.tabs.suggested")}
           </button>
           <button
             className={`products-tab-button ${activeTab === "sales" ? "active" : ""}`}
             onClick={() => setActiveTab("sales")}
           >
-            Sales
+            {t("shop.tabs.sales")}
           </button>
           <button
             className={`products-tab-button ${activeTab === "new" ? "active" : ""}`}
             onClick={() => setActiveTab("new")}
           >
-            New
+            {t("shop.tabs.new")}
           </button>
         </div>
       </div>
@@ -168,14 +170,14 @@ export default function ProductsTabs() {
               <button
                 className="product-carousel-arrow product-carousel-arrow-left"
                 onClick={() => scroll('left')}
-                aria-label="Scroll left"
+                aria-label={t("shop.common.scrollLeft")}
               >
                 <FaChevronLeft />
               </button>
               <button
                 className="product-carousel-arrow product-carousel-arrow-right"
                 onClick={() => scroll('right')}
-                aria-label="Scroll right"
+                aria-label={t("shop.common.scrollRight")}
               >
                 <FaChevronRight />
               </button>
@@ -184,7 +186,7 @@ export default function ProductsTabs() {
           <div className="product-carousel" ref={scrollRef}>
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12 w-full">
-                <p className="text-gray-500">No products found</p>
+                <p className="text-gray-500">{t("products.noProducts")}</p>
               </div>
             ) : (
               filteredProducts.map((product) => (
@@ -220,6 +222,7 @@ export default function ProductsTabs() {
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -255,19 +258,19 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           />
         ) : (
           <div className="card-product-placeholder">
-            No image
+            {t("cart.noImage")}
           </div>
         )}
         <button
           className={`card-product-favorite ${isFavorite ? 'active' : ''}`}
           onClick={handleFavoriteClick}
-          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          aria-label={isFavorite ? t("shop.common.removeFromFavorites") : t("shop.common.addToFavorites")}
         >
           <FaHeart />
         </button>
         {product.sale && (
           <span className="card-product-badge">
-            SALE
+            {t("shop.common.sale")}
           </span>
         )}
       </div>
@@ -299,7 +302,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
             style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto', width: '100%' }}
           >
             <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-            Add to Cart
+            {t("products.addToCart")}
           </button>
         </div>
       </div>

@@ -2,22 +2,40 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "../context/LanguageContext";
+import { FaShoppingCart } from "react-icons/fa";
 
 export default function Cart() {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart, isLoaded } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
+  const { currentLanguage } = useLanguage();
 
   // Show loading state while cart is being loaded from localStorage
   if (!isLoaded) {
     return (
       <main className="cart-page">
         <div className="cart-container">
-          <h1 className="cart-title">Your Cart</h1>
+          <div 
+            className="flex-row flex-gap-md margin-bottom-lg" 
+            style={{ 
+              alignItems: 'center',
+              justifyContent: currentLanguage === 'ar' || currentLanguage === 'he' ? 'flex-end' : 'flex-start',
+              flexDirection: currentLanguage === 'ar' || currentLanguage === 'he' ? 'row-reverse' : 'row'
+            }}
+          >
+            <FaShoppingCart style={{ fontSize: '1.5rem', color: 'var(--brand)' }} />
+            <h1 className="heading-1">{t("cart.title")}</h1>
+            {cartItems.length > 0 && (
+              <span className="text-muted">({cartItems.length} {t("cart.items")})</span>
+            )}
+          </div>
           <div className="text-center padding-y-lg">
             <div className="loading-spinner mx-auto"></div>
-            <p className="margin-top-md text-muted">Loading cart...</p>
+            <p className="margin-top-md text-muted">{t("cart.loading")}</p>
           </div>
         </div>
       </main>
@@ -28,14 +46,24 @@ export default function Cart() {
     return (
       <main className="cart-page">
         <div className="cart-container">
-          <h1 className="cart-title">Your Cart</h1>
+          <div 
+            className="flex-row flex-gap-md margin-bottom-lg" 
+            style={{ 
+              alignItems: 'center',
+              justifyContent: currentLanguage === 'ar' || currentLanguage === 'he' ? 'flex-end' : 'flex-start',
+              flexDirection: currentLanguage === 'ar' || currentLanguage === 'he' ? 'row-reverse' : 'row'
+            }}
+          >
+            <FaShoppingCart style={{ fontSize: '1.5rem', color: 'var(--brand)' }} />
+            <h1 className="heading-1">{t("cart.title")}</h1>
+          </div>
           <div className="card-empty">
-            <p className="text-muted margin-bottom-md">Your cart is empty</p>
+            <p className="text-muted margin-bottom-md">{t("cart.empty")}</p>
             <Link
               to="/shop"
               className="btn-primary"
             >
-              Continue Shopping
+              {t("cart.continueShopping")}
             </Link>
           </div>
         </div>
@@ -56,17 +84,31 @@ export default function Cart() {
   }
 
   return (
-    <main className="cart-page">
-      <div className="cart-container">
-        <div className="cart-header">
-          <h1 className="cart-title">Your Cart</h1>
-          <button
-            onClick={clearCart}
-            className="cart-clear-btn"
+      <main className="cart-page">
+        <div className="cart-container">
+          <div 
+            className="flex-row flex-gap-md margin-bottom-lg" 
+            style={{ 
+              alignItems: 'center',
+              justifyContent: currentLanguage === 'ar' || currentLanguage === 'he' ? 'flex-end' : 'flex-start',
+              flexDirection: currentLanguage === 'ar' || currentLanguage === 'he' ? 'row-reverse' : 'row'
+            }}
           >
-            Clear Cart
-          </button>
-        </div>
+            <FaShoppingCart style={{ fontSize: '1.5rem', color: 'var(--brand)' }} />
+            <h1 className="heading-1">{t("cart.title")}</h1>
+            {cartItems.length > 0 && (
+              <span className="text-muted">({cartItems.length} {t("cart.items")})</span>
+            )}
+            {cartItems.length > 0 && (
+              <button
+                onClick={clearCart}
+                className="cart-clear-btn"
+                style={{ marginLeft: 'auto' }}
+              >
+                {t("cart.clearCart")}
+              </button>
+            )}
+          </div>
 
         <div className="cart-items">
           {cartItems.map((item) => (
@@ -82,7 +124,7 @@ export default function Cart() {
               />
             ) : (
               <div className="img-placeholder" style={{ width: '4rem', height: '4rem' }}>
-                No image
+                {t("cart.noImage")}
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -134,7 +176,7 @@ export default function Cart() {
                 onClick={() => removeFromCart(item.id)}
                 className="text-error padding-x-sm padding-y-sm text-lg transition"
                 style={{ lineHeight: 1 }}
-                title="Remove item"
+                title={t("cart.removeItem")}
               >
                 ×
               </button>
@@ -146,21 +188,21 @@ export default function Cart() {
         {!user && (
           <div className="card padding-md margin-bottom-lg" style={{ background: "#fef3c7", borderColor: "#f59e0b" }}>
             <div className="flex-row flex-gap-sm margin-bottom-sm">
-              <strong style={{ color: "#92400e" }}>Sign in required:</strong>
-              <span style={{ color: "#92400e" }}>Please sign in to proceed to checkout.</span>
+              <strong style={{ color: "#92400e" }}>{t("cart.signInRequired")}</strong>
+              <span style={{ color: "#92400e" }}>{t("cart.signInRequiredMessage")}</span>
             </div>
             <Link
               to="/signin?redirect=/cart"
               className="btn-primary"
             >
-              Sign in to Checkout
+              {t("cart.signInToCheckout")}
             </Link>
           </div>
         )}
 
         <div className="cart-summary">
           <div className="cart-total">
-            <span className="cart-total-label">Total:</span>
+            <span className="cart-total-label">{t("cart.total")}</span>
             <span className="cart-total-amount">
               {formatPrice(total)}
             </span>
@@ -170,14 +212,14 @@ export default function Cart() {
               to="/shop"
               className="btn-secondary btn-full"
             >
-              Continue Shopping
+              {t("cart.continueShopping")}
             </Link>
             <button 
               className="btn-primary btn-full"
               onClick={handleCheckout}
               disabled={!user}
             >
-              Proceed to Checkout
+              {t("cart.proceedToCheckout")}
             </button>
           </div>
         </div>

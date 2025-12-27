@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase"; // your existing firebase init
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminUsers(){
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,30 +24,30 @@ export default function AdminUsers(){
     <div className="space-y-6">
       {loading && (
         <div className="card text-center py-8">
-          <div className="text-gray-500">Loading users...</div>
+          <div className="text-gray-500">{t('admin.users.loading')}</div>
         </div>
       )}
       
       {!loading && (
         <div className="card">
-          <h2 className="section-title">Users ({rows.length})</h2>
+          <h2 className="section-title">{t('admin.users.title')} ({rows.length})</h2>
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th>{t('admin.users.name')}</th>
+                  <th>{t('admin.users.email')}</th>
+                  <th>{t('admin.users.phone')}</th>
+                  <th>{t('admin.users.role')}</th>
+                  <th>{t('admin.users.status')}</th>
+                  <th>{t('admin.users.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-8 text-gray-500">
-                      No users found.
+                      {t('admin.users.noUsers')}
                     </td>
                   </tr>
                 ) : (
@@ -58,7 +60,7 @@ export default function AdminUsers(){
                           <div className="flex items-center gap-2">
                             <span>{u.email}</span>
                             {u.emailVerified && (
-                              <span className="badge badge-success text-xs">Verified</span>
+                              <span className="badge badge-success text-xs">{t('admin.users.verified')}</span>
                             )}
                           </div>
                         </td>
@@ -78,7 +80,7 @@ export default function AdminUsers(){
                         </td>
                         <td>
                           <span className={u.active && !u.disabled ? "badge badge-success" : "badge badge-danger"}>
-                            {u.active && !u.disabled ? "Active" : "Inactive"}
+                            {u.active && !u.disabled ? t('admin.users.active') : t('admin.users.inactive')}
                           </span>
                         </td>
                         <td>
@@ -86,7 +88,7 @@ export default function AdminUsers(){
                             className="btn btn-primary btn-sm" 
                             onClick={() => navigate(`/admin/users/edit/${userId}`)}
                           >
-                            Edit
+                            {t('admin.users.edit')}
                           </button>
                         </td>
                       </tr>

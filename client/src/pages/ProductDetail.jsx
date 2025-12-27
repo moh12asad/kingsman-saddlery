@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useTranslation } from "react-i18next";
 import FlyToCartAnimation from "../components/FlyToCartAnimation";
 import { 
   FaHeart, 
@@ -38,6 +39,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadProduct();
@@ -124,7 +126,7 @@ export default function ProductDetail() {
         <div className="container-main padding-y-xl">
           <div className="text-center">
             <div className="loading-spinner mx-auto"></div>
-            <p className="margin-top-md text-muted">Loading product...</p>
+            <p className="margin-top-md text-muted">{t("productDetail.loading")}</p>
           </div>
         </div>
       </main>
@@ -136,12 +138,12 @@ export default function ProductDetail() {
       <main className="min-h-screen bg-gray-50">
         <div className="container-main padding-y-xl">
           <div className="text-center">
-            <p className="text-error heading-3">{error || "Product not found"}</p>
+            <p className="text-error heading-3">{error || t("productDetail.notFound")}</p>
             <button
               onClick={() => navigate("/shop")}
               className="btn btn-primary margin-top-md"
             >
-              Back to Shop
+              {t("productDetail.backToShop")}
             </button>
           </div>
         </div>
@@ -154,9 +156,9 @@ export default function ProductDetail() {
       <div className="container-main" >
         {/* Breadcrumbs */}
         <nav className="breadcrumbs margin-bottom-lg">
-          <Link to="/" className="breadcrumb-link">Home</Link>
+          <Link to="/" className="breadcrumb-link">{t("productDetail.home")}</Link>
           <span className="breadcrumb-separator">/</span>
-          <Link to="/shop" className="breadcrumb-link">Shop</Link>
+          <Link to="/shop" className="breadcrumb-link">{t("productDetail.shop")}</Link>
           {product.category && (
             <>
               <span className="breadcrumb-separator">/</span>
@@ -201,7 +203,7 @@ export default function ProductDetail() {
                         onClick={() => setSelectedImageIndex(prev => 
                           prev > 0 ? prev - 1 : images.length - 1
                         )}
-                        aria-label="Previous image"
+                        aria-label={t("productDetail.previousImage")}
                       >
                         <FaChevronLeft />
                       </button>
@@ -210,14 +212,14 @@ export default function ProductDetail() {
                         onClick={() => setSelectedImageIndex(prev => 
                           prev < images.length - 1 ? prev + 1 : 0
                         )}
-                        aria-label="Next image"
+                        aria-label={t("productDetail.nextImage")}
                       >
                         <FaChevronRight />
                       </button>
                       <button
                         className="product-image-zoom"
                         onClick={() => setShowImageZoom(true)}
-                        aria-label="Zoom image"
+                        aria-label={t("productDetail.zoomImage")}
                       >
                         <FaSearchPlus />
                       </button>
@@ -229,7 +231,7 @@ export default function ProductDetail() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="product-video-link"
-                      aria-label="Watch product video"
+                      aria-label={t("productDetail.watchProductVideo")}
                     >
                       <FaPlay />
                     </a>
@@ -251,7 +253,7 @@ export default function ProductDetail() {
               </>
             ) : (
               <div className="product-image-placeholder">
-                No image available
+                {t("productDetail.noImageAvailable")}
               </div>
             )}
 
@@ -261,13 +263,13 @@ export default function ProductDetail() {
               className={`product-favorite-btn ${isFav ? 'active' : ''} margin-top-lg`}
             >
               <FaHeart />
-              <span>Add to Favorites</span>
+              <span>{t("productDetail.addToFavorites")}</span>
             </button>
 
             {/* Description */}
             {product.description && (
               <div className="product-description margin-top-lg">
-                <h3 className="product-section-title">Description</h3>
+                <h3 className="product-section-title">{t("productDetail.description")}</h3>
                 <p className="product-description-text">{product.description}</p>
               </div>
             )}
@@ -280,7 +282,7 @@ export default function ProductDetail() {
             {/* SKU */}
             {product.sku && (
               <div className="product-sku margin-top-sm">
-                <span className="text-muted">SKU:</span> {product.sku}
+                <span className="text-muted">{t("productDetail.sku")}</span> {product.sku}
               </div>
             )}
 
@@ -304,12 +306,12 @@ export default function ProductDetail() {
 
             {/* Quantity Selector */}
             <div className="product-quantity-selector margin-top-lg">
-              <label className="product-quantity-label">Quantity:</label>
+              <label className="product-quantity-label">{t("productDetail.quantity")}</label>
               <div className="product-quantity-controls">
                 <button
                   className="product-quantity-btn"
                   onClick={() => handleQuantityChange(-1)}
-                  aria-label="Decrease quantity"
+                  aria-label={t("productDetail.decreaseQuantity")}
                 >
                   -
                 </button>
@@ -323,7 +325,7 @@ export default function ProductDetail() {
                 <button
                   className="product-quantity-btn"
                   onClick={() => handleQuantityChange(1)}
-                  aria-label="Increase quantity"
+                  aria-label={t("productDetail.increaseQuantity")}
                 >
                   +
                 </button>
@@ -337,13 +339,13 @@ export default function ProductDetail() {
                 className="btn btn-primary btn-lg btn-full"
               >
                 <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-                Add to Cart
+                {t("productDetail.addToCart")}
               </button>
               <button
                 onClick={handleBuyNow}
                 className="btn btn-secondary btn-lg btn-full margin-top-sm"
               >
-                Buy Now
+                {t("productDetail.buyNow")}
               </button>
             </div>
 
@@ -359,7 +361,7 @@ export default function ProductDetail() {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <span>Technical Details</span>
+                  <span>{t("productDetail.technicalDetails")}</span>
                   {showTechnicalDetails ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                 {showTechnicalDetails && (
@@ -369,7 +371,7 @@ export default function ProductDetail() {
                     borderRadius: '0.5rem',
                     border: '1px solid #dee2e6'
                   }}>
-                    <h3 className="product-section-title">Technical Details</h3>
+                    <h3 className="product-section-title">{t("productDetail.technicalDetails")}</h3>
                     <div className="product-details-text">
                       {product.technicalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
                         <p key={idx} className="product-detail-bullet">
@@ -395,7 +397,7 @@ export default function ProductDetail() {
                     justifyContent: 'space-between'
                   }}
                 >
-                  <span>Additional Details</span>
+                  <span>{t("productDetail.additionalDetails")}</span>
                   {showAdditionalDetails ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                 {showAdditionalDetails && (
@@ -405,7 +407,7 @@ export default function ProductDetail() {
                     borderRadius: '0.5rem',
                     border: '1px solid #dee2e6'
                   }}>
-                    <h3 className="product-section-title">Additional Information</h3>
+                    <h3 className="product-section-title">{t("productDetail.additionalInformation")}</h3>
                     <div className="product-details-text">
                       {product.additionalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
                         <p key={idx} className="product-detail-bullet">
@@ -424,25 +426,25 @@ export default function ProductDetail() {
           <div className="product-detail-sidebar">
             {/* Customer Benefits */}
             <div className="product-benefits-card">
-              <h3 className="product-benefits-title">Why customers buy from us:</h3>
+              <h3 className="product-benefits-title">{t("productDetail.whyCustomersBuy")}</h3>
               <ul className="product-benefits-list">
                 {product.warranty && (
                   <li className="product-benefit-item">
                     <FaCertificate className="product-benefit-icon" />
-                    <span>Warranty: {product.warranty}</span>
+                    <span>{t("productDetail.warranty")} {product.warranty}</span>
                   </li>
                 )}
                 <li className="product-benefit-item">
                   <FaShieldAlt className="product-benefit-icon" />
-                  <span>Secure payment options</span>
+                  <span>{t("productDetail.securePayment")}</span>
                 </li>
                 <li className="product-benefit-item">
                   <FaTruck className="product-benefit-icon" />
-                  <span>Fast shipping available</span>
+                  <span>{t("productDetail.fastShipping")}</span>
                 </li>
                 <li className="product-benefit-item">
                   <FaCertificate className="product-benefit-icon" />
-                  <span>Products with warranty</span>
+                  <span>{t("productDetail.productsWithWarranty")}</span>
                 </li>
               </ul>
             </div>
@@ -451,16 +453,16 @@ export default function ProductDetail() {
             <div className="product-info-card margin-top-md">
               {product.shippingInfo && (
                 <div className="product-info-item">
-                  <strong>Shipping:</strong> {product.shippingInfo}
+                  <strong>{t("productDetail.shipping")}</strong> {product.shippingInfo}
                 </div>
               )}
               {product.warranty && (
                 <div className="product-info-item">
-                  <strong>Warranty:</strong> {product.warranty}
+                  <strong>{t("productDetail.warranty")}</strong> {product.warranty}
                 </div>
               )}
               <div className="product-info-item">
-                <strong>Delivery time:</strong> 7 days, self-pickup option available
+                <strong>{t("productDetail.deliveryTime")}</strong> {t("productDetail.deliveryTimeValue")}
               </div>
             </div>
 
@@ -468,7 +470,7 @@ export default function ProductDetail() {
             <div className="product-service-links margin-top-md">
               <button className="product-service-link">
                 <FaQuestionCircle />
-                <span>Ask us about this product</span>
+                <span>{t("productDetail.askAboutProduct")}</span>
               </button>
               <a
                 href={whatsappNumber 
@@ -481,12 +483,12 @@ export default function ProductDetail() {
                 onClick={(e) => {
                   if (!whatsappNumber) {
                     e.preventDefault();
-                    alert("WhatsApp number not configured. Please contact the administrator.");
+                    alert(t("productDetail.whatsappNotConfigured"));
                   }
                 }}
               >
                 <FaWhatsapp />
-                <span>Ask us on WhatsApp</span>
+                <span>{t("productDetail.askOnWhatsApp")}</span>
               </a>
             </div>
 
@@ -504,7 +506,7 @@ export default function ProductDetail() {
             <button
               className="image-zoom-close"
               onClick={() => setShowImageZoom(false)}
-              aria-label="Close zoom"
+              aria-label={t("productDetail.closeZoom")}
             >
               ×
             </button>

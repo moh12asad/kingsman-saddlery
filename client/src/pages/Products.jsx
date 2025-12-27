@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
@@ -20,6 +21,7 @@ export default function Products() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
 
   const categoryParam = searchParams.get("category");
   const subcategoryParam = searchParams.get("subcategory");
@@ -35,7 +37,7 @@ export default function Products() {
         const data = await response.json();
         
         if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch products");
+          throw new Error(data.error || t("products.failedToFetch"));
         }
 
         const availableProducts = (data.products || []).filter(
@@ -44,7 +46,7 @@ export default function Products() {
 
         setAllProducts(availableProducts);
       } catch (err) {
-        setError(err.message || "Failed to load products");
+        setError(err.message || t("products.failedToLoad"));
         console.error("Error loading products:", err);
       } finally {
         setLoading(false);
@@ -156,7 +158,7 @@ export default function Products() {
       <main className="min-h-screen bg-gray-50 loading-container">
         <div className="text-center">
           <div className="loading-spinner mx-auto"></div>
-          <p className="margin-top-md text-muted">Loading products...</p>
+          <p className="margin-top-md text-muted">{t("products.loading")}</p>
         </div>
       </main>
     );
@@ -183,20 +185,20 @@ export default function Products() {
             onClick={() => navigate("/shop")}
             className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center gap-2"
           >
-            ← Back to Shop
+            {t("products.backToShop")}
           </button>
           <h1 className="text-3xl font-bold">
             {brandParam
-              ? `${decodeURIComponent(brandParam)} Products`
+              ? `${decodeURIComponent(brandParam)} ${t("products.productsLabel")}`
               : subcategoryParam 
               ? decodeURIComponent(subcategoryParam)
               : categoryParam 
               ? decodeURIComponent(categoryParam)
-              : "All Products"}
+              : t("products.allProducts")}
           </h1>
           {brandParam && (
             <p className="text-gray-600 mt-2">
-              Showing products from brand: <strong>{decodeURIComponent(brandParam)}</strong>
+              {t("products.showingProductsFromBrand")} <strong>{decodeURIComponent(brandParam)}</strong>
             </p>
           )}
           {categoryParam && subcategoryParam && !brandParam && (
@@ -213,7 +215,7 @@ export default function Products() {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search products..."
+              placeholder={t("products.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="shop-search-input"
@@ -234,7 +236,7 @@ export default function Products() {
           <section className="shop-section mb-8">
             <div className="shop-section-header">
               <div className="shop-section-title-wrapper">
-                <h2 className="shop-section-title">On Sale</h2>
+                <h2 className="shop-section-title">{t("products.onSale")}</h2>
               </div>
             </div>
             <ProductCarousel products={filteredProducts.saleProducts} onAddToCart={handleAddToCart} />
@@ -254,7 +256,7 @@ export default function Products() {
         {/* No Results */}
         {filteredProducts.saleProducts.length === 0 && Object.keys(filteredProducts.productsByCategory).length === 0 && (
           <div className="shop-empty">
-            <p className="shop-empty-text">No products found</p>
+            <p className="shop-empty-text">{t("products.noProducts")}</p>
             <button
               onClick={() => {
                 setSearchQuery("");
@@ -262,7 +264,7 @@ export default function Products() {
               }}
               className="btn-link"
             >
-              Clear filters
+              {t("products.clearFilters")}
             </button>
           </div>
         )}
@@ -278,7 +280,7 @@ export default function Products() {
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="heading-3 margin-bottom-md">Add to Cart?</h2>
+            <h2 className="heading-3 margin-bottom-md">{t("products.addToCartConfirm")}</h2>
             <div className="flex-row flex-gap-md margin-bottom-lg">
               {confirmProduct.image ? (
                 <img
@@ -288,7 +290,7 @@ export default function Products() {
                 />
               ) : (
                 <div className="img-placeholder">
-                  No image
+                  {t("products.noImage")}
                 </div>
               )}
               <div className="flex-1">
@@ -322,13 +324,13 @@ export default function Products() {
                 onClick={cancelAddToCart}
                 className="btn-secondary btn-full"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={confirmAddToCart}
                 className="btn-primary btn-full"
               >
-                Add to Cart
+                {t("products.addToCart")}
               </button>
             </div>
           </div>
@@ -366,6 +368,7 @@ function ProductGrid({ products, onAddToCart }) {
 
 // Product Carousel Component (for sale products)
 function ProductCarousel({ products, onAddToCart }) {
+  const { t } = useTranslation();
   const scrollRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -448,7 +451,7 @@ function ProductCarousel({ products, onAddToCart }) {
           <button
             className={`product-carousel-arrow product-carousel-arrow-left ${!showLeftArrow ? 'disabled' : ''}`}
             onClick={() => scroll('left')}
-            aria-label="Scroll left"
+            aria-label={t("products.scrollLeft")}
             disabled={!showLeftArrow}
           >
             <FaChevronLeft />
@@ -456,7 +459,7 @@ function ProductCarousel({ products, onAddToCart }) {
           <button
             className={`product-carousel-arrow product-carousel-arrow-right ${!showRightArrow ? 'disabled' : ''}`}
             onClick={() => scroll('right')}
-            aria-label="Scroll right"
+            aria-label={t("products.scrollRight")}
             disabled={!showRightArrow}
           >
             <FaChevronRight />
@@ -479,6 +482,7 @@ function ProductCarousel({ products, onAddToCart }) {
 // Product Card Component
 function ProductCard({ product, onAddToCart }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
   const isFav = checkFavorite(product.id);
@@ -508,19 +512,19 @@ function ProductCard({ product, onAddToCart }) {
           />
         ) : (
           <div className="card-product-placeholder">
-            No image
+            {t("products.noImage")}
           </div>
         )}
         <button
           className={`card-product-favorite ${isFav ? 'active' : ''}`}
           onClick={handleFavoriteClick}
-          aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+          aria-label={isFav ? t("products.removeFromFavorites") : t("products.addToFavorites")}
         >
           <FaHeart />
         </button>
         {product.sale && (
           <span className="card-product-badge">
-            SALE
+            {t("products.sale")}
           </span>
         )}
       </div>
@@ -550,7 +554,7 @@ function ProductCard({ product, onAddToCart }) {
           style={{ marginTop: '0.75rem' }}
         >
           <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-          Add to Cart
+          {t("products.addToCart")}
         </button>
       </div>
     </div>

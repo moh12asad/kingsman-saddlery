@@ -15,6 +15,18 @@ html {
   padding-top: 9rem;
 }
 
+@media (max-width: 768px) {
+  .max-w-7xl[class*="py-12"] {
+    padding-top: 0; /* Spacer handles the space */
+  }
+}
+
+@media (max-width: 480px) {
+  .max-w-7xl[class*="py-12"] {
+    padding-top: 0; /* Spacer handles the space */
+  }
+}
+
 .container-page {
   max-width: 72rem;
   margin-left: auto;
@@ -108,12 +120,18 @@ html {
   min-width: 0;
   text-align: left;
 }
-/* Admin products table - all cells left-aligned */
+/* Admin products table - all cells left-aligned (LTR default) */
 .admin-products-table th,
 .admin-products-table td {
   text-align: left;
   padding: 0.75rem 0.5rem;
   color: var(--text);
+}
+
+/* RTL override for admin tables */
+[dir="rtl"] .admin-products-table th,
+[dir="rtl"] .admin-products-table td {
+  text-align: right;
 }
 
 .admin-products-table {
@@ -157,6 +175,12 @@ html {
 .table:not(.admin-products-table):not(.brands-table) th:last-child,
 .table:not(.admin-products-table):not(.brands-table) td:last-child {
   text-align: right;
+}
+
+/* RTL override for last column */
+[dir="rtl"] .table:not(.admin-products-table):not(.brands-table) th:last-child,
+[dir="rtl"] .table:not(.admin-products-table):not(.brands-table) td:last-child {
+  text-align: left;
 }
 
 /* Order Confirmation Page */

@@ -10,12 +10,14 @@ import {
   linkWithCredential
 } from "firebase/auth";
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaCalendarAlt, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 import AuthRoute from "../components/AuthRoute";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function Profile() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -178,27 +180,27 @@ export default function Profile() {
     
     // Password requirements: 6-12 characters with at least one letter
     if (!trimmedNewPassword) {
-      setError("Password: Please enter a new password");
+      setError(t("profile.password.errors.enterNewPassword"));
       return;
     }
 
     if (trimmedNewPassword.length < 6) {
-      setError("Password: Password must be at least 6 characters long");
+      setError(t("profile.password.errors.minLength"));
       return;
     }
 
     if (trimmedNewPassword.length > 12) {
-      setError("Password: Password must be no more than 12 characters long");
+      setError(t("profile.password.errors.maxLength"));
       return;
     }
 
     if (!/[a-zA-Z]/.test(trimmedNewPassword)) {
-      setError("Password: Password must contain at least one letter");
+      setError(t("profile.password.errors.mustContainLetter"));
       return;
     }
 
     if (trimmedNewPassword !== trimmedConfirmPassword) {
-      setError("Password: Passwords do not match");
+      setError(t("profile.password.errors.passwordsDoNotMatch"));
       return;
     }
 
@@ -216,7 +218,7 @@ export default function Profile() {
             trimmedNewPassword
           );
           await linkWithCredential(user, credential);
-          setSuccess("Password: Password created successfully! You can now sign in with email and password.");
+          setSuccess(t("profile.password.success.created"));
         } catch (linkErr) {
           if (linkErr.code === "auth/credential-already-in-use") {
             // Password provider already exists, just update password
@@ -226,9 +228,9 @@ export default function Profile() {
             );
             await reauthenticateWithCredential(user, credential);
             await updatePassword(user, trimmedNewPassword);
-            setSuccess("Password: Password updated successfully!");
+            setSuccess(t("profile.password.success.updated"));
           } else if (linkErr.code === "auth/requires-recent-login") {
-            setError("Password: For security, please sign out and sign in again, then try creating your password.");
+            setError(t("profile.password.errors.requiresRecentLoginCreate"));
             return; // Return early to prevent clearing the error
           } else {
             throw linkErr;
@@ -237,7 +239,7 @@ export default function Profile() {
       } else {
         // For existing password users, need to reauthenticate first
         if (!trimmedCurrentPassword) {
-          setError("Password: Please enter your current password");
+          setError(t("profile.password.errors.enterCurrentPassword"));
           return;
         }
         const credential = EmailAuthProvider.credential(
@@ -246,7 +248,7 @@ export default function Profile() {
         );
         await reauthenticateWithCredential(user, credential);
         await updatePassword(user, trimmedNewPassword);
-        setSuccess("Password: Password updated successfully!");
+        setSuccess(t("profile.password.success.updated"));
       }
 
       // Only clear error and reset form on actual success
@@ -257,13 +259,13 @@ export default function Profile() {
       console.error("Password creation error:", err);
       let errorMessage = "";
       if (err.code === "auth/weak-password") {
-        errorMessage = "Password is too weak. Please use a stronger password.";
+        errorMessage = t("profile.password.errors.tooWeak");
       } else if (err.code === "auth/wrong-password") {
-        errorMessage = "Current password is incorrect";
+        errorMessage = t("profile.password.errors.wrongPassword");
       } else if (err.code === "auth/requires-recent-login") {
-        errorMessage = "Please sign out and sign in again before changing your password.";
+        errorMessage = t("profile.password.errors.requiresRecentLogin");
       } else {
-        errorMessage = err.message || "Failed to create password";
+        errorMessage = err.message || t("profile.password.errors.failed");
       }
       setError(`Password: ${errorMessage}`);
     } finally {
@@ -324,7 +326,7 @@ export default function Profile() {
       // Update original data to match current state
       setOriginalProfileData(JSON.parse(JSON.stringify(profileData)));
       setIsEditing(false);
-      setSuccess("Profile updated successfully!");
+      setSuccess(t("profile.success.profileUpdated"));
       
       // Clear success message after 5 seconds
       setTimeout(() => {
@@ -333,11 +335,11 @@ export default function Profile() {
     } catch (err) {
       console.error("Profile update error:", err);
       if (err.code === "auth/email-already-in-use") {
-        setError("Email is already in use by another account");
+        setError(t("profile.errors.emailAlreadyInUse"));
       } else if (err.code === "auth/requires-recent-login") {
-        setError("Please sign out and sign in again before updating your email.");
+        setError(t("profile.errors.requiresRecentLoginEmail"));
       } else {
-        setError(err.message || "Failed to update profile");
+        setError(err.message || t("profile.errors.updateFailed"));
       }
     } finally {
       setLoading(false);
@@ -368,7 +370,7 @@ export default function Profile() {
     <AuthRoute>
       <main className="page-with-navbar">
         <div className="container-main padding-y-xl">
-          <h1 className="heading-1 margin-bottom-lg">My Profile</h1>
+          <h1 className="heading-1 margin-bottom-lg">{t("profile.title")}</h1>
 
           {error && !error.includes("Password") && (
             <div className="card card-error padding-md margin-bottom-md">
@@ -386,17 +388,17 @@ export default function Profile() {
           <div className="card padding-lg margin-bottom-lg">
             <h2 className="section-title flex-row flex-gap-sm margin-bottom-md">
               <FaUser />
-              Profile Information
+              {t("profile.profileInformation")}
             </h2>
             
             <div className="grid-form margin-top-md">
               <div>
-                <label className="text-sm font-medium margin-bottom-sm">Display Name</label>
+                <label className="text-sm font-medium margin-bottom-sm">{t("profile.fields.displayName")}</label>
                 <input
                   type="text"
                   value={profileData.displayName}
                   onChange={e => setProfileData({ ...profileData, displayName: e.target.value })}
-                  placeholder="Your name"
+                  placeholder={t("profile.placeholders.yourName")}
                   disabled={!isEditing}
                   readOnly={!isEditing}
                   className={!isEditing ? "input input-disabled" : "input"}
@@ -406,13 +408,13 @@ export default function Profile() {
               <div>
                 <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                   <FaEnvelope />
-                  Email
+                  {t("profile.fields.email")}
                 </label>
                 <input
                   type="email"
                   value={profileData.email}
                   onChange={e => setProfileData({ ...profileData, email: e.target.value })}
-                  placeholder="your@email.com"
+                  placeholder={t("profile.placeholders.yourEmail")}
                   disabled={!isEditing}
                   readOnly={!isEditing}
                   className={!isEditing ? "input input-disabled" : "input"}
@@ -422,14 +424,14 @@ export default function Profile() {
               <div>
                 <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                   <FaPhone />
-                  Phone Number
+                  {t("profile.fields.phoneNumber")}
                 </label>
                 <input
                   type="tel"
                   className={!isEditing ? "input input-disabled" : "input"}
                   value={profileData.phone}
                   onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
-                  placeholder="05XXXXXXXX"
+                  placeholder={t("profile.placeholders.phone")}
                   disabled={!isEditing}
                   readOnly={!isEditing}
                 />
@@ -439,7 +441,7 @@ export default function Profile() {
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaCalendarAlt />
-                    Member Since
+                    {t("profile.fields.memberSince")}
                   </label>
                   <input
                     type="text"
@@ -448,7 +450,7 @@ export default function Profile() {
                     readOnly
                     className="input input-disabled"
                   />
-                  <p className="text-xs text-muted margin-top-xs">Account creation date</p>
+                  <p className="text-xs text-muted margin-top-xs">{t("profile.fields.accountCreationDate")}</p>
                 </div>
               )}
             </div>
@@ -456,11 +458,11 @@ export default function Profile() {
             <div className="margin-top-md">
               <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                 <FaMapMarkerAlt />
-                Address
+                {t("profile.fields.address")}
               </label>
               <div className="grid-form margin-top-sm">
                 <div className="grid-col-span-full">
-                  <label className="text-sm font-medium margin-bottom-sm">Street Address</label>
+                  <label className="text-sm font-medium margin-bottom-sm">{t("profile.fields.streetAddress")}</label>
                   <input
                     type="text"
                     className="input"
@@ -469,14 +471,14 @@ export default function Profile() {
                       ...profileData,
                       address: { ...profileData.address, street: e.target.value }
                     })}
-                    placeholder="Street Address"
+                    placeholder={t("profile.placeholders.streetAddress")}
                     disabled={!isEditing}
                     readOnly={!isEditing}
                     style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm">City</label>
+                  <label className="text-sm font-medium margin-bottom-sm">{t("profile.fields.city")}</label>
                   <input
                     type="text"
                     className="input"
@@ -485,14 +487,14 @@ export default function Profile() {
                       ...profileData,
                       address: { ...profileData.address, city: e.target.value }
                     })}
-                    placeholder="City"
+                    placeholder={t("profile.placeholders.city")}
                     disabled={!isEditing}
                     readOnly={!isEditing}
                     style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm">ZIP/Postal Code</label>
+                  <label className="text-sm font-medium margin-bottom-sm">{t("profile.fields.zipCode")}</label>
                   <input
                     type="text"
                     className="input"
@@ -501,14 +503,14 @@ export default function Profile() {
                       ...profileData,
                       address: { ...profileData.address, zipCode: e.target.value }
                     })}
-                    placeholder="ZIP/Postal Code"
+                    placeholder={t("profile.placeholders.zipCode")}
                     disabled={!isEditing}
                     readOnly={!isEditing}
                     style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm">Country</label>
+                  <label className="text-sm font-medium margin-bottom-sm">{t("profile.fields.country")}</label>
                   <input
                     type="text"
                     className="input"
@@ -517,7 +519,7 @@ export default function Profile() {
                       ...profileData,
                       address: { ...profileData.address, country: e.target.value }
                     })}
-                    placeholder="Country"
+                    placeholder={t("profile.placeholders.country")}
                     disabled={!isEditing}
                     readOnly={!isEditing}
                     style={!isEditing ? { background: '#f9fafb', cursor: 'not-allowed' } : {}}
@@ -535,7 +537,7 @@ export default function Profile() {
                     disabled={loading}
                   >
                     <FaCheck />
-                    {loading ? "Saving..." : "Save Changes"}
+                    {loading ? t("common.saving") : t("profile.saveChanges")}
                   </button>
                   <button
                     className="btn-secondary flex-row flex-gap-sm"
@@ -543,7 +545,7 @@ export default function Profile() {
                     disabled={loading}
                   >
                     <FaTimes />
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 </>
               ) : (
@@ -552,7 +554,7 @@ export default function Profile() {
                   onClick={handleStartEdit}
                 >
                   <FaEdit />
-                  Edit Profile
+                  {t("profile.editProfile")}
                 </button>
               )}
             </div>
@@ -562,7 +564,7 @@ export default function Profile() {
           <div className="card padding-lg margin-bottom-lg">
             <h2 className="section-title flex-row flex-gap-sm">
               <FaLock />
-              Password
+              {t("profile.password.title")}
             </h2>
             
             {/* Password validation errors - shown above password section */}
@@ -575,13 +577,13 @@ export default function Profile() {
             {isGoogleUser && !showPasswordForm && (
               <div className="margin-top-md">
                 <p className="text-muted margin-bottom-md">
-                  You signed in with Google. Create a password to enable email/password sign-in.
+                  {t("profile.password.googleUserMessage")}
                 </p>
                 <button
                   className="btn-secondary"
                   onClick={() => setShowPasswordForm(true)}
                 >
-                  Create Password
+                  {t("profile.password.createPassword")}
                 </button>
               </div>
             )}
@@ -590,30 +592,30 @@ export default function Profile() {
               <div className="grid-form margin-top-md">
                 {!isGoogleUser && (
                   <div>
-                    <label className="text-sm font-medium margin-bottom-sm">Current Password</label>
+                    <label className="text-sm font-medium margin-bottom-sm">{t("profile.password.currentPassword")}</label>
                     <div className="relative">
                       <input
                         type={showPasswords.current ? "text" : "password"}
                         className="input input-with-action"
                         value={passwordData.currentPassword}
                         onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                        placeholder="Enter current password"
+                        placeholder={t("profile.password.enterCurrentPassword")}
                       />
                       <button
                         type="button"
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
                         onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
                       >
-                        {showPasswords.current ? "Hide" : "Show"}
+                        {showPasswords.current ? t("common.hide") : t("common.show")}
                       </button>
                     </div>
                   </div>
                 )}
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm">
-                    New Password
+                    {t("profile.password.newPassword")}
                     <span className="text-xs text-muted label-with-help">
-                      (6-12 characters, must include at least one letter)
+                      {t("profile.password.requirements")}
                     </span>
                   </label>
                   <div className="relative">
@@ -622,33 +624,33 @@ export default function Profile() {
                       className="input input-with-action"
                       value={passwordData.newPassword}
                       onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      placeholder="Enter new password"
+                      placeholder={t("profile.password.enterNewPassword")}
                     />
                     <button
                       type="button"
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
                       onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
                     >
-                      {showPasswords.new ? "Hide" : "Show"}
+                      {showPasswords.new ? t("common.hide") : t("common.show")}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm">Confirm New Password</label>
+                  <label className="text-sm font-medium margin-bottom-sm">{t("profile.password.confirmNewPassword")}</label>
                   <div className="relative">
                     <input
                       type={showPasswords.confirm ? "text" : "password"}
                       className="input input-with-action"
                       value={passwordData.confirmPassword}
                       onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      placeholder="Confirm new password"
+                      placeholder={t("profile.password.confirmNewPasswordPlaceholder")}
                     />
                     <button
                       type="button"
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
                       onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
                     >
-                      {showPasswords.confirm ? "Hide" : "Show"}
+                      {showPasswords.confirm ? t("common.hide") : t("common.show")}
                     </button>
                   </div>
                 </div>
@@ -662,7 +664,7 @@ export default function Profile() {
                   onClick={handleCreatePassword}
                   disabled={loading}
                 >
-                  {loading ? "Updating..." : isGoogleUser ? "Create Password" : "Update Password"}
+                  {loading ? t("common.saving") : isGoogleUser ? t("profile.password.createPassword") : t("profile.password.updatePassword")}
                 </button>
                 {isGoogleUser && showPasswordForm && (
                   <button
@@ -674,7 +676,7 @@ export default function Profile() {
                       setError("");
                     }}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                 )}
               </div>

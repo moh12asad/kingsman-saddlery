@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, signInWithGoogle } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import GuestRoute from "../components/GuestRoute";
 import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock, FaEnvelope } from "react-icons/fa";
@@ -12,6 +13,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function SignUp() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState("");
@@ -410,9 +412,9 @@ export default function SignUp() {
       <main className="page-with-navbar">
         <div className="container-main padding-y-xl">
           <div className="max-w-2xl mx-auto">
-            <h1 className="heading-1 margin-bottom-md">Create Your Account</h1>
+            <h1 className="heading-1 margin-bottom-md">{t("signUp.title")}</h1>
             <p className="text-muted margin-bottom-lg">
-              Sign up to get started and receive 5% off on all purchases for the next 3 months!
+              {t("signUp.description")}
             </p>
 
             {error && (
@@ -427,13 +429,13 @@ export default function SignUp() {
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaEnvelope />
-                    Email *
+                    {t("signUp.email")} *
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="you@example.com"
+                    placeholder={t("signIn.emailPlaceholder")}
                     readOnly={fromPopup.email}
                     disabled={fromPopup.email}
                     className={fromPopup.email ? "input input-readonly" : "input"}
@@ -446,7 +448,7 @@ export default function SignUp() {
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaLock />
-                    Password *
+                    {t("signUp.password")} *
                   </label>
                   <div className="relative">
                     <input
@@ -454,7 +456,7 @@ export default function SignUp() {
                       className="input input-with-action"
                       value={formData.password}
                       onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Enter password (6-12 chars, must include a letter)"
+                      placeholder={t("signUp.passwordPlaceholder")}
                       required
                     />
                     <button
@@ -462,22 +464,22 @@ export default function SignUp() {
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
                       onClick={() => setShowPasswords({ ...showPasswords, password: !showPasswords.password })}
                     >
-                      {showPasswords.password ? "Hide" : "Show"}
+                      {showPasswords.password ? t("common.hide") : t("common.show")}
                     </button>
                   </div>
                   <p className="text-xs text-muted margin-top-sm">
-                    6-12 characters, must include at least one letter
+                    {t("signUp.passwordRequirements")}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium margin-bottom-sm">Confirm Password *</label>
+                  <label className="text-sm font-medium margin-bottom-sm">{t("signUp.confirmPassword")} *</label>
                   <div className="relative">
                     <input
                       type={showPasswords.confirmPassword ? "text" : "password"}
                       className="input input-with-action"
                       value={formData.confirmPassword}
                       onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      placeholder="Confirm password"
+                      placeholder={t("signUp.confirmPasswordPlaceholder")}
                       required
                     />
                     <button
@@ -485,7 +487,7 @@ export default function SignUp() {
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
                       onClick={() => setShowPasswords({ ...showPasswords, confirmPassword: !showPasswords.confirmPassword })}
                     >
-                      {showPasswords.confirmPassword ? "Hide" : "Show"}
+                      {showPasswords.confirmPassword ? t("common.hide") : t("common.show")}
                     </button>
                   </div>
                 </div>
@@ -496,14 +498,14 @@ export default function SignUp() {
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaUser />
-                    Full Name *
+                    {t("signUp.displayName")} *
                   </label>
                   <input
                     type="text"
                     className="input"
                     value={formData.displayName}
                     onChange={e => setFormData({ ...formData, displayName: e.target.value })}
-                    placeholder="Your full name"
+                    placeholder={t("signUp.displayNamePlaceholder")}
                     required
                   />
                 </div>
@@ -511,7 +513,7 @@ export default function SignUp() {
                 <div>
                   <label className="font-medium margin-bottom-sm flex-row flex-gap-sm">
                     <FaPhone />
-                    Phone Number *
+                    {t("signUp.phone")} *
                   </label>
                   <div className="flex-row flex-gap-sm">
                     <select
@@ -533,7 +535,7 @@ export default function SignUp() {
                       className={`input flex-1 ${fromPopup.phone ? "input-readonly" : ""}`}
                       value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
-                      placeholder="Enter phone number"
+                      placeholder={t("signUp.phonePlaceholder")}
                       readOnly={fromPopup.phone}
                       disabled={fromPopup.phone}
                       required
@@ -547,7 +549,7 @@ export default function SignUp() {
                 <div className="flex-row flex-gap-sm flex-items-center margin-bottom-sm">
                   <label className="text-sm font-medium flex-row flex-gap-sm">
                     <FaMapMarkerAlt />
-                    Address *
+                    {t("signUp.address")} *
                   </label>
                   <button
                     type="button"
@@ -559,12 +561,12 @@ export default function SignUp() {
                     {locationLoading ? (
                       <>
                         <FaSpinner className="animate-spin" />
-                        Getting location...
+                        {t("signUp.gettingLocation")}
                       </>
                     ) : (
                       <>
                         <FaLocationArrow />
-                        Use My Location
+                        {t("signUp.getLocation")}
                       </>
                     )}
                   </button>
@@ -580,7 +582,7 @@ export default function SignUp() {
                         ...formData,
                         address: { ...formData.address, street: e.target.value }
                       })}
-                      placeholder="Street Address"
+                      placeholder={t("signUp.street")}
                       required
                     />
                   </div>
@@ -592,7 +594,7 @@ export default function SignUp() {
                       ...formData,
                       address: { ...formData.address, city: e.target.value }
                     })}
-                    placeholder="City"
+                    placeholder={t("signUp.city")}
                     required
                   />
                   <input
@@ -603,7 +605,7 @@ export default function SignUp() {
                       ...formData,
                       address: { ...formData.address, zipCode: e.target.value }
                     })}
-                    placeholder="ZIP/Postal Code"
+                    placeholder={t("signUp.zipCode")}
                     required
                   />
                   <input
@@ -614,7 +616,7 @@ export default function SignUp() {
                       ...formData,
                       address: { ...formData.address, country: e.target.value }
                     })}
-                    placeholder="Country"
+                    placeholder={t("signUp.country")}
                     required
                   />
                 </div>
@@ -623,9 +625,9 @@ export default function SignUp() {
               {/* Consent */}
               <div className="margin-top-lg margin-bottom-md">
                 <div className="card card-brand padding-md">
-                  <h3 className="section-title margin-bottom-md">Communication Preferences *</h3>
+                  <h3 className="section-title margin-bottom-md">{t("signUp.communicationPreferences")} *</h3>
                   <p className="text-sm text-muted margin-bottom-md">
-                    Please confirm your preferences to receive updates and special offers
+                    {t("signUp.communicationPreferencesDescription")}
                   </p>
                   
                   <div className="margin-bottom-sm">
@@ -638,7 +640,7 @@ export default function SignUp() {
                         className="checkbox-custom"
                       />
                       <span className="text-sm">
-                        I agree to receive emails with updates, special offers, and promotions
+                        {t("signUp.emailConsent")}
                       </span>
                     </label>
                   </div>
@@ -653,7 +655,7 @@ export default function SignUp() {
                         className="checkbox-custom"
                       />
                       <span className="text-sm">
-                        I agree to receive SMS messages with updates and special offers
+                        {t("signUp.smsConsent")}
                       </span>
                     </label>
                   </div>
@@ -665,7 +667,7 @@ export default function SignUp() {
                 className="btn-primary margin-top-md"
                 disabled={loading || locationLoading}
               >
-                {loading ? "Creating Account..." : "Sign Up"}
+                {loading ? t("signUp.creatingAccount") : t("signUp.signUpButton")}
               </button>
             </form>
 
@@ -682,15 +684,15 @@ export default function SignUp() {
                 disabled={loading}
               >
                 <FcGoogle className="icon-lg" />
-                <span>Continue with Google</span>
+                <span>{t("signUp.continueWithGoogle")}</span>
               </button>
             </div>
 
             <div className="margin-top-md text-center">
               <p className="text-sm text-muted">
-                Already have an account?{" "}
+                {t("signUp.haveAccount")}{" "}
                 <Link to="/signin" className="link-brand">
-                  Sign in
+                  {t("signUp.signIn")}
                 </Link>
               </p>
             </div>

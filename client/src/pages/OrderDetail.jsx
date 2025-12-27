@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
@@ -25,6 +26,7 @@ export default function OrderDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [order, setOrder] = useState(null);
@@ -57,12 +59,12 @@ export default function OrderDetail() {
       setError("");
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        setError("You must be signed in to view order details");
+        setError(t("orderDetail.errors.mustSignIn"));
         return;
       }
 
       if (!id) {
-        setError("Order ID is missing");
+        setError(t("orderDetail.errors.orderIdMissing"));
         return;
       }
 
@@ -87,15 +89,15 @@ export default function OrderDetail() {
         } else {
           console.error("Order not found. Looking for ID:", id);
           console.error("Available order IDs:", orders.map(o => o.id));
-          setError("Order not found. The order may have been removed or you don't have permission to view it.");
+          setError(t("orderDetail.errors.orderNotFound"));
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        setError(errorData.error || "Failed to load order details");
+        setError(errorData.error || t("orderDetail.errors.failedToLoad"));
       }
     } catch (err) {
       console.error("Error loading order:", err);
-      setError("Failed to load order details. Please try again.");
+      setError(t("orderDetail.errors.failedToLoadRetry"));
     } finally {
       setLoading(false);
     }
@@ -128,7 +130,7 @@ export default function OrderDetail() {
   }
 
   function formatDate(dateString) {
-    if (!dateString) return "N/A";
+    if (!dateString) return t("common.notAvailable") || "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       year: "numeric",
@@ -146,7 +148,7 @@ export default function OrderDetail() {
           <div className="container-main padding-y-xl">
             <div className="text-center padding-y-lg">
               <div className="loading-spinner mx-auto"></div>
-              <p className="margin-top-md text-muted">Loading order details...</p>
+              <p className="margin-top-md text-muted">{t("orderDetail.loading")}</p>
             </div>
           </div>
         </main>
@@ -160,10 +162,10 @@ export default function OrderDetail() {
         <main className="page-with-navbar">
           <div className="container-main padding-y-xl">
             <div className="card card-error padding-md">
-              <p className="text-error">{error || "Order not found"}</p>
+              <p className="text-error">{error || t("orderDetail.notFound")}</p>
               <div className="margin-top-md">
                 <Link to="/orders" className="btn-primary">
-                  Back to Orders
+                  {t("orderDetail.backToOrders")}
                 </Link>
               </div>
             </div>
@@ -183,10 +185,10 @@ export default function OrderDetail() {
                 <FaCheckCircle style={{ color: "#16a34a", fontSize: "1.5rem", flexShrink: 0, marginTop: "0.125rem" }} />
                 <div className="flex-1">
                   <h3 style={{ color: "#16a34a", margin: 0, marginBottom: "0.5rem", fontSize: "1.125rem", fontWeight: "600" }}>
-                    Order Placed Successfully!
+                    {t("orderDetail.orderPlacedSuccessfully")}
                   </h3>
                   <p style={{ color: "#16a34a", margin: 0, fontSize: "0.875rem" }}>
-                    Your order has been confirmed and payment processed. A confirmation email has been sent to {order?.customerEmail || "your email address"}.
+                    {t("orderDetail.orderPlacedMessage")} {order?.customerEmail || t("orderConfirmation.notSet")}.
                   </p>
                 </div>
                 <button
@@ -212,11 +214,11 @@ export default function OrderDetail() {
             <div className="flex-row flex-gap-md" style={{ alignItems: "center" }}>
               <h1 className="heading-1 flex-row flex-gap-sm order-heading">
                 <FaShoppingBag />
-                Order #{order.id.substring(0, 8)}
+                {t("orderDetail.title")} #{order.id.substring(0, 8)}
               </h1>
               <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs order-badge`}>
                 {getStatusIcon(order.status)}
-                <span className="order-badge-text">{order.status || "pending"}</span>
+                <span className="order-badge-text">{t(`orders.status.${order.status?.toLowerCase() || "pending"}`) || order.status || "pending"}</span>
               </span>
             </div>
             <button
@@ -224,7 +226,7 @@ export default function OrderDetail() {
               className="btn btn-primary flex items-center gap-2"
             >
               <FaFileInvoice />
-              View Invoice
+              {t("orderDetail.viewInvoice")}
             </button>
           </div>
 
@@ -234,7 +236,7 @@ export default function OrderDetail() {
               <div className="card">
                 <h2 className="section-title flex-row flex-gap-sm margin-bottom-md">
                   <FaShoppingBag />
-                  Order Items ({order.items?.length || 0})
+                  {t("orderDetail.orderItems")} ({order.items?.length || 0})
                 </h2>
                 <div className="space-y-3">
                   {order.items && order.items.length > 0 ? (
@@ -248,7 +250,7 @@ export default function OrderDetail() {
                           />
                         ) : (
                           <div className="w-20 h-20 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs order-item-image-wrapper">
-                            No image
+                            {t("orderDetail.noImage")}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
@@ -257,7 +259,7 @@ export default function OrderDetail() {
                             <p className="text-xs text-muted">{item.category}</p>
                           )}
                           <div className="flex items-center gap-2 margin-top-xs">
-                            <span className="text-sm text-muted">Qty: {item.quantity}</span>
+                            <span className="text-sm text-muted">{t("orderDetail.qty")} {item.quantity}</span>
                             <span className="text-sm font-semibold">
                               {formatPrice((item.price || 0) * (item.quantity || 1))}
                             </span>
@@ -266,13 +268,13 @@ export default function OrderDetail() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted text-sm">No items found</p>
+                    <p className="text-muted text-sm">{t("orderDetail.noItems")}</p>
                   )}
                 </div>
                 <div className="margin-top-md padding-top-md border-top space-y-2">
                   {/* Subtotal before discount */}
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted">Subtotal:</span>
+                    <span className="text-sm text-muted">{t("orderDetail.subtotal")}</span>
                     <span className="text-sm font-semibold">
                       {formatPrice(order.subtotalBeforeDiscount || order.subtotal || 0)}
                     </span>
@@ -283,14 +285,14 @@ export default function OrderDetail() {
                     <>
                       <div className="flex justify-between items-center" style={{ color: "#22c55e" }}>
                         <span className="text-sm font-semibold">
-                          {order.discount.type === "new_user" ? "New User Discount" : "Discount"} ({order.discount.percentage}%):
+                          {order.discount.type === "new_user" ? t("orderDetail.newUserDiscount") : t("orderDetail.discount")} ({order.discount.percentage}%):
                         </span>
                         <span className="text-sm font-semibold">
                           -{formatPrice(order.discount.amount)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted">Subtotal after discount:</span>
+                        <span className="text-sm text-muted">{t("orderDetail.subtotalAfterDiscount")}</span>
                         <span className="text-sm font-semibold">
                           {formatPrice(order.subtotal || 0)}
                         </span>
@@ -301,7 +303,7 @@ export default function OrderDetail() {
                   {/* Tax */}
                   {order.tax && order.tax > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted">Tax:</span>
+                      <span className="text-sm text-muted">{t("orderDetail.tax")}</span>
                       <span className="text-sm font-semibold">{formatPrice(order.tax)}</span>
                     </div>
                   )}
@@ -309,7 +311,7 @@ export default function OrderDetail() {
                   {/* Delivery cost */}
                   {order.metadata?.deliveryType === "delivery" && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted">Delivery:</span>
+                      <span className="text-sm text-muted">{t("orderDetail.delivery")}</span>
                       <span className="text-sm font-semibold">
                         {formatPrice((order.total || 0) - (order.subtotal || 0) - (order.tax || 0))}
                       </span>
@@ -318,7 +320,7 @@ export default function OrderDetail() {
                   
                   {/* Final Total */}
                   <div className="flex justify-between items-center padding-top-sm border-top">
-                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold">{t("orderDetail.total")}</span>
                     <span className="text-lg font-bold">{formatPrice(order.total || 0)}</span>
                   </div>
                 </div>
@@ -329,12 +331,12 @@ export default function OrderDetail() {
             <div className="space-y-6">
               {/* Order Details */}
               <div className="card">
-                <h2 className="section-title margin-bottom-md">Order Information</h2>
+                <h2 className="section-title margin-bottom-md">{t("orderDetail.orderInformation")}</h2>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <FaCalendarAlt className="text-muted" />
                     <div>
-                      <p className="text-muted order-info-label">Order Date</p>
+                      <p className="text-muted order-info-label">{t("orderDetail.orderDate")}</p>
                       <p className="order-info-value">{formatDate(order.createdAt)}</p>
                     </div>
                   </div>
@@ -342,7 +344,7 @@ export default function OrderDetail() {
                     <div className="flex items-center gap-2">
                       <FaClock className="text-muted" />
                       <div>
-                        <p className="text-muted order-info-label">Last Updated</p>
+                        <p className="text-muted order-info-label">{t("orderDetail.lastUpdated")}</p>
                         <p className="order-info-value">{formatDate(order.updatedAt)}</p>
                       </div>
                     </div>
@@ -350,7 +352,7 @@ export default function OrderDetail() {
                   <div className="flex items-center gap-2">
                     <FaShoppingBag className="text-muted" />
                     <div>
-                      <p className="text-muted order-info-label">Order ID</p>
+                      <p className="text-muted order-info-label">{t("orderDetail.orderId")}</p>
                       <p className="font-mono text-xs order-info-value-mono">{order.id}</p>
                     </div>
                   </div>
@@ -361,7 +363,7 @@ export default function OrderDetail() {
               <div className="card">
                 <h2 className="section-title margin-bottom-md flex-row flex-gap-sm">
                   <FaUser />
-                  Customer Information
+                  {t("orderDetail.customerInformation")}
                 </h2>
                 <div className="space-y-3 text-sm">
                   {order.customerName && (
@@ -390,18 +392,18 @@ export default function OrderDetail() {
                 <div className="card">
                   <h2 className="section-title margin-bottom-md flex-row flex-gap-sm">
                     <FaMapMarkerAlt />
-                    Pickup Information
+                    {t("orderDetail.pickupInformation")}
                   </h2>
                   <div className="space-y-2 text-sm">
-                    <p className="order-text-bold">Store Pickup</p>
-                    <p className="order-text-muted">Please pick up your order from our store.</p>
+                    <p className="order-text-bold">{t("orderDetail.storePickup")}</p>
+                    <p className="order-text-muted">{t("orderDetail.pickupMessage")}</p>
                   </div>
                 </div>
               ) : order.shippingAddress ? (
                 <div className="card">
                   <h2 className="section-title margin-bottom-md flex-row flex-gap-sm">
                     <FaMapMarkerAlt />
-                    Delivery Address
+                    {t("orderDetail.deliveryAddress")}
                   </h2>
                   <div className="space-y-2 text-sm">
                     {order.shippingAddress.street && (
@@ -422,7 +424,7 @@ export default function OrderDetail() {
               {/* Notes */}
               {order.notes && (
                 <div className="card">
-                  <h2 className="section-title margin-bottom-md">Notes</h2>
+                  <h2 className="section-title margin-bottom-md">{t("orderDetail.notes")}</h2>
                   <p className="text-sm order-text-no-margin">{order.notes}</p>
                 </div>
               )}

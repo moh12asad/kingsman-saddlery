@@ -3,7 +3,6 @@ import Navbar from "./components/Navbar";
 import SubNavbar from "./components/SubNavbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-import SocialButtons from "./components/SocialButtons";
 import SignupInvitePopup from "./components/SignupInvitePopup";
 import "./styles/signup-invite-popup.css";
 
@@ -14,7 +13,6 @@ export default function App() {
       <Navbar />
       <SubNavbar />
       <div className="subnavbar-spacer"></div>
-      <SocialButtons />
       <div className="flex-1" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <Outlet />
       </div>

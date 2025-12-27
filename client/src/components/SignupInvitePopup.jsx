@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 import { FaTimes } from "react-icons/fa";
 
 const STORAGE_KEY = "signupInvitePopupShown";
@@ -9,6 +10,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function SignupInvitePopup() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -46,22 +48,22 @@ export default function SignupInvitePopup() {
 
     // Validation
     if (!formData.email || !formData.email.trim()) {
-      setError("Please enter your email address");
+      setError(t("signupInvite.errors.enterEmail"));
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError("Please enter a valid email address");
+      setError(t("signupInvite.errors.validEmail"));
       return;
     }
 
     if (!formData.phone || !formData.phone.trim()) {
-      setError("Please enter your phone number");
+      setError(t("signupInvite.errors.enterPhone"));
       return;
     }
 
     if (!formData.consent) {
-      setError("You must agree to receive emails and SMS messages");
+      setError(t("signupInvite.errors.consentRequired"));
       return;
     }
 
@@ -83,7 +85,7 @@ export default function SignupInvitePopup() {
       });
 
       if (!checkRes.ok) {
-        throw new Error("Failed to check if user exists");
+        throw new Error(t("signupInvite.errors.checkFailed"));
       }
 
       const checkData = await checkRes.json();
@@ -91,11 +93,11 @@ export default function SignupInvitePopup() {
       // If email or phone exists, redirect to sign in page
       if (checkData.exists) {
         if (checkData.emailExists && checkData.phoneExists) {
-          setError("An account with this email and phone number already exists. Please sign in instead.");
+          setError(t("signupInvite.errors.emailAndPhoneExists"));
         } else if (checkData.emailExists) {
-          setError("An account with this email already exists. Please sign in instead.");
+          setError(t("signupInvite.errors.emailExists"));
         } else if (checkData.phoneExists) {
-          setError("An account with this phone number already exists. Please sign in instead.");
+          setError(t("signupInvite.errors.phoneExists"));
         }
         
         // Mark popup as shown
@@ -128,7 +130,7 @@ export default function SignupInvitePopup() {
       setShow(false);
     } catch (err) {
       console.error("Error saving signup invite data:", err);
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(err.message || t("signupInvite.errors.failed"));
     } finally {
       setSubmitting(false);
     }
@@ -149,20 +151,20 @@ export default function SignupInvitePopup() {
         <button
           className="signup-invite-close"
           onClick={handleClose}
-          aria-label="Close"
+          aria-label={t("signupInvite.close")}
         >
           <FaTimes />
         </button>
 
         <div className="signup-invite-content">
           <div className="signup-invite-header">
-            <h2 className="signup-invite-title">What are you waiting for?</h2>
-            <h3 className="signup-invite-subtitle">Sign up now and get 5% off!</h3>
+            <h2 className="signup-invite-title">{t("signupInvite.title")}</h2>
+            <h3 className="signup-invite-subtitle">{t("signupInvite.subtitle")}</h3>
             <p className="signup-invite-description">
-              Enter your details to sign up and receive 5% off on all purchases for the next 3 months
+              {t("signupInvite.description")}
             </p>
             <div className="signup-invite-discount">
-              <strong>🎉 Get 5% off for 3 months on all purchases! 🎉</strong>
+              <strong>🎉 {t("signupInvite.discountBanner")} 🎉</strong>
             </div>
           </div>
 
@@ -175,21 +177,21 @@ export default function SignupInvitePopup() {
 
             <div className="signup-invite-field">
               <label className="signup-invite-label">
-                Email *
+                {t("signupInvite.email")}
               </label>
               <input
                 type="email"
                 className="signup-invite-input"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter email address"
+                placeholder={t("signupInvite.emailPlaceholder")}
                 required
               />
             </div>
 
             <div className="signup-invite-field">
               <label className="signup-invite-label">
-                Phone *
+                {t("signupInvite.phone")}
               </label>
               <div className="signup-invite-phone-group">
                 <select
@@ -210,7 +212,7 @@ export default function SignupInvitePopup() {
                   className="signup-invite-phone-input"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
-                  placeholder="Enter phone number"
+                  placeholder={t("signupInvite.phonePlaceholder")}
                   required
                 />
               </div>
@@ -226,7 +228,7 @@ export default function SignupInvitePopup() {
                   required
                 />
                 <span className="signup-invite-consent-text">
-                  By filling out this form, I agree to receive newsletters and updates via email or SMS messages
+                  {t("signupInvite.consent")}
                 </span>
               </label>
             </div>
@@ -236,7 +238,7 @@ export default function SignupInvitePopup() {
               className="signup-invite-submit"
               disabled={submitting}
             >
-              {submitting ? "Signing up..." : "Sign Up"}
+              {submitting ? t("signupInvite.signingUp") : t("signupInvite.signUp")}
             </button>
           </form>
         </div>

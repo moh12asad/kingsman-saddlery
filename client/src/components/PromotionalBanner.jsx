@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -8,6 +9,7 @@ export default function PromotionalBanner() {
   const [currentAd, setCurrentAd] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   // Fetch ads from API
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function PromotionalBanner() {
                     href={ad.link} 
                     className="promotional-banner-link"
                   >
-                    Learn More
+                    {t("shop.promotional.learnMore")}
                   </a>
                 )}
               </div>
@@ -102,14 +104,14 @@ export default function PromotionalBanner() {
           <button
             className="promotional-banner-nav promotional-banner-nav-prev"
             onClick={goToPrevious}
-            aria-label="Previous ad"
+            aria-label={t("shop.promotional.previousAd")}
           >
             <FaChevronLeft />
           </button>
           <button
             className="promotional-banner-nav promotional-banner-nav-next"
             onClick={goToNext}
-            aria-label="Next ad"
+            aria-label={t("shop.promotional.nextAd")}
           >
             <FaChevronRight />
           </button>
@@ -124,7 +126,7 @@ export default function PromotionalBanner() {
               key={index}
               className={`promotional-banner-indicator ${index === currentAd ? "active" : ""}`}
               onClick={() => goToAd(index)}
-              aria-label={`Go to ad ${index + 1}`}
+              aria-label={`${t("shop.promotional.goToAd")} ${index + 1}`}
             />
           ))}
         </div>
