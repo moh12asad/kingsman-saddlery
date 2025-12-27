@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { getTranslated } from "../utils/translations.js";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -9,27 +10,51 @@ export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Fetch hero slides from API
   useEffect(() => {
+    const abortController = new AbortController();
+    
     async function loadSlides() {
       try {
-        const res = await fetch(`${API}/api/hero-slides`);
+        const lang = i18n.language || 'en';
+        const res = await fetch(`${API}/api/hero-slides?lang=${lang}`, {
+          signal: abortController.signal
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Failed to load hero slides: ${res.status}`);
+        }
+        
         const data = await res.json();
         const slides = data.slides || [];
         // Sort by order if available
         setHeroSlides(slides.sort((a, b) => (a.order || 0) - (b.order || 0)));
       } catch (error) {
+        // Ignore abort errors (they're expected when language changes)
+        if (error.name === 'AbortError') {
+          return;
+        }
         console.error("Failed to load hero slides:", error);
         // Fallback to empty array if API fails
         setHeroSlides([]);
       } finally {
-        setLoading(false);
+        // Only update loading state if request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
+    
+    setLoading(true);
     loadSlides();
-  }, []);
+    
+    // Cleanup: abort request if language changes or component unmounts
+    return () => {
+      abortController.abort();
+    };
+  }, [i18n.language]);
 
   // Auto-rotate slides every 5 seconds
   useEffect(() => {
@@ -96,18 +121,18 @@ export default function HeroCarousel() {
             <div className="hero-slide-overlay">
               <div className="container-main">
                 <div className="hero-content">
-                  {slide.title && <h1 className="hero-title">{slide.title}</h1>}
-                  {slide.subtitle && <p className="hero-subtitle">{slide.subtitle}</p>}
-                  {(slide.button1 || slide.button2) && (
+                  {getTranslated(slide.title, i18n.language) && <h1 className="hero-title">{getTranslated(slide.title, i18n.language)}</h1>}
+                  {getTranslated(slide.subtitle, i18n.language) && <p className="hero-subtitle">{getTranslated(slide.subtitle, i18n.language)}</p>}
+                  {(getTranslated(slide.button1, i18n.language) || getTranslated(slide.button2, i18n.language)) && (
                     <div className="hero-buttons">
-                      {slide.button1 && (
+                      {getTranslated(slide.button1, i18n.language) && (
                         <button className="btn-hero btn-hero-primary">
-                          {slide.button1}
+                          {getTranslated(slide.button1, i18n.language)}
                         </button>
                       )}
-                      {slide.button2 && (
+                      {getTranslated(slide.button2, i18n.language) && (
                         <button className="btn-hero btn-hero-secondary">
-                          {slide.button2}
+                          {getTranslated(slide.button2, i18n.language)}
                         </button>
                       )}
                     </div>
