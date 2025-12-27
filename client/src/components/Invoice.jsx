@@ -1,5 +1,7 @@
 import { useCurrency } from "../context/CurrencyContext";
 import { FaPrint } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
+import { getTranslated } from "../utils/translations";
 
 const PAYMENT_METHODS = {
   credit_card: "Credit Card",
@@ -14,6 +16,7 @@ const DELIVERY_TYPES = {
 
 export default function Invoice({ order, onClose }) {
   const { formatPrice } = useCurrency();
+  const { i18n } = useTranslation();
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -417,7 +420,7 @@ export default function Invoice({ order, onClose }) {
                 order.items.map((item, idx) => (
                   <tr key={idx}>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{item.name}</div>
+                      <div style={{ fontWeight: 600 }}>{getTranslated(item.name, i18n.language || 'en')}</div>
                     </td>
                     <td className="text-right">{item.quantity || 1}</td>
                     <td className="text-right">{formatPrice(Number(item.price || 0))}</td>

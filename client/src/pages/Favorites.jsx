@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../context/LanguageContext";
+import { getTranslated } from "../utils/translations";
 import { FaHeart, FaShoppingCart } from "react-icons/fa";
 import FlyToCartAnimation from "../components/FlyToCartAnimation";
 
@@ -15,7 +16,7 @@ export default function Favorites() {
   const { favorites, removeFavorite, isLoaded: favoritesLoaded } = useFavorites();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentLanguage } = useLanguage();
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
@@ -26,7 +27,9 @@ export default function Favorites() {
     async function loadProducts() {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/products`);
+        // Get current language for translation
+        const lang = i18n.language || 'en';
+        const response = await fetch(`${API}/api/products?lang=${lang}`);
         const data = await response.json();
         
         if (!response.ok) {
@@ -42,7 +45,7 @@ export default function Favorites() {
     }
 
     loadProducts();
-  }, []);
+  }, [i18n.language]);
 
   // Get full product details for favorites
   const favoriteProducts = favorites.map(fav => {
@@ -148,7 +151,7 @@ export default function Favorites() {
                     {product.image ? (
                       <img
                         src={product.image}
-                        alt={product.name}
+                        alt={getTranslated(product.name, i18n.language || 'en')}
                         className="img-product"
                       />
                     ) : (
@@ -170,10 +173,10 @@ export default function Favorites() {
                   </div>
                   <div className="padding-sm flex-col flex-1">
                     <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm">
-                      {product.name}
+                      {getTranslated(product.name, i18n.language || 'en')}
                     </h3>
                     {product.category && (
-                      <p className="text-xs text-muted margin-bottom-sm">{product.category}</p>
+                      <p className="text-xs text-muted margin-bottom-sm">{getTranslated(product.category, i18n.language || 'en')}</p>
                     )}
                     <div className="flex-row flex-gap-sm margin-bottom-md">
                       {product.sale && product.sale_proce > 0 ? (
@@ -221,7 +224,7 @@ export default function Favorites() {
               {confirmProduct.image ? (
                 <img
                   src={confirmProduct.image}
-                  alt={confirmProduct.name}
+                  alt={getTranslated(confirmProduct.name, i18n.language || 'en')}
                   className="img-cart"
                 />
               ) : (
@@ -230,12 +233,12 @@ export default function Favorites() {
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="font-semibold heading-3">{confirmProduct.name}</h3>
+                <h3 className="font-semibold heading-3">{getTranslated(confirmProduct.name, i18n.language || 'en')}</h3>
                 {confirmProduct.category && (
-                  <p className="text-small text-muted">{confirmProduct.category}</p>
+                  <p className="text-small text-muted">{getTranslated(confirmProduct.category, i18n.language || 'en')}</p>
                 )}
                 {confirmProduct.description && (
-                  <p className="text-small text-muted margin-top-sm">{confirmProduct.description}</p>
+                  <p className="text-small text-muted margin-top-sm">{getTranslated(confirmProduct.description, i18n.language || 'en')}</p>
                 )}
                 <div className="margin-top-sm">
                   {confirmProduct.sale && confirmProduct.sale_proce > 0 ? (

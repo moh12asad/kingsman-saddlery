@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTranslation } from "react-i18next";
+import { getTranslated } from "../utils/translations";
 import FlyToCartAnimation from "../components/FlyToCartAnimation";
 import { 
   FaHeart, 
@@ -39,12 +40,12 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     loadProduct();
     loadSettings();
-  }, [id]);
+  }, [id, i18n.language]);
 
   async function loadSettings() {
     try {
@@ -62,7 +63,8 @@ export default function ProductDetail() {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch(`${API}/api/products`);
+      const lang = i18n.language || 'en';
+      const response = await fetch(`${API}/api/products?lang=${lang}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -163,10 +165,10 @@ export default function ProductDetail() {
             <>
               <span className="breadcrumb-separator">/</span>
               <Link 
-                to={`/products?category=${encodeURIComponent(product.category)}`} 
+                to={`/products?category=${encodeURIComponent(getTranslated(product.category, i18n.language || 'en'))}`} 
                 className="breadcrumb-link"
               >
-                {product.category}
+                {getTranslated(product.category, i18n.language || 'en')}
               </Link>
             </>
           )}
@@ -174,15 +176,15 @@ export default function ProductDetail() {
             <>
               <span className="breadcrumb-separator">/</span>
               <Link 
-                to={`/products?category=${encodeURIComponent(product.category)}&subcategory=${encodeURIComponent(product.subCategory)}`} 
+                to={`/products?category=${encodeURIComponent(getTranslated(product.category, i18n.language || 'en'))}&subcategory=${encodeURIComponent(getTranslated(product.subCategory, i18n.language || 'en'))}`} 
                 className="breadcrumb-link"
               >
-                {product.subCategory}
+                {getTranslated(product.subCategory, i18n.language || 'en')}
               </Link>
             </>
           )}
           <span className="breadcrumb-separator">/</span>
-          <span className="breadcrumb-text">{product.name}</span>
+          <span className="breadcrumb-text">{getTranslated(product.name, i18n.language || 'en')}</span>
         </nav>
 
         <div className="product-detail-grid">
@@ -193,7 +195,7 @@ export default function ProductDetail() {
                 <div className="product-main-image-wrapper">
                   <img
                     src={images[selectedImageIndex]}
-                    alt={product.name}
+                    alt={getTranslated(product.name, i18n.language || 'en')}
                     className="product-main-image"
                   />
                   {images.length > 1 && (
@@ -245,7 +247,7 @@ export default function ProductDetail() {
                         className={`product-thumbnail ${selectedImageIndex === idx ? 'active' : ''}`}
                         onClick={() => setSelectedImageIndex(idx)}
                       >
-                        <img src={img} alt={`${product.name} view ${idx + 1}`} />
+                        <img src={img} alt={`${getTranslated(product.name, i18n.language || 'en')} view ${idx + 1}`} />
                       </button>
                     ))}
                   </div>
@@ -270,14 +272,14 @@ export default function ProductDetail() {
             {product.description && (
               <div className="product-description margin-top-lg">
                 <h3 className="product-section-title">{t("productDetail.description")}</h3>
-                <p className="product-description-text">{product.description}</p>
+                <p className="product-description-text">{getTranslated(product.description, i18n.language || 'en')}</p>
               </div>
             )}
           </div>
 
           {/* Center Column - Product Info */}
           <div className="product-detail-info">
-            <h1 className="product-detail-title">{product.name}</h1>
+            <h1 className="product-detail-title">{getTranslated(product.name, i18n.language || 'en')}</h1>
 
             {/* SKU */}
             {product.sku && (
@@ -373,7 +375,7 @@ export default function ProductDetail() {
                   }}>
                     <h3 className="product-section-title">{t("productDetail.technicalDetails")}</h3>
                     <div className="product-details-text">
-                      {product.technicalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
+                      {getTranslated(product.technicalDetails, i18n.language || 'en').split('\n').filter(line => line.trim()).map((line, idx) => (
                         <p key={idx} className="product-detail-bullet">
                           <span className="product-bullet">•</span>
                           {line.trim()}
@@ -409,7 +411,7 @@ export default function ProductDetail() {
                   }}>
                     <h3 className="product-section-title">{t("productDetail.additionalInformation")}</h3>
                     <div className="product-details-text">
-                      {product.additionalDetails.split('\n').filter(line => line.trim()).map((line, idx) => (
+                      {getTranslated(product.additionalDetails, i18n.language || 'en').split('\n').filter(line => line.trim()).map((line, idx) => (
                         <p key={idx} className="product-detail-bullet">
                           <span className="product-bullet">•</span>
                           {line.trim()}
@@ -431,7 +433,7 @@ export default function ProductDetail() {
                 {product.warranty && (
                   <li className="product-benefit-item">
                     <FaCertificate className="product-benefit-icon" />
-                    <span>{t("productDetail.warranty")} {product.warranty}</span>
+                    <span>{t("productDetail.warranty")} {getTranslated(product.warranty, i18n.language || 'en')}</span>
                   </li>
                 )}
                 <li className="product-benefit-item">
@@ -453,12 +455,12 @@ export default function ProductDetail() {
             <div className="product-info-card margin-top-md">
               {product.shippingInfo && (
                 <div className="product-info-item">
-                  <strong>{t("productDetail.shipping")}</strong> {product.shippingInfo}
+                  <strong>{t("productDetail.shipping")}</strong> {getTranslated(product.shippingInfo, i18n.language || 'en')}
                 </div>
               )}
               {product.warranty && (
                 <div className="product-info-item">
-                  <strong>{t("productDetail.warranty")}</strong> {product.warranty}
+                  <strong>{t("productDetail.warranty")}</strong> {getTranslated(product.warranty, i18n.language || 'en')}
                 </div>
               )}
               <div className="product-info-item">
@@ -474,7 +476,7 @@ export default function ProductDetail() {
               </button>
               <a
                 href={whatsappNumber 
-                  ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`I'm interested in: ${product.name}`)}`
+                  ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`I'm interested in: ${getTranslated(product.name, i18n.language || 'en')}`)}`
                   : "#"
                 }
                 target="_blank"
@@ -512,7 +514,7 @@ export default function ProductDetail() {
             </button>
             <img
               src={images[selectedImageIndex]}
-              alt={product.name}
+              alt={getTranslated(product.name, i18n.language || 'en')}
               className="image-zoom-img"
             />
           </div>

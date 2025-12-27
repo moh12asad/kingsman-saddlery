@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getTranslated } from "../utils/translations";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
@@ -26,7 +27,7 @@ export default function OrderDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [order, setOrder] = useState(null);
@@ -245,7 +246,7 @@ export default function OrderDetail() {
                         {item.image ? (
                           <img
                             src={item.image}
-                            alt={item.name}
+                            alt={getTranslated(item.name, i18n.language || 'en')}
                             className="w-20 h-20 object-cover rounded-lg border order-item-image-wrapper"
                           />
                         ) : (
@@ -254,9 +255,9 @@ export default function OrderDetail() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-small">{item.name}</h3>
+                          <h3 className="font-semibold text-small">{getTranslated(item.name, i18n.language || 'en')}</h3>
                           {item.category && (
-                            <p className="text-xs text-muted">{item.category}</p>
+                            <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
                           )}
                           <div className="flex items-center gap-2 margin-top-xs">
                             <span className="text-sm text-muted">{t("orderDetail.qty")} {item.quantity}</span>

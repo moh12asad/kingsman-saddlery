@@ -274,7 +274,7 @@ export default function OrdersDashboard() {
                         <ul className="text-gray-600 space-y-1">
                           {(order.items || []).slice(0, 2).map((item, idx) => (
                             <li key={idx}>
-                              {item.quantity} × {item.name}
+                              {item.quantity} × {typeof item.name === 'string' ? item.name : (item.name?.en || item.name?.ar || item.name?.he || '')}
                             </li>
                           ))}
                           {(order.items || []).length > 2 && (

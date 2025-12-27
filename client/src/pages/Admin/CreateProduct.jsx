@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -12,22 +13,22 @@ export default function CreateProduct(){
   const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({
-    name: "",
+    name: { en: "", ar: "", he: "" },
     price: 0,
     category: "",
     subCategory: "",
     image: "",
-    description: "",
+    description: { en: "", ar: "", he: "" },
     available: true,
     sale: false,
     sale_proce: 0,
     featured: false,
     sku: "",
     brand: "",
-    technicalDetails: "",
-    additionalDetails: "",
-    warranty: "",
-    shippingInfo: "",
+    technicalDetails: { en: "", ar: "", he: "" },
+    additionalDetails: { en: "", ar: "", he: "" },
+    warranty: { en: "", ar: "", he: "" },
+    shippingInfo: { en: "", ar: "", he: "" },
     videoUrl: "",
     additionalImages: [],
   });
@@ -39,7 +40,8 @@ export default function CreateProduct(){
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) return;
-      const r = await fetch(`${API}/api/categories`, {
+      // Fetch with all=true to get full translation objects for admin display
+      const r = await fetch(`${API}/api/categories?all=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const b = await r.json();
@@ -53,11 +55,17 @@ export default function CreateProduct(){
     loadCategories();
   },[]);
 
-  const canSubmit = useMemo(() => form.name && form.price > 0 && form.category, [form]);
+  const canSubmit = useMemo(() => {
+    const name = typeof form.name === 'string' ? form.name : (form.name?.en || "");
+    return name && form.price > 0 && form.category;
+  }, [form]);
 
   // Get selected category object and its sub-categories
   const selectedCategoryObj = useMemo(() => {
-    return categories.find(cat => cat.name === form.category);
+    return categories.find(cat => {
+      const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+      return catName === form.category;
+    });
   }, [categories, form.category]);
 
   const availableSubCategories = useMemo(() => {
@@ -114,23 +122,36 @@ export default function CreateProduct(){
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error(t('admin.createProduct.errors.mustSignIn'));
 
+      // Helper to clean translation objects (remove empty strings)
+      const cleanTranslation = (trans) => {
+        if (typeof trans === 'string') return trans;
+        if (typeof trans === 'object' && trans !== null) {
+          const cleaned = {};
+          if (trans.en) cleaned.en = trans.en.trim();
+          if (trans.ar) cleaned.ar = trans.ar.trim();
+          if (trans.he) cleaned.he = trans.he.trim();
+          return Object.keys(cleaned).length > 0 ? cleaned : "";
+        }
+        return "";
+      };
+
       const payload = {
-        name: form.name,
+        name: cleanTranslation(form.name),
         price: Number(form.price) || 0,
         category: form.category,
         subCategory: form.subCategory || "",
         image: form.image,
-        description: form.description ? form.description.trim() : "",
+        description: cleanTranslation(form.description),
         available: form.available,
         sale: form.sale,
         sale_proce: Number(form.sale_proce) || 0,
         featured: form.featured || false,
         sku: form.sku || "",
         brand: form.brand || "",
-        technicalDetails: form.technicalDetails || "",
-        additionalDetails: form.additionalDetails || "",
-        warranty: form.warranty || "",
-        shippingInfo: form.shippingInfo || "",
+        technicalDetails: cleanTranslation(form.technicalDetails),
+        additionalDetails: cleanTranslation(form.additionalDetails),
+        warranty: cleanTranslation(form.warranty),
+        shippingInfo: cleanTranslation(form.shippingInfo),
         videoUrl: form.videoUrl || "",
         additionalImages: form.additionalImages || [],
       };
@@ -263,12 +284,15 @@ export default function CreateProduct(){
       
       <div className="card">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 mb-3">
-          <input 
-            className="input" 
-            placeholder={t('admin.createProduct.namePlaceholder')} 
-            value={form.name} 
-            onChange={e=>setForm({...form,name:e.target.value})}
-          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label={t('admin.createProduct.namePlaceholder')}
+              value={form.name}
+              onChange={(value) => setForm({...form, name: value})}
+              placeholder="Product name"
+              required={true}
+            />
+          </div>
           <input 
             className="input" 
             type="number" 
@@ -283,9 +307,12 @@ export default function CreateProduct(){
             required
           >
             <option value="">{t('admin.createProduct.selectCategory')}</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.name}>{cat.name}</option>
-            ))}
+            {categories.map(cat => {
+              const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+              return (
+                <option key={cat.id} value={catName}>{catName}</option>
+              );
+            })}
           </select>
           {availableSubCategories.length > 0 && (
             <select 
@@ -294,9 +321,12 @@ export default function CreateProduct(){
               onChange={e=>setForm({...form, subCategory: e.target.value})}
             >
               <option value="">{t('admin.createProduct.selectSubCategory')}</option>
-              {availableSubCategories.map((sub, idx) => (
-                <option key={idx} value={sub.name}>{sub.name}</option>
-              ))}
+              {availableSubCategories.map((sub, idx) => {
+                const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+                return (
+                  <option key={idx} value={subName}>{subName}</option>
+                );
+              })}
             </select>
           )}
           <input 
@@ -319,13 +349,16 @@ export default function CreateProduct(){
               Uploading {uploadingImages.length} image(s)...
             </span>
           )}
-          <textarea
-            className="input md:col-span-2 lg:col-span-3"
-            placeholder={t('admin.createProduct.descriptionPlaceholder')}
-            rows="3"
-            value={form.description}
-            onChange={e=>setForm({...form,description:e.target.value})}
-          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label={t('admin.createProduct.descriptionPlaceholder')}
+              value={form.description}
+              onChange={(value) => setForm({...form, description: value})}
+              placeholder="Product description"
+              type="textarea"
+              rows={3}
+            />
+          </div>
           <input 
             className="input" 
             placeholder={t('admin.createProduct.skuPlaceholder')} 
@@ -338,32 +371,42 @@ export default function CreateProduct(){
             value={form.brand} 
             onChange={e=>setForm({...form,brand:e.target.value})}
           />
-          <textarea
-            className="input md:col-span-2 lg:col-span-3"
-            placeholder={t('admin.createProduct.technicalDetailsPlaceholder')}
-            rows="3"
-            value={form.technicalDetails}
-            onChange={e=>setForm({...form,technicalDetails:e.target.value})}
-          />
-          <textarea
-            className="input md:col-span-2 lg:col-span-3"
-            placeholder={t('admin.createProduct.additionalDetailsPlaceholder')}
-            rows="3"
-            value={form.additionalDetails}
-            onChange={e=>setForm({...form,additionalDetails:e.target.value})}
-          />
-          <input 
-            className="input" 
-            placeholder={t('admin.createProduct.warrantyPlaceholder')} 
-            value={form.warranty} 
-            onChange={e=>setForm({...form,warranty:e.target.value})}
-          />
-          <input 
-            className="input" 
-            placeholder={t('admin.createProduct.shippingInfoPlaceholder')} 
-            value={form.shippingInfo} 
-            onChange={e=>setForm({...form,shippingInfo:e.target.value})}
-          />
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label={t('admin.createProduct.technicalDetailsPlaceholder')}
+              value={form.technicalDetails}
+              onChange={(value) => setForm({...form, technicalDetails: value})}
+              placeholder="Technical details"
+              type="textarea"
+              rows={3}
+            />
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label={t('admin.createProduct.additionalDetailsPlaceholder')}
+              value={form.additionalDetails}
+              onChange={(value) => setForm({...form, additionalDetails: value})}
+              placeholder="Additional details"
+              type="textarea"
+              rows={3}
+            />
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label={t('admin.createProduct.warrantyPlaceholder')}
+              value={form.warranty}
+              onChange={(value) => setForm({...form, warranty: value})}
+              placeholder="Warranty information"
+            />
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label={t('admin.createProduct.shippingInfoPlaceholder')}
+              value={form.shippingInfo}
+              onChange={(value) => setForm({...form, shippingInfo: value})}
+              placeholder="Shipping information"
+            />
+          </div>
           <input 
             className="input md:col-span-2 lg:col-span-3" 
             placeholder={t('admin.createProduct.videoUrlPlaceholder')} 

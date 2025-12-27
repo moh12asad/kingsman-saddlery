@@ -4,6 +4,8 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTranslation } from "react-i18next";
+import { useLanguage } from "../context/LanguageContext";
+import { getTranslated } from "../utils/translations";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import { auth } from "../lib/firebase";
 import FlyToCartAnimation from "./FlyToCartAnimation";
@@ -16,7 +18,8 @@ export default function BestSellers() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { isRTL } = useLanguage();
   const scrollRef = useRef(null);
   const [animationTrigger, setAnimationTrigger] = useState(null);
 
@@ -25,8 +28,11 @@ export default function BestSellers() {
       try {
         setLoading(true);
         
+        // Get current language for translation
+        const lang = i18n.language || 'en';
+        
         // Load products
-        const productsRes = await fetch(`${API}/api/products`);
+        const productsRes = await fetch(`${API}/api/products?lang=${lang}`);
         if (!productsRes.ok) {
           throw new Error("Failed to fetch products");
         }
@@ -62,14 +68,16 @@ export default function BestSellers() {
     }
 
     loadData();
-  }, []);
+  }, [i18n.language]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {
       const cardWidth = 280;
       const scrollAmount = cardWidth + 20;
+      // In RTL, scroll direction is reversed
+      const effectiveDirection = isRTL ? (direction === 'left' ? 'right' : 'left') : direction;
       scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        left: effectiveDirection === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
     }
@@ -104,14 +112,14 @@ export default function BestSellers() {
                 onClick={() => scroll('left')}
                 aria-label={t("shop.common.scrollLeft")}
               >
-                <FaChevronLeft />
+                {isRTL ? <FaChevronRight /> : <FaChevronLeft />}
               </button>
               <button
                 className="product-carousel-arrow product-carousel-arrow-right"
                 onClick={() => scroll('right')}
                 aria-label={t("shop.common.scrollRight")}
               >
-                <FaChevronRight />
+                {isRTL ? <FaChevronLeft /> : <FaChevronRight />}
               </button>
             </>
           )}
@@ -148,7 +156,7 @@ export default function BestSellers() {
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -179,7 +187,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name}
+            alt={getTranslated(product.name, i18n.language || 'en')}
             className="card-product-image"
           />
         ) : (
@@ -202,7 +210,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
       </div>
       <div className="card-product-content">
         <h3 className="card-product-title">
-          {product.name}
+          {getTranslated(product.name, i18n.language || 'en')}
         </h3>
         <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (

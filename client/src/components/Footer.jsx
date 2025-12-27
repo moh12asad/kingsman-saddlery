@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaTiktok, FaFacebook, FaInstagram, FaEnvelope, FaMapMarkerAlt, FaPhone, FaWhatsapp, FaClock } from "react-icons/fa";
 import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
+import { getTranslated } from "../utils/translations";
 import WazeIcon from "./icons/WazeIcon";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -10,13 +11,13 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function Footer() {
   const [categories, setCategories] = useState([]);
   const [storeInfo, setStoreInfo] = useState(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     async function loadData() {
       try {
         // Load categories
-        const categoriesResponse = await fetch(`${API}/api/categories`);
+        const categoriesResponse = await fetch(`${API}/api/categories?lang=${i18n.language || 'en'}`);
         if (categoriesResponse.ok) {
           const categoriesData = await categoriesResponse.json();
           setCategories(categoriesData.categories || []);
@@ -30,7 +31,7 @@ export default function Footer() {
       }
     }
     loadData();
-  }, []);
+  }, [i18n.language]);
 
   return (
     <footer className="footer">
@@ -75,7 +76,7 @@ export default function Footer() {
           <ul className="footer-links">
             {categories.length > 0 ? (
               categories.slice(0, 10).map((category) => {
-                const categoryName = typeof category === 'string' ? category : category.name;
+                const categoryName = typeof category === 'string' ? category : getTranslated(category.name, i18n.language || 'en');
                 return (
                   <li key={categoryName}>
                     <Link to={`/products?category=${encodeURIComponent(categoryName)}`}>
