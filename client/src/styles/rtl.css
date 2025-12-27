@@ -331,13 +331,13 @@
 
 /* Product carousel arrows RTL */
 [dir="rtl"] .product-carousel-arrow-left {
-  left: auto;
-  right: 0;
+  left: auto !important;
+  right: 0 !important;
 }
 
 [dir="rtl"] .product-carousel-arrow-right {
-  right: auto;
-  left: 0;
+  right: auto !important;
+  left: 0 !important;
 }
 
 /* Product carousel container RTL */
@@ -347,6 +347,42 @@
 
 [dir="rtl"] .product-carousel {
   direction: rtl; /* Carousel scroll direction RTL */
+}
+
+/* Mobile RTL arrow positioning - must override all media queries */
+@media (max-width: 768px) {
+  [dir="rtl"] .product-carousel-arrow-left {
+    left: auto !important;
+    right: 0 !important;
+  }
+  
+  [dir="rtl"] .product-carousel-arrow-right {
+    right: auto !important;
+    left: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  [dir="rtl"] .product-carousel-arrow-left {
+    left: auto !important;
+    right: -0.5rem !important;
+  }
+  
+  [dir="rtl"] .product-carousel-arrow-right {
+    right: auto !important;
+    left: -0.5rem !important;
+  }
+}
+
+/* Ensure RTL arrows override all other styles at all breakpoints */
+[dir="rtl"] .product-carousel-arrow-left {
+  left: auto !important;
+  right: 0 !important;
+}
+
+[dir="rtl"] .product-carousel-arrow-right {
+  right: auto !important;
+  left: 0 !important;
 }
 
 /* Product grid RTL */

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
@@ -369,6 +370,7 @@ function ProductGrid({ products, onAddToCart }) {
 // Product Carousel Component (for sale products)
 function ProductCarousel({ products, onAddToCart }) {
   const { t } = useTranslation();
+  const { isRTL } = useLanguage();
   const scrollRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -435,8 +437,10 @@ function ProductCarousel({ products, onAddToCart }) {
     if (scrollRef.current) {
       const cardWidth = 280;
       const scrollAmount = cardWidth + 20;
+      // In RTL, scroll direction is reversed
+      const effectiveDirection = isRTL ? (direction === 'left' ? 'right' : 'left') : direction;
       scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        left: effectiveDirection === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
     }
@@ -454,7 +458,7 @@ function ProductCarousel({ products, onAddToCart }) {
             aria-label={t("products.scrollLeft")}
             disabled={!showLeftArrow}
           >
-            <FaChevronLeft />
+            {isRTL ? <FaChevronRight /> : <FaChevronLeft />}
           </button>
           <button
             className={`product-carousel-arrow product-carousel-arrow-right ${!showRightArrow ? 'disabled' : ''}`}
@@ -462,7 +466,7 @@ function ProductCarousel({ products, onAddToCart }) {
             aria-label={t("products.scrollRight")}
             disabled={!showRightArrow}
           >
-            <FaChevronRight />
+            {isRTL ? <FaChevronLeft /> : <FaChevronRight />}
           </button>
         </>
       )}

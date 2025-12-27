@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTranslation } from "react-i18next";
+import { useLanguage } from "../context/LanguageContext";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import { auth } from "../lib/firebase";
 import FlyToCartAnimation from "./FlyToCartAnimation";
@@ -17,6 +18,7 @@ export default function BestSellers() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { t } = useTranslation();
+  const { isRTL } = useLanguage();
   const scrollRef = useRef(null);
   const [animationTrigger, setAnimationTrigger] = useState(null);
 
@@ -68,8 +70,10 @@ export default function BestSellers() {
     if (scrollRef.current) {
       const cardWidth = 280;
       const scrollAmount = cardWidth + 20;
+      // In RTL, scroll direction is reversed
+      const effectiveDirection = isRTL ? (direction === 'left' ? 'right' : 'left') : direction;
       scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        left: effectiveDirection === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
     }
@@ -104,14 +108,14 @@ export default function BestSellers() {
                 onClick={() => scroll('left')}
                 aria-label={t("shop.common.scrollLeft")}
               >
-                <FaChevronLeft />
+                {isRTL ? <FaChevronRight /> : <FaChevronLeft />}
               </button>
               <button
                 className="product-carousel-arrow product-carousel-arrow-right"
                 onClick={() => scroll('right')}
                 aria-label={t("shop.common.scrollRight")}
               >
-                <FaChevronRight />
+                {isRTL ? <FaChevronLeft /> : <FaChevronRight />}
               </button>
             </>
           )}
