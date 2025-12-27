@@ -5,6 +5,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { getTranslated } from "../utils/translations";
+import { auth } from "../lib/firebase";
 import { FaSearch, FaTimes, FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import FlyToCartAnimation from "../components/FlyToCartAnimation";
 
@@ -14,6 +16,7 @@ export default function Products() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState([]); // Store categories for filtering
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [confirmProduct, setConfirmProduct] = useState(null);
@@ -56,7 +59,23 @@ export default function Products() {
       }
     }
 
+    async function loadCategories() {
+      try {
+        const token = await auth.currentUser?.getIdToken().catch(() => null);
+        const categoriesRes = await fetch(`${API}/api/categories?all=true`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData.categories || []);
+        }
+      } catch (err) {
+        console.error("Error loading categories:", err);
+      }
+    }
+
     loadProducts();
+    loadCategories();
   }, [i18n.language]);
 
   // Focus search input when opened from navbar
@@ -85,24 +104,79 @@ export default function Products() {
     // Filter by category
     if (categoryParam) {
       const decodedCategory = decodeURIComponent(categoryParam);
-      filtered = filtered.filter(p => p.category === decodedCategory);
       
-      // Filter by sub-category if selected
-      if (subcategoryParam) {
-        const decodedSubCategory = decodeURIComponent(subcategoryParam);
-        filtered = filtered.filter(p => p.subCategory === decodedSubCategory);
+      // Find category that matches the decoded name in any language
+      // Products store category/subcategory as English strings, so we need to find the English name
+      const matchedCategory = categories.find(cat => {
+        const catNameEn = getTranslated(cat.name, 'en');
+        const catNameAr = getTranslated(cat.name, 'ar');
+        const catNameHe = getTranslated(cat.name, 'he');
+        return catNameEn === decodedCategory || 
+               catNameAr === decodedCategory || 
+               catNameHe === decodedCategory;
+      });
+      
+      if (matchedCategory) {
+        const categoryNameEn = getTranslated(matchedCategory.name, 'en');
+        filtered = filtered.filter(p => {
+          // Products have category stored as string (usually English)
+          const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+          return pCategory === categoryNameEn;
+        });
+        
+        // Filter by sub-category if selected
+        if (subcategoryParam) {
+          const decodedSubCategory = decodeURIComponent(subcategoryParam);
+          // Find subcategory that matches in any language
+          const matchedSubCategory = (matchedCategory.subCategories || []).find(sub => {
+            const subNameEn = getTranslated(sub.name, 'en');
+            const subNameAr = getTranslated(sub.name, 'ar');
+            const subNameHe = getTranslated(sub.name, 'he');
+            return subNameEn === decodedSubCategory || 
+                   subNameAr === decodedSubCategory || 
+                   subNameHe === decodedSubCategory;
+          });
+          
+          if (matchedSubCategory) {
+            const subCategoryNameEn = getTranslated(matchedSubCategory.name, 'en');
+            filtered = filtered.filter(p => {
+              const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
+              return pSubCategory === subCategoryNameEn;
+            });
+          }
+        }
+      } else {
+        // Fallback: if category not found in categories list, use direct comparison
+        const currentLang = i18n.language || 'en';
+        filtered = filtered.filter(p => {
+          const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, currentLang);
+          return pCategory === decodedCategory;
+        });
+        
+        if (subcategoryParam) {
+          const decodedSubCategory = decodeURIComponent(subcategoryParam);
+          filtered = filtered.filter(p => {
+            const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, currentLang);
+            return pSubCategory === decodedSubCategory;
+          });
+        }
       }
     }
 
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(query) ||
-        (p.category && p.category.toLowerCase().includes(query)) ||
-        (p.subCategory && p.subCategory.toLowerCase().includes(query)) ||
-        (p.brand && p.brand.toLowerCase().includes(query))
-      );
+      const currentLang = i18n.language || 'en';
+      filtered = filtered.filter(p => {
+        const name = getTranslated(p.name, currentLang).toLowerCase();
+        const category = getTranslated(p.category, currentLang).toLowerCase();
+        const subCategory = getTranslated(p.subCategory, currentLang).toLowerCase();
+        const brand = (p.brand || '').toLowerCase();
+        return name.includes(query) ||
+          category.includes(query) ||
+          subCategory.includes(query) ||
+          brand.includes(query);
+      });
     }
 
     // Separate sale products
@@ -110,11 +184,12 @@ export default function Products() {
     
     // Group regular products by category and sub-category
     const productsByCategory = {};
+    const currentLang = i18n.language || 'en';
     
     filtered
       .filter(p => !p.sale)
       .forEach(product => {
-        const category = product.category || "Uncategorized";
+        const category = getTranslated(product.category, currentLang) || "Uncategorized";
         if (!productsByCategory[category]) {
           productsByCategory[category] = [];
         }
@@ -125,7 +200,7 @@ export default function Products() {
       saleProducts, 
       productsByCategory 
     };
-  }, [allProducts, categoryParam, subcategoryParam, brandParam, searchQuery]);
+  }, [allProducts, categories, categoryParam, subcategoryParam, brandParam, searchQuery, i18n.language]);
 
   const handleAddToCart = (product) => {
     setConfirmProduct(product);
@@ -288,7 +363,7 @@ export default function Products() {
               {confirmProduct.image ? (
                 <img
                   src={confirmProduct.image}
-                  alt={confirmProduct.name}
+                  alt={getTranslated(confirmProduct.name, i18n.language || 'en')}
                   className="img-cart"
                 />
               ) : (
@@ -297,12 +372,12 @@ export default function Products() {
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="font-semibold heading-3">{confirmProduct.name}</h3>
+                <h3 className="font-semibold heading-3">{getTranslated(confirmProduct.name, i18n.language || 'en')}</h3>
                 {confirmProduct.category && (
-                  <p className="text-small text-muted">{confirmProduct.category}</p>
+                  <p className="text-small text-muted">{getTranslated(confirmProduct.category, i18n.language || 'en')}</p>
                 )}
                 {confirmProduct.description && (
-                  <p className="text-small text-muted margin-top-sm">{confirmProduct.description}</p>
+                  <p className="text-small text-muted margin-top-sm">{getTranslated(confirmProduct.description, i18n.language || 'en')}</p>
                 )}
                 <div className="margin-top-sm">
                   {confirmProduct.sale && confirmProduct.sale_proce > 0 ? (
@@ -488,7 +563,7 @@ function ProductCarousel({ products, onAddToCart }) {
 // Product Card Component
 function ProductCard({ product, onAddToCart }) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
   const isFav = checkFavorite(product.id);
@@ -513,7 +588,7 @@ function ProductCard({ product, onAddToCart }) {
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name}
+            alt={getTranslated(product.name, i18n.language || 'en')}
             className="card-product-image"
           />
         ) : (
@@ -536,7 +611,7 @@ function ProductCard({ product, onAddToCart }) {
       </div>
       <div className="card-product-content">
         <h3 className="card-product-title">
-          {product.name}
+          {getTranslated(product.name, i18n.language || 'en')}
         </h3>
         <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (

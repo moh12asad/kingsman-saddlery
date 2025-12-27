@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -27,14 +28,39 @@ export default function EditProduct() {
   async function loadProduct() {
     try {
       setLoading(true);
-      const response = await fetch(`${API}/api/products`);
+      // Fetch with all=true to get full translation objects for admin editing
+      const response = await fetch(`${API}/api/products?all=true`);
       const data = await response.json();
       const found = (data.products || []).find(p => p.id === id);
-      if (!found) {
-        setError(t('admin.editProduct.notFound'));
-        return;
-      }
-      setProduct(found);
+        if (!found) {
+          setError(t('admin.editProduct.notFound'));
+          return;
+        }
+        // Ensure translation objects are properly formatted (fill missing languages with empty strings)
+        const ensureTranslationObject = (field) => {
+          if (typeof field === 'string') {
+            return { en: field, ar: "", he: "" };
+          }
+          if (typeof field === 'object' && field !== null) {
+            return {
+              en: field.en || "",
+              ar: field.ar || "",
+              he: field.he || ""
+            };
+          }
+          return { en: "", ar: "", he: "" };
+        };
+        
+        const formattedProduct = {
+          ...found,
+          name: ensureTranslationObject(found.name),
+          description: ensureTranslationObject(found.description),
+          technicalDetails: ensureTranslationObject(found.technicalDetails),
+          additionalDetails: ensureTranslationObject(found.additionalDetails),
+          warranty: ensureTranslationObject(found.warranty),
+          shippingInfo: ensureTranslationObject(found.shippingInfo),
+        };
+        setProduct(formattedProduct);
     } catch (err) {
       setError(err.message || t('admin.editProduct.errors.failedToLoad'));
     } finally {
@@ -46,7 +72,8 @@ export default function EditProduct() {
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) return;
-      const r = await fetch(`${API}/api/categories`, {
+      // Fetch with all=true to get full translation objects for admin display
+      const r = await fetch(`${API}/api/categories?all=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const b = await r.json();
@@ -196,23 +223,36 @@ export default function EditProduct() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error(t('admin.editProduct.errors.mustSignIn'));
 
+      // Helper to clean translation objects (remove empty strings)
+      const cleanTranslation = (trans) => {
+        if (typeof trans === 'string') return trans;
+        if (typeof trans === 'object' && trans !== null) {
+          const cleaned = {};
+          if (trans.en) cleaned.en = trans.en.trim();
+          if (trans.ar) cleaned.ar = trans.ar.trim();
+          if (trans.he) cleaned.he = trans.he.trim();
+          return Object.keys(cleaned).length > 0 ? cleaned : "";
+        }
+        return "";
+      };
+
       const payload = {
-        name: product.name,
+        name: cleanTranslation(product.name),
         price: Number(product.price) || 0,
         category: product.category || "",
         subCategory: product.subCategory || "",
         image: product.image || "",
-        description: product.description ? product.description.trim() : "",
+        description: cleanTranslation(product.description),
         available: product.available,
         sale: product.sale,
         sale_proce: Number(product.sale_proce) || 0,
         featured: product.featured || false,
         sku: product.sku || "",
         brand: product.brand || "",
-        technicalDetails: product.technicalDetails || "",
-        additionalDetails: product.additionalDetails || "",
-        warranty: product.warranty || "",
-        shippingInfo: product.shippingInfo || "",
+        technicalDetails: cleanTranslation(product.technicalDetails),
+        additionalDetails: cleanTranslation(product.additionalDetails),
+        warranty: cleanTranslation(product.warranty),
+        shippingInfo: cleanTranslation(product.shippingInfo),
         videoUrl: product.videoUrl || "",
         additionalImages: product.additionalImages || [],
       };
@@ -271,15 +311,13 @@ export default function EditProduct() {
       <div className="card">
         <div className="grid-form grid-form-3">
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label form-label-required">Product Name</label>
-              <input
-                className="input"
-                placeholder="Product name"
-                value={product.name || ""}
-                onChange={e => setProduct({ ...product, name: e.target.value })}
-              />
-            </div>
+            <MultiLanguageInput
+              label="Product Name"
+              value={product.name}
+              onChange={(value) => setProduct({ ...product, name: value })}
+              placeholder="Product name"
+              required={true}
+            />
           </div>
 
           <div>
@@ -303,19 +341,26 @@ export default function EditProduct() {
               <label className="form-label">Category</label>
               <select
                 className="select"
-                value={product.category || ""}
+                value={typeof product.category === 'string' ? product.category : (product.category?.en || product.category?.ar || product.category?.he || "")}
                 onChange={e => setProduct({ ...product, category: e.target.value, subCategory: "" })}
               >
                 <option value="">Select category...</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
-                ))}
+                {categories.map(cat => {
+                  const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+                  return (
+                    <option key={cat.id} value={catName}>{catName}</option>
+                  );
+                })}
               </select>
             </div>
           </div>
 
           {(() => {
-            const selectedCategoryObj = categories.find(cat => cat.name === product.category);
+            const productCategory = typeof product.category === 'string' ? product.category : (product.category?.en || product.category?.ar || product.category?.he || "");
+            const selectedCategoryObj = categories.find(cat => {
+              const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+              return catName === productCategory;
+            });
             const availableSubCategories = selectedCategoryObj?.subCategories || [];
             
             if (availableSubCategories.length > 0) {
@@ -325,13 +370,16 @@ export default function EditProduct() {
                     <label className="form-label">Sub-Category</label>
                     <select
                       className="select"
-                      value={product.subCategory || ""}
+                      value={typeof product.subCategory === 'string' ? product.subCategory : (product.subCategory?.en || product.subCategory?.ar || product.subCategory?.he || "")}
                       onChange={e => setProduct({ ...product, subCategory: e.target.value })}
                     >
                       <option value="">Select sub-category (optional)...</option>
-                      {availableSubCategories.map((sub, idx) => (
-                        <option key={idx} value={sub.name}>{sub.name}</option>
-                      ))}
+                      {availableSubCategories.map((sub, idx) => {
+                        const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+                        return (
+                          <option key={idx} value={subName}>{subName}</option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -341,16 +389,14 @@ export default function EditProduct() {
           })()}
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea
-                className="input"
-                placeholder="Product description (optional)"
-                rows="4"
-                value={product.description || ""}
-                onChange={e => setProduct({ ...product, description: e.target.value })}
-              />
-            </div>
+            <MultiLanguageInput
+              label="Description"
+              value={product.description}
+              onChange={(value) => setProduct({ ...product, description: value })}
+              placeholder="Product description"
+              type="textarea"
+              rows={4}
+            />
           </div>
 
           <div>
@@ -378,53 +424,43 @@ export default function EditProduct() {
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label">Technical Details</label>
-              <textarea
-                className="input"
-                placeholder="Technical details (optional, one per line)"
-                rows="4"
-                value={product.technicalDetails || ""}
-                onChange={e => setProduct({ ...product, technicalDetails: e.target.value })}
-              />
-            </div>
+            <MultiLanguageInput
+              label="Technical Details"
+              value={product.technicalDetails}
+              onChange={(value) => setProduct({ ...product, technicalDetails: value })}
+              placeholder="Technical details"
+              type="textarea"
+              rows={4}
+            />
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
-            <div className="form-group">
-              <label className="form-label">Additional Details</label>
-              <textarea
-                className="input"
-                placeholder="Additional information (optional, one per line)"
-                rows="4"
-                value={product.additionalDetails || ""}
-                onChange={e => setProduct({ ...product, additionalDetails: e.target.value })}
-              />
-            </div>
+            <MultiLanguageInput
+              label="Additional Details"
+              value={product.additionalDetails}
+              onChange={(value) => setProduct({ ...product, additionalDetails: value })}
+              placeholder="Additional information"
+              type="textarea"
+              rows={4}
+            />
           </div>
 
-          <div>
-            <div className="form-group">
-              <label className="form-label">Warranty</label>
-              <input
-                className="input"
-                placeholder="Warranty information (optional)"
-                value={product.warranty || ""}
-                onChange={e => setProduct({ ...product, warranty: e.target.value })}
-              />
-            </div>
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label="Warranty"
+              value={product.warranty}
+              onChange={(value) => setProduct({ ...product, warranty: value })}
+              placeholder="Warranty information"
+            />
           </div>
 
-          <div>
-            <div className="form-group">
-              <label className="form-label">Shipping Info</label>
-              <input
-                className="input"
-                placeholder="Shipping information (optional)"
-                value={product.shippingInfo || ""}
-                onChange={e => setProduct({ ...product, shippingInfo: e.target.value })}
-              />
-            </div>
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <MultiLanguageInput
+              label="Shipping Info"
+              value={product.shippingInfo}
+              onChange={(value) => setProduct({ ...product, shippingInfo: value })}
+              placeholder="Shipping information"
+            />
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
@@ -577,7 +613,7 @@ export default function EditProduct() {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || !product.name || !product.price}
+            disabled={saving || !(typeof product.name === 'string' ? product.name : (product.name?.en || "")) || !product.price}
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

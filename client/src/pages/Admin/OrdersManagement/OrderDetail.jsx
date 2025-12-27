@@ -545,7 +545,7 @@ export default function AdminOrderDetail() {
                     {item.image ? (
                       <img
                         src={item.image}
-                        alt={item.name}
+                        alt={typeof item.name === 'string' ? item.name : (item.name?.en || item.name?.ar || item.name?.he || '')}
                         className="w-20 h-20 object-cover rounded-lg border"
                       />
                     ) : (
@@ -554,7 +554,7 @@ export default function AdminOrderDetail() {
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className="font-semibold">{item.name}</h3>
+                      <h3 className="font-semibold">{typeof item.name === 'string' ? item.name : (item.name?.en || item.name?.ar || item.name?.he || "-")}</h3>
                       <div className="flex items-center gap-4 mt-2 text-sm">
                         <span className="text-gray-600">Qty: {item.quantity}</span>
                         <span className="font-semibold">

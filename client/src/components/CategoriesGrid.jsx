@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getTranslated } from "../utils/translations";
 import { auth } from "../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -48,15 +49,19 @@ export default function CategoriesGrid() {
   }, [i18n.language]);
 
   const handleCategoryClick = (category) => {
+    const categoryName = getTranslated(category.name, i18n.language || 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
-    const hasProducts = products.some(p => p.category === category.name && p.available);
+    const hasProducts = products.some(p => {
+      const productCategory = getTranslated(p.category, i18n.language || 'en');
+      return productCategory === categoryName && p.available;
+    });
     
     if (hasSubCategories) {
       // Navigate to subcategories page
-      navigate(`/subcategories/${encodeURIComponent(category.name)}`);
+      navigate(`/subcategories/${encodeURIComponent(categoryName)}`);
     } else if (hasProducts) {
       // Navigate directly to products page with category filter
-      navigate(`/products?category=${encodeURIComponent(category.name)}`);
+      navigate(`/products?category=${encodeURIComponent(categoryName)}`);
     }
   };
 
@@ -78,7 +83,11 @@ export default function CategoriesGrid() {
     <section className="max-w-7xl mx-auto px-4 py-12" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ gap: '1rem' }}>
         {categories.map((category) => {
-          const hasProducts = products.some(p => p.category === category.name && p.available);
+          const categoryName = getTranslated(category.name, i18n.language || 'en');
+          const hasProducts = products.some(p => {
+            const productCategory = getTranslated(p.category, i18n.language || 'en');
+            return productCategory === categoryName && p.available;
+          });
           const hasSubCategories = category.subCategories && category.subCategories.length > 0;
           
           // Only show categories that have products or subcategories
@@ -88,7 +97,7 @@ export default function CategoriesGrid() {
 
           return (
             <div
-              key={category.id || category.name}
+              key={category.id || categoryName}
               onClick={() => handleCategoryClick(category)}
               className="relative group cursor-pointer overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
@@ -96,7 +105,7 @@ export default function CategoriesGrid() {
                 {category.image ? (
                   <img
                     src={category.image}
-                    alt={category.name}
+                    alt={categoryName}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -108,7 +117,7 @@ export default function CategoriesGrid() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
                   <div className="w-full p-4 flex items-center justify-center">
                     <h3 className="category-card-title text-white font-bold text-lg md:text-xl text-center px-4 py-2">
-                      {category.name}
+                      {categoryName}
                     </h3>
                   </div>
                 </div>

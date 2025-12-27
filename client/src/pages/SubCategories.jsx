@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { getTranslated } from "../utils/translations";
 import { auth } from "../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -7,6 +9,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function SubCategories() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,9 +24,10 @@ export default function SubCategories() {
         // Decode category name
         const decodedCategoryName = decodeURIComponent(categoryName || "");
 
-        // Load categories
+        // Load categories with all languages to get translation objects
+        const lang = i18n.language || 'en';
         const token = await auth.currentUser?.getIdToken().catch(() => null);
-        const categoriesRes = await fetch(`${API}/api/categories`, {
+        const categoriesRes = await fetch(`${API}/api/categories?all=true`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
 
@@ -32,8 +36,16 @@ export default function SubCategories() {
         }
 
         const categoriesData = await categoriesRes.json();
+        // Find category by checking all language versions
         const foundCategory = (categoriesData.categories || []).find(
-          (cat) => cat.name === decodedCategoryName
+          (cat) => {
+            const catNameEn = getTranslated(cat.name, 'en');
+            const catNameAr = getTranslated(cat.name, 'ar');
+            const catNameHe = getTranslated(cat.name, 'he');
+            return catNameEn === decodedCategoryName || 
+                   catNameAr === decodedCategoryName || 
+                   catNameHe === decodedCategoryName;
+          }
         );
 
         if (!foundCategory) {
@@ -42,8 +54,9 @@ export default function SubCategories() {
 
         setCategory(foundCategory);
 
-        // Load products to check which subcategories have products
-        const productsRes = await fetch(`${API}/api/products`);
+        // Load products - products store category/subcategory as English strings
+        // So we need to compare using the English name
+        const productsRes = await fetch(`${API}/api/products?lang=${lang}`);
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           const availableProducts = (productsData.products || []).filter(
@@ -62,10 +75,11 @@ export default function SubCategories() {
     if (categoryName) {
       loadData();
     }
-  }, [categoryName]);
+  }, [categoryName, i18n.language]);
 
   const handleSubCategoryClick = (subCategoryName) => {
-    navigate(`/products?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(subCategoryName)}`);
+    const categoryName = getTranslated(category.name, i18n.language || 'en');
+    navigate(`/products?category=${encodeURIComponent(categoryName)}&subcategory=${encodeURIComponent(subCategoryName)}`);
   };
 
   if (loading) {
@@ -103,7 +117,8 @@ export default function SubCategories() {
 
   if (subCategories.length === 0) {
     // If no subcategories, redirect to products page with category filter
-    navigate(`/products?category=${encodeURIComponent(category.name)}`);
+    const categoryName = getTranslated(category.name, i18n.language || 'en');
+    navigate(`/products?category=${encodeURIComponent(categoryName)}`);
     return null;
   }
 
@@ -117,16 +132,25 @@ export default function SubCategories() {
           >
             ← Back to Home
           </button>
-          <h1 className="text-4xl font-bold mb-2">{category.name}</h1>
+          <h1 className="text-4xl font-bold mb-2">{getTranslated(category.name, i18n.language || 'en')}</h1>
           {category.description && (
-            <p className="text-gray-600 text-lg">{category.description}</p>
+            <p className="text-gray-600 text-lg">{getTranslated(category.description, i18n.language || 'en')}</p>
           )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {subCategories.map((subCategory, index) => {
+            // Products store category/subcategory as English strings, so compare using English names
+            const categoryNameEn = getTranslated(category.name, 'en');
+            const subCategoryNameEn = getTranslated(subCategory.name, 'en');
             const hasProducts = products.some(
-              (p) => p.category === category.name && p.subCategory === subCategory.name && p.available
+              (p) => {
+                // Products have category/subcategory stored as strings (usually English)
+                // So we compare the stored string directly
+                const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+                const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
+                return pCategory === categoryNameEn && pSubCategory === subCategoryNameEn && p.available;
+              }
             );
 
             // Only show subcategories that have products
@@ -137,15 +161,15 @@ export default function SubCategories() {
             return (
               <div
                 key={index}
-                onClick={() => handleSubCategoryClick(subCategory.name)}
+                onClick={() => handleSubCategoryClick(getTranslated(subCategory.name, i18n.language || 'en'))}
                 className="relative group cursor-pointer overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 <div className="aspect-square relative">
                   {subCategory.image ? (
                     <img
                       src={subCategory.image}
-                      alt={subCategory.name}
-                      className="w-full h-full object-cover"
+                    alt={getTranslated(subCategory.name, i18n.language || 'en')}
+                    className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -156,7 +180,7 @@ export default function SubCategories() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
                     <div className="w-full p-4">
                       <h3 className="text-white font-bold text-lg md:text-xl text-center">
-                        {subCategory.name}
+                        {getTranslated(subCategory.name, i18n.language || 'en')}
                       </h3>
                     </div>
                   </div>
@@ -166,9 +190,16 @@ export default function SubCategories() {
           })}
         </div>
 
-        {subCategories.filter((sub) => 
-          products.some(p => p.category === category.name && p.subCategory === sub.name && p.available)
-        ).length === 0 && (
+        {subCategories.filter((sub) => {
+          // Products store category/subcategory as English strings, so compare using English names
+          const categoryNameEn = getTranslated(category.name, 'en');
+          const subNameEn = getTranslated(sub.name, 'en');
+          return products.some(p => {
+            const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+            const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
+            return pCategory === categoryNameEn && pSubCategory === subNameEn && p.available;
+          });
+        }).length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-4">No subcategories with products available</p>
             <button

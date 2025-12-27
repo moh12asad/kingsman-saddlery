@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../context/LanguageContext";
+import { getTranslated } from "../utils/translations";
 import { FaShoppingCart } from "react-icons/fa";
 
 export default function Cart() {
@@ -11,7 +12,7 @@ export default function Cart() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentLanguage } = useLanguage();
 
   // Show loading state while cart is being loaded from localStorage
@@ -119,7 +120,7 @@ export default function Cart() {
             {item.image ? (
               <img
                 src={item.image}
-                alt={item.name}
+                alt={getTranslated(item.name, i18n.language || 'en')}
                 className="img-cart"
               />
             ) : (
@@ -128,9 +129,9 @@ export default function Cart() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-small text-truncate">{item.name}</h3>
+              <h3 className="font-semibold text-small text-truncate">{getTranslated(item.name, i18n.language || 'en')}</h3>
               {item.category && (
-                <p className="text-xs text-muted">{item.category}</p>
+                <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
               )}
               <div className="flex-row flex-gap-sm margin-top-sm">
                 {item.sale ? (

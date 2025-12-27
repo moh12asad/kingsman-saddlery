@@ -5,6 +5,7 @@ import { useFavorites } from "../context/FavoritesContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../context/LanguageContext";
+import { getTranslated } from "../utils/translations";
 import { FaChevronLeft, FaChevronRight, FaHeart, FaShoppingCart } from "react-icons/fa";
 import FlyToCartAnimation from "./FlyToCartAnimation";
 
@@ -228,7 +229,7 @@ export default function ProductsTabs() {
 function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -259,7 +260,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name}
+            alt={getTranslated(product.name, i18n.language || 'en')}
             className="card-product-image"
           />
         ) : (
@@ -282,7 +283,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
       </div>
       <div className="card-product-content">
         <h3 className="card-product-title">
-          {product.name}
+          {getTranslated(product.name, i18n.language || 'en')}
         </h3>
         <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase";
+import { getTranslated } from "../../utils/translations";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -18,7 +19,8 @@ export default function AdminProducts(){
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   async function load(){
-    const r = await fetch(`${API}/api/products`);
+    // Fetch with all=true to get full translation objects for admin display
+    const r = await fetch(`${API}/api/products?all=true`);
     const b = await r.json();
     const products = b.products || [];
     setAllRows(products);
@@ -41,12 +43,32 @@ export default function AdminProducts(){
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(p => 
-        (p.name && p.name.toLowerCase().includes(query)) ||
-        (p.category && p.category.toLowerCase().includes(query)) ||
-        (p.subCategory && p.subCategory.toLowerCase().includes(query)) ||
-        (p.description && p.description.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(p => {
+        // Helper to get searchable text from translation object or string
+        const getSearchableText = (field) => {
+          if (!field) return "";
+          if (typeof field === 'string') return field.toLowerCase();
+          if (typeof field === 'object' && field !== null) {
+            // Search in all languages
+            return `${field.en || ""} ${field.ar || ""} ${field.he || ""}`.toLowerCase();
+          }
+          return "";
+        };
+        
+        const nameText = getSearchableText(p.name);
+        const categoryText = getSearchableText(p.category);
+        const subCategoryText = getSearchableText(p.subCategory);
+        const descriptionText = getSearchableText(p.description);
+        const brandText = (p.brand || "").toLowerCase();
+        const skuText = (p.sku || "").toLowerCase();
+        
+        return nameText.includes(query) ||
+               categoryText.includes(query) ||
+               subCategoryText.includes(query) ||
+               descriptionText.includes(query) ||
+               brandText.includes(query) ||
+               skuText.includes(query);
+      });
     }
 
     return filtered;
@@ -180,18 +202,18 @@ export default function AdminProducts(){
                   <tr key={p.id}>
                     <td>
                       {p.image ? (
-                        <img src={p.image} alt={p.name} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
+                        <img src={p.image} alt={typeof p.name === 'string' ? p.name : (p.name?.en || p.name?.ar || p.name?.he || '')} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
                       ) : (
                         <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">{t('admin.products.noImage')}</div>
                       )}
                     </td>
-                    <td className="font-medium">{p.name || "-"}</td>
+                    <td className="font-medium">{typeof p.name === 'string' ? p.name : (p.name?.en || p.name?.ar || p.name?.he || "-")}</td>
                     <td>₪{(p.price || 0).toFixed(2)}</td>
-                    <td>{p.category || "-"}</td>
-                    <td>{p.subCategory || "-"}</td>
+                    <td>{typeof p.category === 'string' ? p.category : (p.category?.en || p.category?.ar || p.category?.he || "-")}</td>
+                    <td>{typeof p.subCategory === 'string' ? p.subCategory : (p.subCategory?.en || p.subCategory?.ar || p.subCategory?.he || "-")}</td>
                     <td className="max-w-xs">
-                      <p className="text-sm text-gray-600 truncate" title={p.description || ""}>
-                        {p.description || "-"}
+                      <p className="text-sm text-gray-600 truncate" title={typeof p.description === 'string' ? p.description : (p.description?.en || p.description?.ar || p.description?.he || "")}>
+                        {typeof p.description === 'string' ? p.description : (p.description?.en || p.description?.ar || p.description?.he || "-")}
                       </p>
                     </td>
                     <td>{p.brand || "-"}</td>

@@ -1,11 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { getTranslated } from "../utils/translations";
 import { auth } from "../lib/firebase";
 import { createPortal } from "react-dom";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function SubNavbar() {
+  const { i18n } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,8 +85,9 @@ export default function SubNavbar() {
     async function loadData() {
       try {
         // Load categories
+        const lang = i18n.language || 'en';
         const token = await auth.currentUser?.getIdToken().catch(() => null);
-        const categoriesRes = await fetch(`${API}/api/categories`, {
+        const categoriesRes = await fetch(`${API}/api/categories?lang=${lang}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (categoriesRes.ok) {
@@ -92,7 +96,7 @@ export default function SubNavbar() {
         }
 
         // Load products to check which categories have products
-        const productsRes = await fetch(`${API}/api/products`);
+        const productsRes = await fetch(`${API}/api/products?lang=${lang}`);
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           const availableProducts = (productsData.products || []).filter(
@@ -108,7 +112,7 @@ export default function SubNavbar() {
     }
 
     loadData();
-  }, []);
+  }, [i18n.language]);
 
   // Update dropdown position on scroll and resize
   useEffect(() => {
@@ -182,20 +186,26 @@ export default function SubNavbar() {
   }, []);
 
   const handleCategoryClick = (category) => {
+    const categoryName = getTranslated(category.name, i18n.language || 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
-    const hasProducts = products.some(p => p.category === category.name && p.available);
+    const hasProducts = products.some(p => {
+      const pCategory = getTranslated(p.category, i18n.language || 'en');
+      return pCategory === categoryName && p.available;
+    });
     
     if (hasSubCategories) {
       // Navigate to subcategories page
-      navigate(`/subcategories/${encodeURIComponent(category.name)}`);
+      navigate(`/subcategories/${encodeURIComponent(categoryName)}`);
     } else if (hasProducts) {
       // Navigate directly to products page with category filter
-      navigate(`/products?category=${encodeURIComponent(category.name)}`);
+      navigate(`/products?category=${encodeURIComponent(categoryName)}`);
     }
   };
 
   const handleSubCategoryClick = (category, subCategory) => {
-    navigate(`/products?category=${encodeURIComponent(category.name)}&subcategory=${encodeURIComponent(subCategory.name)}`);
+    const categoryName = getTranslated(category.name, i18n.language || 'en');
+    const subCategoryName = getTranslated(subCategory.name, i18n.language || 'en');
+    navigate(`/products?category=${encodeURIComponent(categoryName)}&subcategory=${encodeURIComponent(subCategoryName)}`);
   };
 
   if (loading) {
@@ -204,7 +214,11 @@ export default function SubNavbar() {
 
   // Filter categories that have products or subcategories
   const visibleCategories = categories.filter((category) => {
-    const hasProducts = products.some(p => p.category === category.name && p.available);
+    const categoryName = getTranslated(category.name, i18n.language || 'en');
+    const hasProducts = products.some(p => {
+      const pCategory = getTranslated(p.category, i18n.language || 'en');
+      return pCategory === categoryName && p.available;
+    });
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     return hasProducts || hasSubCategories;
   });
@@ -219,11 +233,15 @@ export default function SubNavbar() {
   );
   const hoveredSubCategories = hoveredCategoryData
     ? (hoveredCategoryData.subCategories || []).filter((subCat) => {
-        return products.some(
-          p => p.category === hoveredCategoryData.name && 
-               p.subCategory === subCat.name && 
-               p.available
-        );
+        const categoryName = getTranslated(hoveredCategoryData.name, i18n.language || 'en');
+        const subCatName = getTranslated(subCat.name, i18n.language || 'en');
+        return products.some(p => {
+          const pCategory = getTranslated(p.category, i18n.language || 'en');
+          const pSubCategory = getTranslated(p.subCategory, i18n.language || 'en');
+          return pCategory === categoryName && 
+                 pSubCategory === subCatName && 
+                 p.available;
+        });
       })
     : [];
 
@@ -235,15 +253,19 @@ export default function SubNavbar() {
             {visibleCategories.map((category) => {
               const hasSubCategories = category.subCategories && category.subCategories.length > 0;
               const subCategories = category.subCategories || [];
+              const categoryName = getTranslated(category.name, i18n.language || 'en');
               const visibleSubCategories = subCategories.filter((subCat) => {
-                return products.some(
-                  p => p.category === category.name && 
-                       p.subCategory === subCat.name && 
-                       p.available
-                );
+                const subCatName = getTranslated(subCat.name, i18n.language || 'en');
+                return products.some(p => {
+                  const pCategory = getTranslated(p.category, i18n.language || 'en');
+                  const pSubCategory = getTranslated(p.subCategory, i18n.language || 'en');
+                  return pCategory === categoryName && 
+                         pSubCategory === subCatName && 
+                         p.available;
+                });
               });
 
-              const categoryKey = category.id || category.name;
+              const categoryKey = category.id || categoryName;
               const isHovered = hoveredCategory === categoryKey;
 
               return (
@@ -315,7 +337,7 @@ export default function SubNavbar() {
                     onClick={() => handleCategoryClick(category)}
                     className="subnavbar-link"
                   >
-                    {category.name}
+                    {getTranslated(category.name, i18n.language || 'en')}
                   </button>
                 </li>
               );
@@ -362,7 +384,7 @@ export default function SubNavbar() {
                       className="subnavbar-dropdown-link"
                       type="button"
                     >
-                      {subCategory.name}
+                      {getTranslated(subCategory.name, i18n.language || 'en')}
                     </button>
                   </li>
                 ))}

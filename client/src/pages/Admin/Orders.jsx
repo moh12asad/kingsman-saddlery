@@ -226,7 +226,7 @@ export default function AdminOrders() {
                         <ul className="text-gray-600 space-y-1 text-xs">
                           {(order.items || []).slice(0, 2).map((item, idx) => (
                             <li key={idx}>
-                              {item.quantity} × {item.name}
+                              {item.quantity} × {typeof item.name === 'string' ? item.name : (item.name?.en || item.name?.ar || item.name?.he || '')}
                             </li>
                           ))}
                           {(order.items || []).length > 2 && (

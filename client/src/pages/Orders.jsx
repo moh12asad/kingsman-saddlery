@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { getTranslated } from "../utils/translations";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
 import { FaShoppingBag, FaCalendarAlt, FaCheckCircle, FaClock, FaTimesCircle, FaArrowRight } from "react-icons/fa";
@@ -12,7 +13,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function Orders() {
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,13 +157,13 @@ export default function Orders() {
                                 {item.image && (
                                   <img
                                     src={item.image}
-                                    alt={item.name}
+                                    alt={getTranslated(item.name, i18n.language || 'en')}
                                     className="order-item-image"
                                   />
                                 )}
                                 <div className="order-item-info">
                                   <p className="text-sm font-semibold" style={{ margin: 0 }}>
-                                    {item.name}
+                                    {getTranslated(item.name, i18n.language || 'en')}
                                   </p>
                                   <p className="text-xs text-muted" style={{ margin: 0 }}>
                                     {t("orderDetail.qty")} {item.quantity}

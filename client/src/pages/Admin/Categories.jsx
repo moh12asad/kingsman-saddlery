@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -15,7 +16,12 @@ export default function AdminCategories() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", description: "", image: "", subCategories: [] });
+  const [form, setForm] = useState({ 
+    name: { en: "", ar: "", he: "" }, 
+    description: { en: "", ar: "", he: "" }, 
+    image: "", 
+    subCategories: [] 
+  });
 
   useEffect(() => {
     loadCategories();
@@ -27,7 +33,8 @@ export default function AdminCategories() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error(t('admin.categories.errors.mustSignIn'));
 
-      const res = await fetch(`${API}/api/categories`, {
+      // Fetch with all=true to get full translation objects for admin display
+      const res = await fetch(`${API}/api/categories?all=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -109,7 +116,7 @@ export default function AdminCategories() {
   function addSubCategory() {
     setForm(prev => ({
       ...prev,
-      subCategories: [...(prev.subCategories || []), { name: "", image: "" }]
+      subCategories: [...(prev.subCategories || []), { name: { en: "", ar: "", he: "" }, image: "" }]
     }));
   }
 
@@ -159,13 +166,36 @@ export default function AdminCategories() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error(t('admin.categories.errors.mustSignIn'));
 
+      // Helper to clean translation objects (remove empty strings)
+      const cleanTranslation = (trans) => {
+        if (typeof trans === 'string') return trans;
+        if (typeof trans === 'object' && trans !== null) {
+          const cleaned = {};
+          if (trans.en) cleaned.en = trans.en.trim();
+          if (trans.ar) cleaned.ar = trans.ar.trim();
+          if (trans.he) cleaned.he = trans.he.trim();
+          return Object.keys(cleaned).length > 0 ? cleaned : "";
+        }
+        return "";
+      };
+
+      const payload = {
+        name: cleanTranslation(form.name),
+        description: cleanTranslation(form.description),
+        image: form.image || "",
+        subCategories: (form.subCategories || []).map(sub => ({
+          name: cleanTranslation(sub.name),
+          image: sub.image || ""
+        }))
+      };
+
       const res = await fetch(`${API}/api/categories`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -173,7 +203,7 @@ export default function AdminCategories() {
         throw new Error(body.error || "Failed to create category");
       }
 
-      setForm({ name: "", description: "", image: "", subCategories: [] });
+      setForm({ name: { en: "", ar: "", he: "" }, description: { en: "", ar: "", he: "" }, image: "", subCategories: [] });
       await loadCategories();
     } catch (err) {
       setError(err.message || "Unable to create category");
@@ -215,19 +245,21 @@ export default function AdminCategories() {
     <div className="space-y-6">
       <form className="card space-y-4" onSubmit={createCategory}>
         <div className="section-title">{t('admin.categories.createCategory')}</div>
-        <div className="grid md:grid-cols-2 gap-4">
-          <input
-            className="input"
-            placeholder={t('admin.categories.name') + ' *'}
+        <div className="space-y-4">
+          <MultiLanguageInput
+            label={t('admin.categories.name')}
             value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            required
+            onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}
+            placeholder="Category name"
+            required={true}
           />
-          <input
-            className="input"
-            placeholder={t('admin.categories.description') + ' (optional)'}
+          <MultiLanguageInput
+            label={t('admin.categories.description')}
             value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+            onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
+            placeholder="Category description"
+            type="textarea"
+            rows={3}
           />
         </div>
 
@@ -265,13 +297,13 @@ export default function AdminCategories() {
           {form.subCategories && form.subCategories.length > 0 && (
             <div className="space-y-3 border rounded p-3">
               {form.subCategories.map((sub, index) => (
-                <div key={index} className="grid md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded">
-                  <input
-                    className="input"
-                    placeholder="Sub-category name *"
+                <div key={index} className="space-y-3 p-3 bg-gray-50 rounded">
+                  <MultiLanguageInput
+                    label="Sub-category name"
                     value={sub.name}
-                    onChange={(e) => updateSubCategory(index, "name", e.target.value)}
-                    required
+                    onChange={(value) => updateSubCategory(index, "name", value)}
+                    placeholder="Sub-category name"
+                    required={true}
                   />
                   <div className="flex gap-2 items-center">
                     <input
@@ -339,13 +371,13 @@ export default function AdminCategories() {
                 <tr key={category.id}>
                   <td style={{ textAlign: 'left' }}>
                     {category.image ? (
-                      <img src={category.image} alt={category.name} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
+                      <img src={category.image} alt={typeof category.name === 'string' ? category.name : (category.name?.en || category.name?.ar || category.name?.he || '')} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
                     ) : (
                       <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">No image</div>
                     )}
                   </td>
-                  <td className="font-semibold" style={{ textAlign: 'left' }}>{category.name}</td>
-                  <td className="text-gray-600" style={{ textAlign: 'left' }}>{category.description || "-"}</td>
+                  <td className="font-semibold" style={{ textAlign: 'left' }}>{typeof category.name === 'string' ? category.name : (category.name?.en || category.name?.ar || category.name?.he || "-")}</td>
+                  <td className="text-gray-600" style={{ textAlign: 'left' }}>{typeof category.description === 'string' ? category.description : (category.description?.en || category.description?.ar || category.description?.he || "-")}</td>
                   <td style={{ textAlign: 'left' }}>
                     {category.subCategories && category.subCategories.length > 0 ? (
                       <div className="text-sm space-y-1">
@@ -355,13 +387,13 @@ export default function AdminCategories() {
                         {category.subCategories.map((sub, idx) => (
                           <div key={idx} className="flex items-center gap-2 p-1.5 bg-gray-50 rounded border border-gray-200">
                             {sub.image ? (
-                              <img src={sub.image} alt={sub.name} className="w-8 h-8 object-cover rounded border" />
+                              <img src={sub.image} alt={typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || '')} className="w-8 h-8 object-cover rounded border" />
                             ) : (
                               <div className="w-8 h-8 bg-gray-200 rounded border flex items-center justify-center text-gray-400 text-xs">
                                 No img
                               </div>
                             )}
-                            <span className="font-medium">{sub.name}</span>
+                            <span className="font-medium">{typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "-")}</span>
                           </div>
                         ))}
                       </div>

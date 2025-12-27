@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -25,7 +26,8 @@ export default function EditCategory() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
-      const response = await fetch(`${API}/api/categories`, {
+      // Fetch with all=true to get full translation objects for admin editing
+      const response = await fetch(`${API}/api/categories?all=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -34,11 +36,32 @@ export default function EditCategory() {
         setError("Category not found");
         return;
       }
-      // Ensure subCategories is an array
-      setCategory({
+      // Helper to ensure translation objects are properly formatted
+      const ensureTranslationObject = (field) => {
+        if (typeof field === 'string') {
+          return { en: field, ar: "", he: "" };
+        }
+        if (typeof field === 'object' && field !== null) {
+          return {
+            en: field.en || "",
+            ar: field.ar || "",
+            he: field.he || ""
+          };
+        }
+        return { en: "", ar: "", he: "" };
+      };
+      
+      // Ensure subCategories is an array and format translation objects
+      const formattedCategory = {
         ...found,
-        subCategories: found.subCategories || []
-      });
+        name: ensureTranslationObject(found.name),
+        description: ensureTranslationObject(found.description),
+        subCategories: (found.subCategories || []).map(sub => ({
+          ...sub,
+          name: ensureTranslationObject(sub.name)
+        }))
+      };
+      setCategory(formattedCategory);
     } catch (err) {
       setError(err.message || "Failed to load category");
     } finally {
@@ -137,7 +160,7 @@ export default function EditCategory() {
   function addSubCategory() {
     setCategory(prev => ({
       ...prev,
-      subCategories: [...(prev.subCategories || []), { name: "", image: "" }]
+      subCategories: [...(prev.subCategories || []), { name: { en: "", ar: "", he: "" }, image: "" }]
     }));
   }
 
@@ -164,15 +187,35 @@ export default function EditCategory() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
-      if (!category.name || category.name.trim() === "") {
-        throw new Error("Category name is required");
+      // Helper to clean translation objects (remove empty strings)
+      const cleanTranslation = (trans) => {
+        if (typeof trans === 'string') return trans;
+        if (typeof trans === 'object' && trans !== null) {
+          const cleaned = {};
+          if (trans.en) cleaned.en = trans.en.trim();
+          if (trans.ar) cleaned.ar = trans.ar.trim();
+          if (trans.he) cleaned.he = trans.he.trim();
+          return Object.keys(cleaned).length > 0 ? cleaned : "";
+        }
+        return "";
+      };
+
+      const nameObj = typeof category.name === 'string' ? { en: category.name } : category.name;
+      if (!nameObj || !nameObj.en || nameObj.en.trim() === "") {
+        throw new Error("Category name (English) is required");
       }
 
       const payload = {
-        name: category.name.trim(),
-        description: category.description || "",
+        name: cleanTranslation(category.name),
+        description: cleanTranslation(category.description),
         image: category.image || "",
-        subCategories: (category.subCategories || []).filter(sub => sub.name && sub.name.trim()),
+        subCategories: (category.subCategories || []).map(sub => ({
+          name: cleanTranslation(sub.name),
+          image: sub.image || ""
+        })).filter(sub => {
+          const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || "");
+          return subName.trim() !== "";
+        }),
       };
 
       const res = await fetch(`${API}/api/categories/${id}`, {
@@ -228,29 +271,25 @@ export default function EditCategory() {
 
       <div className="card">
         <div className="grid-form">
-          <div>
-            <div className="form-group">
-              <label className="form-label form-label-required">Category Name</label>
-              <input
-                className="input"
-                placeholder="Category name"
-                value={category.name || ""}
-                onChange={e => setCategory({ ...category, name: e.target.value })}
-                required
-              />
-            </div>
+          <div className="grid-col-span-full">
+            <MultiLanguageInput
+              label="Category Name"
+              value={category.name}
+              onChange={(value) => setCategory({ ...category, name: value })}
+              placeholder="Category name"
+              required={true}
+            />
           </div>
 
-          <div>
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <input
-                className="input"
-                placeholder="Description (optional)"
-                value={category.description || ""}
-                onChange={e => setCategory({ ...category, description: e.target.value })}
-              />
-            </div>
+          <div className="grid-col-span-full">
+            <MultiLanguageInput
+              label="Description"
+              value={category.description}
+              onChange={(value) => setCategory({ ...category, description: value })}
+              placeholder="Category description"
+              type="textarea"
+              rows={3}
+            />
           </div>
 
           <div className="grid-col-span-full">
@@ -292,14 +331,14 @@ export default function EditCategory() {
               {category.subCategories && category.subCategories.length > 0 && (
                 <div className="space-y-3 border rounded padding-md">
                   {category.subCategories.map((sub, index) => (
-                    <div key={index} className="grid-form grid-form-2 padding-md bg-gray-50 rounded">
+                    <div key={index} className="space-y-3 padding-md bg-gray-50 rounded">
                       <div>
-                        <label className="form-label">Sub-Category Name</label>
-                        <input
-                          className="input"
+                        <MultiLanguageInput
+                          label="Sub-Category Name"
+                          value={sub.name}
+                          onChange={(value) => updateSubCategory(index, "name", value)}
                           placeholder="Sub-category name"
-                          value={sub.name || ""}
-                          onChange={e => updateSubCategory(index, "name", e.target.value)}
+                          required={true}
                         />
                       </div>
                       <div>
@@ -330,7 +369,7 @@ export default function EditCategory() {
                         </div>
                         {sub.image && (
                           <div className="margin-top-sm">
-                            <img src={sub.image} alt={sub.name} className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
+                            <img src={sub.image} alt={typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "")} className="w-24 h-24 object-cover rounded-lg border shadow-sm" />
                           </div>
                         )}
                       </div>
@@ -348,7 +387,7 @@ export default function EditCategory() {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || uploadingImage || !category.name || category.name.trim() === ""}
+            disabled={saving || uploadingImage || !(typeof category.name === 'string' ? category.name : (category.name?.en || ""))}
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
