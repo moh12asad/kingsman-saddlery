@@ -43,6 +43,30 @@ Backups are saved to the `backups/` directory (created automatically if it doesn
 
 **Note:** The `backups/` directory is in `.gitignore` - backups are not committed to version control.
 
+### Migration Script
+Converts existing database content to translation format.
+
+⚠️ **WARNING:** This will modify your database!
+
+```bash
+# IMPORTANT: Run from server directory (where firebase-admin is installed)
+cd server
+
+# Dry run (see what would change, no modifications)
+node ../scripts/migrate-translations.mjs --dry-run
+
+# Actual migration
+node ../scripts/migrate-translations.mjs
+
+# Migrate only products
+node ../scripts/migrate-translations.mjs --collection=products
+
+# Migrate only categories
+node ../scripts/migrate-translations.mjs --collection=categories
+```
+
+**Note:** The script must be run from the `server/` directory because `firebase-admin` is installed there.
+
 ## Before Migration
 
 Always create a backup before running database migrations:

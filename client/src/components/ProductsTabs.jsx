@@ -16,7 +16,7 @@ export default function ProductsTabs() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isRTL } = useLanguage();
   const scrollRef = useRef(null);
   const [animationTrigger, setAnimationTrigger] = useState(null);
@@ -25,7 +25,9 @@ export default function ProductsTabs() {
     async function loadProducts() {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/products`);
+        // Get current language for translation
+        const lang = i18n.language || 'en';
+        const response = await fetch(`${API}/api/products?lang=${lang}`);
         const data = await response.json();
         
         if (!response.ok) {
@@ -45,7 +47,7 @@ export default function ProductsTabs() {
     }
 
     loadProducts();
-  }, []);
+  }, [i18n.language]);
 
   const getFilteredProducts = () => {
     const now = new Date();

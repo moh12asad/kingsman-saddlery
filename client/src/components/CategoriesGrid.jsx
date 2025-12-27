@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth } from "../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
@@ -9,13 +10,17 @@ export default function CategoriesGrid() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     async function loadData() {
       try {
+        // Get current language for translation
+        const lang = i18n.language || 'en';
+        
         // Load categories
         const token = await auth.currentUser?.getIdToken().catch(() => null);
-        const categoriesRes = await fetch(`${API}/api/categories`, {
+        const categoriesRes = await fetch(`${API}/api/categories?lang=${lang}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (categoriesRes.ok) {
@@ -24,7 +29,7 @@ export default function CategoriesGrid() {
         }
 
         // Load products to check which categories have products
-        const productsRes = await fetch(`${API}/api/products`);
+        const productsRes = await fetch(`${API}/api/products?lang=${lang}`);
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           const availableProducts = (productsData.products || []).filter(
@@ -40,7 +45,7 @@ export default function CategoriesGrid() {
     }
 
     loadData();
-  }, []);
+  }, [i18n.language]);
 
   const handleCategoryClick = (category) => {
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;

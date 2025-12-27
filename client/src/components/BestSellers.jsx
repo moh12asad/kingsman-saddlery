@@ -17,7 +17,7 @@ export default function BestSellers() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isRTL } = useLanguage();
   const scrollRef = useRef(null);
   const [animationTrigger, setAnimationTrigger] = useState(null);
@@ -27,8 +27,11 @@ export default function BestSellers() {
       try {
         setLoading(true);
         
+        // Get current language for translation
+        const lang = i18n.language || 'en';
+        
         // Load products
-        const productsRes = await fetch(`${API}/api/products`);
+        const productsRes = await fetch(`${API}/api/products?lang=${lang}`);
         if (!productsRes.ok) {
           throw new Error("Failed to fetch products");
         }
@@ -64,7 +67,7 @@ export default function BestSellers() {
     }
 
     loadData();
-  }, []);
+  }, [i18n.language]);
 
   const scroll = (direction) => {
     if (scrollRef.current) {

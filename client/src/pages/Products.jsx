@@ -22,7 +22,7 @@ export default function Products() {
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const categoryParam = searchParams.get("category");
   const subcategoryParam = searchParams.get("subcategory");
@@ -34,7 +34,9 @@ export default function Products() {
     async function loadProducts() {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/products`);
+        // Get current language for translation
+        const lang = i18n.language || 'en';
+        const response = await fetch(`${API}/api/products?lang=${lang}`);
         const data = await response.json();
         
         if (!response.ok) {
@@ -55,7 +57,7 @@ export default function Products() {
     }
 
     loadProducts();
-  }, []);
+  }, [i18n.language]);
 
   // Focus search input when opened from navbar
   useEffect(() => {
