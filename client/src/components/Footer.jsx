@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaTiktok, FaFacebook, FaInstagram, FaEnvelope, FaMapMarkerAlt, FaPhone, FaWhatsapp, FaClock } from "react-icons/fa";
 import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
+import WazeIcon from "./icons/WazeIcon";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -162,7 +163,7 @@ export default function Footer() {
                 href={getWhatsAppLink(storeInfo.whatsappNumber)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="footer-social-link"
+                className="footer-social-link footer-social-whatsapp"
                 aria-label="WhatsApp"
               >
                 <FaWhatsapp className="footer-social-icon" />
@@ -172,7 +173,7 @@ export default function Footer() {
               href="https://www.facebook.com/profile.php?id=100063785065499" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="footer-social-link"
+              className="footer-social-link footer-social-facebook"
               aria-label="Facebook"
             >
               <FaFacebook className="footer-social-icon" />
@@ -181,7 +182,7 @@ export default function Footer() {
               href="https://www.instagram.com/kingsmansaddlery/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="footer-social-link"
+              className="footer-social-link footer-social-instagram"
               aria-label="Instagram"
             >
               <FaInstagram className="footer-social-icon" />
@@ -190,7 +191,7 @@ export default function Footer() {
               href="https://www.tiktok.com/@kingsmansaddlery" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="footer-social-link"
+              className="footer-social-link footer-social-tiktok"
               aria-label="Tiktok"
             >
               <FaTiktok className="footer-social-icon" />
@@ -198,7 +199,7 @@ export default function Footer() {
             {storeInfo?.storeEmail && (
               <a 
                 href={`mailto:${storeInfo.storeEmail}`}
-                className="footer-social-link"
+                className="footer-social-link footer-social-email"
                 aria-label="Email"
               >
                 <FaEnvelope className="footer-social-icon" />
@@ -208,10 +209,19 @@ export default function Footer() {
               href="https://www.google.com/maps/dir/32.3977216,35.045376/32.86528,35.30071/@32.865443,35.3005489,19.75z/data=!4m4!4m3!1m1!4e1!1m0?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="footer-social-link"
+              className="footer-social-link footer-social-googlemaps"
               aria-label="Google Maps"
             >
               <FaMapMarkerAlt className="footer-social-icon" />
+            </a>
+            <a 
+              href="https://waze.com/ul/hsvc558k99" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="footer-social-link footer-social-waze"
+              aria-label="Waze"
+            >
+              <WazeIcon size={20} className="footer-social-icon" />
             </a>
           </div>
           <div className="footer-welcome">
