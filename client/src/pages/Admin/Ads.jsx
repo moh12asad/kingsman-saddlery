@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -10,8 +11,8 @@ export default function AdminAds() {
   const [loadingAds, setLoadingAds] = useState(false);
   const [adForm, setAdForm] = useState({
     image: "",
-    title: "",
-    subtitle: "",
+    title: { en: "", ar: "", he: "" },
+    subtitle: { en: "", ar: "", he: "" },
     link: "",
     order: 0,
     active: true
@@ -28,8 +29,8 @@ export default function AdminAds() {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
-      // Load all ads (including inactive) for admin view
-      const res = await fetch(`${API}/api/ads/all`, {
+      // Load all ads (including inactive) for admin view with all languages
+      const res = await fetch(`${API}/api/ads/all?all=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -151,7 +152,14 @@ export default function AdminAds() {
         throw new Error(data.error || "Failed to save ad");
       }
 
-      setAdForm({ image: "", title: "", subtitle: "", link: "", order: 0, active: true });
+      setAdForm({ 
+        image: "", 
+        title: { en: "", ar: "", he: "" }, 
+        subtitle: { en: "", ar: "", he: "" }, 
+        link: "", 
+        order: 0, 
+        active: true 
+      });
       setEditingAdId(null);
       await loadAds();
     } catch (err) {
@@ -159,11 +167,26 @@ export default function AdminAds() {
     }
   }
 
+  // Helper to ensure translation object format
+  function ensureTranslationObject(value) {
+    if (typeof value === 'string') {
+      return { en: value, ar: "", he: "" };
+    }
+    if (typeof value === 'object' && value !== null) {
+      return {
+        en: value.en || "",
+        ar: value.ar || "",
+        he: value.he || ""
+      };
+    }
+    return { en: "", ar: "", he: "" };
+  }
+  
   function editAd(ad) {
     setAdForm({
       image: ad.image || "",
-      title: ad.title || "",
-      subtitle: ad.subtitle || "",
+      title: ensureTranslationObject(ad.title),
+      subtitle: ensureTranslationObject(ad.subtitle),
       link: ad.link || "",
       order: ad.order || 0,
       active: ad.active !== false
@@ -171,9 +194,16 @@ export default function AdminAds() {
     setEditingAdId(ad.id);
     setAdError("");
   }
-
+  
   function cancelEdit() {
-    setAdForm({ image: "", title: "", subtitle: "", link: "", order: 0, active: true });
+    setAdForm({ 
+      image: "", 
+      title: { en: "", ar: "", he: "" }, 
+      subtitle: { en: "", ar: "", he: "" }, 
+      link: "", 
+      order: 0, 
+      active: true 
+    });
     setEditingAdId(null);
     setAdError("");
   }
@@ -235,12 +265,14 @@ export default function AdminAds() {
                 </label>
               </div>
             </div>
-            <input
-              className="input"
-              placeholder="Title"
-              value={adForm.title}
-              onChange={e => setAdForm({ ...adForm, title: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <MultiLanguageInput
+                label="Title"
+                value={adForm.title}
+                onChange={(value) => setAdForm({ ...adForm, title: value })}
+                placeholder="Enter ad title"
+              />
+            </div>
             <input
               className="input"
               type="number"
@@ -248,12 +280,16 @@ export default function AdminAds() {
               value={adForm.order || ""}
               onChange={e => setAdForm({ ...adForm, order: Number(e.target.value) || 0 })}
             />
-            <input
-              className="input md:col-span-2"
-              placeholder="Subtitle"
-              value={adForm.subtitle}
-              onChange={e => setAdForm({ ...adForm, subtitle: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <MultiLanguageInput
+                label="Subtitle"
+                value={adForm.subtitle}
+                onChange={(value) => setAdForm({ ...adForm, subtitle: value })}
+                placeholder="Enter ad subtitle"
+                type="textarea"
+                rows={2}
+              />
+            </div>
             <input
               className="input md:col-span-2"
               placeholder="Link URL (optional)"
@@ -315,10 +351,12 @@ export default function AdminAds() {
                   />
                   <div className="flex-1">
                     <div className="font-medium flex items-center gap-2">
-                      {ad.title || "No title"}
+                      {typeof ad.title === 'string' ? ad.title : (ad.title?.en || ad.title?.ar || ad.title?.he || "No title")}
                       {!ad.active && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Inactive</span>}
                     </div>
-                    <div className="text-sm text-gray-600">{ad.subtitle || "No subtitle"}</div>
+                    <div className="text-sm text-gray-600">
+                      {typeof ad.subtitle === 'string' ? ad.subtitle : (ad.subtitle?.en || ad.subtitle?.ar || ad.subtitle?.he || "No subtitle")}
+                    </div>
                     <div className="text-xs text-gray-500 mt-1">
                       {ad.link && <span>Link: {ad.link} | </span>}
                       Order: {ad.order || 0}

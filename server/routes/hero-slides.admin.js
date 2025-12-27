@@ -2,22 +2,37 @@ import { Router } from "express";
 import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
+import {
+  getTranslatedHeroSlide,
+  prepareHeroSlideForStorage,
+  mergeTranslations
+} from "../utils/translations.js";
 
 const db = admin.firestore();
 const router = Router();
 
 // Get all hero slides (public endpoint for carousel)
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
+    const lang = req.query.lang || 'en'; // Get language from query parameter, default to 'en'
+    const includeAllLanguages = req.query.all === 'true'; // Admin can request all languages
+    
     const snap = await db
       .collection("heroSlides")
       .orderBy("order", "asc")
       .get();
 
-    const slides = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const slides = snap.docs.map((doc) => {
+      const data = doc.data();
+      
+      // If admin requests all languages, return raw data
+      // Otherwise, return translated version
+      if (includeAllLanguages) {
+        return { id: doc.id, ...data };
+      } else {
+        return { id: doc.id, ...getTranslatedHeroSlide(data, lang) };
+      }
+    });
 
     res.json({ slides });
   } catch (error) {
@@ -34,10 +49,10 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
   try {
     const { 
       image = "", 
-      title = "", 
-      subtitle = "", 
-      button1 = "", 
-      button2 = "",
+      title, 
+      subtitle, 
+      button1, 
+      button2,
       order = 0
     } = req.body;
 
@@ -45,16 +60,19 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       return res.status(400).json({ error: "Image URL is required" });
     }
 
-    const docRef = await db.collection("heroSlides").add({
+    // Prepare slide data with translation support
+    const slideData = prepareHeroSlideForStorage({
       image: image.trim(),
-      title: title.trim() || "",
-      subtitle: subtitle.trim() || "",
-      button1: button1.trim() || "",
-      button2: button2.trim() || "",
+      title: title || "",
+      subtitle: subtitle || "",
+      button1: button1 || "",
+      button2: button2 || "",
       order: Number(order) || 0,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    const docRef = await db.collection("heroSlides").add(slideData);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -66,21 +84,42 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
 // Update hero slide (ADMIN only)
 router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
   try {
-    const { image, title, subtitle, button1, button2, order } = req.body;
-
-    const updateData = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-
-    if (image !== undefined) updateData.image = image.trim();
-    if (title !== undefined) updateData.title = title.trim() || "";
-    if (subtitle !== undefined) updateData.subtitle = subtitle.trim() || "";
-    if (button1 !== undefined) updateData.button1 = button1.trim() || "";
-    if (button2 !== undefined) updateData.button2 = button2.trim() || "";
-    if (order !== undefined) updateData.order = Number(order) || 0;
-
-    await db.collection("heroSlides").doc(req.params.id).set(updateData, { merge: true });
-
+    // Get existing slide to merge translations properly
+    const docRef = db.collection("heroSlides").doc(req.params.id);
+    const existingDoc = await docRef.get();
+    
+    if (!existingDoc.exists) {
+      return res.status(404).json({ error: "Hero slide not found" });
+    }
+    
+    const existingData = existingDoc.data();
+    const updates = { ...req.body };
+    
+    // Handle translation merges for translatable fields
+    const translatableFields = ['title', 'subtitle', 'button1', 'button2'];
+    
+    for (const field of translatableFields) {
+      if (updates[field] !== undefined) {
+        // If existing field is a translation object and update is also an object, merge them
+        if (existingData[field] && typeof existingData[field] === 'object' && 
+            updates[field] && typeof updates[field] === 'object') {
+          updates[field] = mergeTranslations(existingData[field], updates[field]);
+        } else {
+          // Otherwise, prepare for storage (converts strings to translation objects)
+          const prepared = prepareHeroSlideForStorage({ [field]: updates[field] });
+          updates[field] = prepared[field];
+        }
+      }
+    }
+    
+    // Handle non-translatable fields
+    if (updates.image !== undefined) updates.image = updates.image.trim();
+    if (updates.order !== undefined) updates.order = Number(updates.order) || 0;
+    
+    // Add updated timestamp
+    updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+    
+    await docRef.set(updates, { merge: true });
     res.json({ ok: true });
   } catch (error) {
     console.error("Error updating hero slide:", error);

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
+import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -10,10 +11,10 @@ export default function AdminHeroSlides() {
   const [loadingSlides, setLoadingSlides] = useState(false);
   const [slideForm, setSlideForm] = useState({
     image: "",
-    title: "",
-    subtitle: "",
-    button1: "",
-    button2: "",
+    title: { en: "", ar: "", he: "" },
+    subtitle: { en: "", ar: "", he: "" },
+    button1: { en: "", ar: "", he: "" },
+    button2: { en: "", ar: "", he: "" },
     order: 0
   });
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -25,7 +26,13 @@ export default function AdminHeroSlides() {
   async function loadHeroSlides() {
     try {
       setLoadingSlides(true);
-      const res = await fetch(`${API}/api/hero-slides`);
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("You must be signed in");
+      
+      // Fetch with all languages for admin
+      const res = await fetch(`${API}/api/hero-slides?all=true`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await res.json();
       setHeroSlides(data.slides || []);
     } catch (err) {
@@ -33,6 +40,21 @@ export default function AdminHeroSlides() {
     } finally {
       setLoadingSlides(false);
     }
+  }
+  
+  // Helper to ensure translation object format
+  function ensureTranslationObject(value) {
+    if (typeof value === 'string') {
+      return { en: value, ar: "", he: "" };
+    }
+    if (typeof value === 'object' && value !== null) {
+      return {
+        en: value.en || "",
+        ar: value.ar || "",
+        he: value.he || ""
+      };
+    }
+    return { en: "", ar: "", he: "" };
   }
 
   useEffect(() => {
@@ -138,7 +160,14 @@ export default function AdminHeroSlides() {
         throw new Error(data.error || "Failed to save slide");
       }
 
-      setSlideForm({ image: "", title: "", subtitle: "", button1: "", button2: "", order: 0 });
+      setSlideForm({ 
+        image: "", 
+        title: { en: "", ar: "", he: "" }, 
+        subtitle: { en: "", ar: "", he: "" }, 
+        button1: { en: "", ar: "", he: "" }, 
+        button2: { en: "", ar: "", he: "" }, 
+        order: 0 
+      });
       setEditingSlideId(null);
       await loadHeroSlides();
     } catch (err) {
@@ -149,10 +178,10 @@ export default function AdminHeroSlides() {
   function editSlide(slide) {
     setSlideForm({
       image: slide.image || "",
-      title: slide.title || "",
-      subtitle: slide.subtitle || "",
-      button1: slide.button1 || "",
-      button2: slide.button2 || "",
+      title: ensureTranslationObject(slide.title),
+      subtitle: ensureTranslationObject(slide.subtitle),
+      button1: ensureTranslationObject(slide.button1),
+      button2: ensureTranslationObject(slide.button2),
       order: slide.order || 0
     });
     setEditingSlideId(slide.id);
@@ -160,7 +189,14 @@ export default function AdminHeroSlides() {
   }
 
   function cancelEdit() {
-    setSlideForm({ image: "", title: "", subtitle: "", button1: "", button2: "", order: 0 });
+    setSlideForm({ 
+      image: "", 
+      title: { en: "", ar: "", he: "" }, 
+      subtitle: { en: "", ar: "", he: "" }, 
+      button1: { en: "", ar: "", he: "" }, 
+      button2: { en: "", ar: "", he: "" }, 
+      order: 0 
+    });
     setEditingSlideId(null);
     setSlideError("");
   }
@@ -220,12 +256,14 @@ export default function AdminHeroSlides() {
                 </label>
               </div>
             </div>
-            <input
-              className="input"
-              placeholder="Title"
-              value={slideForm.title}
-              onChange={e => setSlideForm({ ...slideForm, title: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <MultiLanguageInput
+                label="Title"
+                value={slideForm.title}
+                onChange={(value) => setSlideForm({ ...slideForm, title: value })}
+                placeholder="Enter slide title"
+              />
+            </div>
             <input
               className="input"
               type="number"
@@ -233,24 +271,32 @@ export default function AdminHeroSlides() {
               value={slideForm.order || ""}
               onChange={e => setSlideForm({ ...slideForm, order: Number(e.target.value) || 0 })}
             />
-            <input
-              className="input md:col-span-2"
-              placeholder="Subtitle"
-              value={slideForm.subtitle}
-              onChange={e => setSlideForm({ ...slideForm, subtitle: e.target.value })}
-            />
-            <input
-              className="input"
-              placeholder="Button 1 Text"
-              value={slideForm.button1}
-              onChange={e => setSlideForm({ ...slideForm, button1: e.target.value })}
-            />
-            <input
-              className="input"
-              placeholder="Button 2 Text"
-              value={slideForm.button2}
-              onChange={e => setSlideForm({ ...slideForm, button2: e.target.value })}
-            />
+            <div className="md:col-span-2">
+              <MultiLanguageInput
+                label="Subtitle"
+                value={slideForm.subtitle}
+                onChange={(value) => setSlideForm({ ...slideForm, subtitle: value })}
+                placeholder="Enter slide subtitle"
+                type="textarea"
+                rows={2}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <MultiLanguageInput
+                label="Button 1 Text"
+                value={slideForm.button1}
+                onChange={(value) => setSlideForm({ ...slideForm, button1: value })}
+                placeholder="Enter button 1 text"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <MultiLanguageInput
+                label="Button 2 Text"
+                value={slideForm.button2}
+                onChange={(value) => setSlideForm({ ...slideForm, button2: value })}
+                placeholder="Enter button 2 text"
+              />
+            </div>
           </div>
           {slideForm.image && (
             <div className="mt-2">
@@ -295,10 +341,14 @@ export default function AdminHeroSlides() {
                     className="w-32 h-20 object-cover rounded border"
                   />
                   <div className="flex-1">
-                    <div className="font-medium">{slide.title || "No title"}</div>
-                    <div className="text-sm text-gray-600">{slide.subtitle || "No subtitle"}</div>
+                    <div className="font-medium">
+                      {typeof slide.title === 'string' ? slide.title : (slide.title?.en || slide.title?.ar || slide.title?.he || "No title")}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {typeof slide.subtitle === 'string' ? slide.subtitle : (slide.subtitle?.en || slide.subtitle?.ar || slide.subtitle?.he || "No subtitle")}
+                    </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Buttons: {slide.button1 || "None"} / {slide.button2 || "None"} | Order: {slide.order || 0}
+                      Buttons: {typeof slide.button1 === 'string' ? slide.button1 : (slide.button1?.en || "None")} / {typeof slide.button2 === 'string' ? slide.button2 : (slide.button2?.en || "None")} | Order: {slide.order || 0}
                     </div>
                   </div>
                   <div className="flex gap-2">

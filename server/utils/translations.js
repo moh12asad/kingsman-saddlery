@@ -259,3 +259,85 @@ export function prepareCategoryForStorage(data) {
   return prepared;
 }
 
+/**
+ * Get translated hero slide with all translatable fields resolved
+ * @param {object} slide - Hero slide object from database
+ * @param {string} lang - Language code
+ * @returns {object} Hero slide with translated fields
+ */
+export function getTranslatedHeroSlide(slide, lang = DEFAULT_LANGUAGE) {
+  if (!slide) return slide;
+  
+  const translated = { ...slide };
+  
+  translated.title = getTranslatedField(slide.title, lang);
+  translated.subtitle = getTranslatedField(slide.subtitle, lang);
+  translated.button1 = getTranslatedField(slide.button1, lang);
+  translated.button2 = getTranslatedField(slide.button2, lang);
+  
+  return translated;
+}
+
+/**
+ * Get translated ad with all translatable fields resolved
+ * @param {object} ad - Ad object from database
+ * @param {string} lang - Language code
+ * @returns {object} Ad with translated fields
+ */
+export function getTranslatedAd(ad, lang = DEFAULT_LANGUAGE) {
+  if (!ad) return ad;
+  
+  const translated = { ...ad };
+  
+  translated.title = getTranslatedField(ad.title, lang);
+  translated.subtitle = getTranslatedField(ad.subtitle, lang);
+  
+  return translated;
+}
+
+/**
+ * Prepare hero slide data for storage
+ * @param {object} data - Hero slide data from request
+ * @returns {object} Hero slide data ready for storage
+ */
+export function prepareHeroSlideForStorage(data) {
+  const prepared = { ...data };
+  
+  const translatableFields = ['title', 'subtitle', 'button1', 'button2'];
+  
+  for (const field of translatableFields) {
+    if (data[field] !== undefined) {
+      if (typeof data[field] === 'object' && data[field] !== null && !Array.isArray(data[field])) {
+        prepared[field] = data[field];
+      } else if (typeof data[field] === 'string') {
+        prepared[field] = stringToTranslationObject(data[field]);
+      }
+    }
+  }
+  
+  return prepared;
+}
+
+/**
+ * Prepare ad data for storage
+ * @param {object} data - Ad data from request
+ * @returns {object} Ad data ready for storage
+ */
+export function prepareAdForStorage(data) {
+  const prepared = { ...data };
+  
+  const translatableFields = ['title', 'subtitle'];
+  
+  for (const field of translatableFields) {
+    if (data[field] !== undefined) {
+      if (typeof data[field] === 'object' && data[field] !== null && !Array.isArray(data[field])) {
+        prepared[field] = data[field];
+      } else if (typeof data[field] === 'string') {
+        prepared[field] = stringToTranslationObject(data[field]);
+      }
+    }
+  }
+  
+  return prepared;
+}
+

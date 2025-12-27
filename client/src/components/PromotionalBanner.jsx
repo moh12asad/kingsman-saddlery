@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { getTranslated } from "../utils/translations.js";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -9,13 +10,14 @@ export default function PromotionalBanner() {
   const [currentAd, setCurrentAd] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Fetch ads from API
   useEffect(() => {
     async function loadAds() {
       try {
-        const res = await fetch(`${API}/api/ads`);
+        const lang = i18n.language || 'en';
+        const res = await fetch(`${API}/api/ads?lang=${lang}`);
         const data = await res.json();
         const fetchedAds = data.ads || [];
         // Sort by order if available
@@ -28,7 +30,7 @@ export default function PromotionalBanner() {
       }
     }
     loadAds();
-  }, []);
+  }, [i18n.language]);
 
   // Auto-rotate ads every 5 seconds
   useEffect(() => {
@@ -82,8 +84,8 @@ export default function PromotionalBanner() {
             >
               <div className="promotional-banner-overlay"></div>
               <div className="promotional-banner-content">
-                {ad.title && <h2 className="promotional-banner-title">{ad.title}</h2>}
-                {ad.subtitle && <p className="promotional-banner-subtitle">{ad.subtitle}</p>}
+                {getTranslated(ad.title, i18n.language) && <h2 className="promotional-banner-title">{getTranslated(ad.title, i18n.language)}</h2>}
+                {getTranslated(ad.subtitle, i18n.language) && <p className="promotional-banner-subtitle">{getTranslated(ad.subtitle, i18n.language)}</p>}
                 {ad.link && (
                   <a 
                     href={ad.link} 

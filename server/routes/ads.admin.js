@@ -2,21 +2,36 @@ import { Router } from "express";
 import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
+import {
+  getTranslatedAd,
+  prepareAdForStorage,
+  mergeTranslations
+} from "../utils/translations.js";
 
 const db = admin.firestore();
 const router = Router();
 
 // Get all active ads (public endpoint for promotional banner)
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
+    const lang = req.query.lang || 'en'; // Get language from query parameter, default to 'en'
+    const includeAllLanguages = req.query.all === 'true'; // Admin can request all languages
+    
     // Fetch all ads and filter/sort in code to avoid needing a composite index
     const snap = await db.collection("ads").get();
 
     const ads = snap.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
+      .map((doc) => {
+        const data = doc.data();
+        
+        // If admin requests all languages, return raw data
+        // Otherwise, return translated version
+        if (includeAllLanguages) {
+          return { id: doc.id, ...data };
+        } else {
+          return { id: doc.id, ...getTranslatedAd(data, lang) };
+        }
+      })
       .filter((ad) => ad.active !== false) // Filter active ads
       .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort by order
 
@@ -31,15 +46,25 @@ router.get("/", async (_req, res) => {
 router.use(verifyFirebaseToken);
 
 // Get all ads including inactive (ADMIN only - for admin panel)
-router.get("/all", requireRole("ADMIN"), async (_req, res) => {
+router.get("/all", requireRole("ADMIN"), async (req, res) => {
   try {
+    const includeAllLanguages = req.query.all === 'true'; // Can request all languages
+    const lang = req.query.lang || 'en';
+    
     const snap = await db.collection("ads").get();
 
     const ads = snap.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
+      .map((doc) => {
+        const data = doc.data();
+        
+        // If requesting all languages, return raw data
+        // Otherwise, return translated version
+        if (includeAllLanguages) {
+          return { id: doc.id, ...data };
+        } else {
+          return { id: doc.id, ...getTranslatedAd(data, lang) };
+        }
+      })
       .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort by order
 
     res.json({ ads });
@@ -54,8 +79,8 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
   try {
     const { 
       image = "", 
-      title = "", 
-      subtitle = "",
+      title,
+      subtitle,
       link = "",
       order = 0,
       active = true
@@ -65,16 +90,19 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       return res.status(400).json({ error: "Image URL is required" });
     }
 
-    const docRef = await db.collection("ads").add({
+    // Prepare ad data with translation support
+    const adData = prepareAdForStorage({
       image: image.trim(),
-      title: title.trim() || "",
-      subtitle: subtitle.trim() || "",
+      title: title || "",
+      subtitle: subtitle || "",
       link: link.trim() || "",
       order: Number(order) || 0,
       active: active !== false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    const docRef = await db.collection("ads").add(adData);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -86,21 +114,44 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
 // Update ad (ADMIN only)
 router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
   try {
-    const { image, title, subtitle, link, order, active } = req.body;
-
-    const updateData = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-
-    if (image !== undefined) updateData.image = image.trim();
-    if (title !== undefined) updateData.title = title.trim() || "";
-    if (subtitle !== undefined) updateData.subtitle = subtitle.trim() || "";
-    if (link !== undefined) updateData.link = link.trim() || "";
-    if (order !== undefined) updateData.order = Number(order) || 0;
-    if (active !== undefined) updateData.active = active !== false;
-
-    await db.collection("ads").doc(req.params.id).set(updateData, { merge: true });
-
+    // Get existing ad to merge translations properly
+    const docRef = db.collection("ads").doc(req.params.id);
+    const existingDoc = await docRef.get();
+    
+    if (!existingDoc.exists) {
+      return res.status(404).json({ error: "Ad not found" });
+    }
+    
+    const existingData = existingDoc.data();
+    const updates = { ...req.body };
+    
+    // Handle translation merges for translatable fields
+    const translatableFields = ['title', 'subtitle'];
+    
+    for (const field of translatableFields) {
+      if (updates[field] !== undefined) {
+        // If existing field is a translation object and update is also an object, merge them
+        if (existingData[field] && typeof existingData[field] === 'object' && 
+            updates[field] && typeof updates[field] === 'object') {
+          updates[field] = mergeTranslations(existingData[field], updates[field]);
+        } else {
+          // Otherwise, prepare for storage (converts strings to translation objects)
+          const prepared = prepareAdForStorage({ [field]: updates[field] });
+          updates[field] = prepared[field];
+        }
+      }
+    }
+    
+    // Handle non-translatable fields
+    if (updates.image !== undefined) updates.image = updates.image.trim();
+    if (updates.link !== undefined) updates.link = updates.link.trim() || "";
+    if (updates.order !== undefined) updates.order = Number(updates.order) || 0;
+    if (updates.active !== undefined) updates.active = updates.active !== false;
+    
+    // Add updated timestamp
+    updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+    
+    await docRef.set(updates, { merge: true });
     res.json({ ok: true });
   } catch (error) {
     console.error("Error updating ad:", error);
