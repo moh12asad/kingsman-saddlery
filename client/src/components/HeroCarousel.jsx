@@ -14,23 +14,46 @@ export default function HeroCarousel() {
 
   // Fetch hero slides from API
   useEffect(() => {
+    const abortController = new AbortController();
+    
     async function loadSlides() {
       try {
         const lang = i18n.language || 'en';
-        const res = await fetch(`${API}/api/hero-slides?lang=${lang}`);
+        const res = await fetch(`${API}/api/hero-slides?lang=${lang}`, {
+          signal: abortController.signal
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Failed to load hero slides: ${res.status}`);
+        }
+        
         const data = await res.json();
         const slides = data.slides || [];
         // Sort by order if available
         setHeroSlides(slides.sort((a, b) => (a.order || 0) - (b.order || 0)));
       } catch (error) {
+        // Ignore abort errors (they're expected when language changes)
+        if (error.name === 'AbortError') {
+          return;
+        }
         console.error("Failed to load hero slides:", error);
         // Fallback to empty array if API fails
         setHeroSlides([]);
       } finally {
-        setLoading(false);
+        // Only update loading state if request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
+    
+    setLoading(true);
     loadSlides();
+    
+    // Cleanup: abort request if language changes or component unmounts
+    return () => {
+      abortController.abort();
+    };
   }, [i18n.language]);
 
   // Auto-rotate slides every 5 seconds

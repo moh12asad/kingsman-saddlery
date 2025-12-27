@@ -26,6 +26,7 @@ export default function AdminAds() {
   async function loadAds() {
     try {
       setLoadingAds(true);
+      setAdError(""); // Clear any previous errors
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
 
@@ -33,17 +34,18 @@ export default function AdminAds() {
       const res = await fetch(`${API}/api/ads/all?all=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Failed to load ads" }));
+        throw new Error(errorData.error || `Server error: ${res.status}`);
+      }
+      
       const data = await res.json();
       setAds(data.ads || []);
     } catch (err) {
-      // If /all endpoint doesn't exist, try regular endpoint
-      try {
-        const res = await fetch(`${API}/api/ads`);
-        const data = await res.json();
-        setAds(data.ads || []);
-      } catch (e) {
-        setAdError(e.message || "Failed to load ads");
-      }
+      // Show error instead of silently falling back to incomplete data
+      setAdError(err.message || "Failed to load ads. Please refresh the page.");
+      setAds([]); // Clear ads to avoid showing incomplete data
     } finally {
       setLoadingAds(false);
     }

@@ -103,7 +103,16 @@ export function mergeTranslations(existing = {}, updates = {}) {
   
   for (const lang of SUPPORTED_LANGUAGES) {
     if (updates[lang] !== undefined) {
-      merged[lang] = updates[lang];
+      // Only update if the new value is non-empty, or if there's no existing value
+      // This preserves existing translations when admin leaves a field empty in the form
+      if (updates[lang] !== '') {
+        // Non-empty update: use the new value
+        merged[lang] = updates[lang];
+      } else if (merged[lang] === undefined || merged[lang] === '') {
+        // Empty update and no existing value: set to empty
+        merged[lang] = '';
+      }
+      // If update is empty but existing has a value, preserve the existing value (don't overwrite)
     } else if (!merged[lang]) {
       // If language doesn't exist in existing, initialize with empty string
       merged[lang] = merged[lang] || '';

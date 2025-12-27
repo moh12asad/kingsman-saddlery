@@ -14,22 +14,45 @@ export default function PromotionalBanner() {
 
   // Fetch ads from API
   useEffect(() => {
+    const abortController = new AbortController();
+    
     async function loadAds() {
       try {
         const lang = i18n.language || 'en';
-        const res = await fetch(`${API}/api/ads?lang=${lang}`);
+        const res = await fetch(`${API}/api/ads?lang=${lang}`, {
+          signal: abortController.signal
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Failed to load ads: ${res.status}`);
+        }
+        
         const data = await res.json();
         const fetchedAds = data.ads || [];
         // Sort by order if available
         setAds(fetchedAds.sort((a, b) => (a.order || 0) - (b.order || 0)));
       } catch (error) {
+        // Ignore abort errors (they're expected when language changes)
+        if (error.name === 'AbortError') {
+          return;
+        }
         console.error("Failed to load ads:", error);
         setAds([]);
       } finally {
-        setLoading(false);
+        // Only update loading state if request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
+    
+    setLoading(true);
     loadAds();
+    
+    // Cleanup: abort request if language changes or component unmounts
+    return () => {
+      abortController.abort();
+    };
   }, [i18n.language]);
 
   // Auto-rotate ads every 5 seconds

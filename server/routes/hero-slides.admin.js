@@ -15,7 +15,6 @@ const router = Router();
 router.get("/", async (req, res) => {
   try {
     const lang = req.query.lang || 'en'; // Get language from query parameter, default to 'en'
-    const includeAllLanguages = req.query.all === 'true'; // Admin can request all languages
     
     const snap = await db
       .collection("heroSlides")
@@ -24,14 +23,8 @@ router.get("/", async (req, res) => {
 
     const slides = snap.docs.map((doc) => {
       const data = doc.data();
-      
-      // If admin requests all languages, return raw data
-      // Otherwise, return translated version
-      if (includeAllLanguages) {
-        return { id: doc.id, ...data };
-      } else {
-        return { id: doc.id, ...getTranslatedHeroSlide(data, lang) };
-      }
+      // Always return translated version for public endpoint
+      return { id: doc.id, ...getTranslatedHeroSlide(data, lang) };
     });
 
     res.json({ slides });
@@ -43,6 +36,36 @@ router.get("/", async (req, res) => {
 
 // Require authentication for mutating routes
 router.use(verifyFirebaseToken);
+
+// Get all hero slides with full translation objects (ADMIN only - for admin panel)
+router.get("/all", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const includeAllLanguages = req.query.all === 'true'; // Can request all languages
+    const lang = req.query.lang || 'en';
+    
+    const snap = await db
+      .collection("heroSlides")
+      .orderBy("order", "asc")
+      .get();
+
+    const slides = snap.docs.map((doc) => {
+      const data = doc.data();
+      
+      // If requesting all languages, return raw data
+      // Otherwise, return translated version
+      if (includeAllLanguages) {
+        return { id: doc.id, ...data };
+      } else {
+        return { id: doc.id, ...getTranslatedHeroSlide(data, lang) };
+      }
+    });
+
+    res.json({ slides });
+  } catch (error) {
+    console.error("Error fetching all hero slides:", error);
+    res.status(500).json({ error: "Failed to fetch hero slides", details: error.message });
+  }
+});
 
 // Create hero slide (ADMIN only)
 router.post("/", requireRole("ADMIN"), async (req, res) => {
@@ -100,31 +123,39 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
     
     for (const field of translatableFields) {
       if (updates[field] !== undefined) {
-        // If existing field is a translation object and update is also an object, merge them
-        if (existingData[field] && typeof existingData[field] === 'object' && 
-            updates[field] && typeof updates[field] === 'object') {
-          updates[field] = mergeTranslations(existingData[field], updates[field]);
+        // If update is a translation object
+        if (updates[field] && typeof updates[field] === 'object' && !Array.isArray(updates[field])) {
+          // If existing field is also a translation object, merge them
+          if (existingData[field] && typeof existingData[field] === 'object' && !Array.isArray(existingData[field])) {
+            updates[field] = mergeTranslations(existingData[field], updates[field]);
+          } else {
+            // Existing is a string or doesn't exist - use the update object directly
+            // This handles migration case: existing string -> new translation object
+            updates[field] = updates[field];
+          }
         } else if (typeof updates[field] === 'string') {
           // If update is a string (empty or not)
           const updateValue = updates[field].trim();
           
-          // If empty string and existing data has translations, preserve existing translations
-          if (updateValue === '' && existingData[field] && typeof existingData[field] === 'object') {
-            // Don't update this field - preserve existing translations
-            delete updates[field];
-          } else if (updateValue !== '') {
+          // If empty string, preserve existing data (whether it's a string or translation object)
+          if (updateValue === '') {
+            if (existingData[field]) {
+              // Preserve existing data (string or translation object)
+              delete updates[field];
+            } else {
+              // No existing data: set to empty translation object
+              const prepared = prepareHeroSlideForStorage({ [field]: '' });
+              updates[field] = prepared[field];
+            }
+          } else {
             // Non-empty string: convert to translation object
             const prepared = prepareHeroSlideForStorage({ [field]: updateValue });
-            updates[field] = prepared[field];
-          } else {
-            // Empty string and no existing translations: set to empty translation object
-            const prepared = prepareHeroSlideForStorage({ [field]: '' });
             updates[field] = prepared[field];
           }
         } else {
           // Handle other cases (null, undefined, etc.)
           // If existing has translations, preserve them
-          if (existingData[field] && typeof existingData[field] === 'object') {
+          if (existingData[field] && typeof existingData[field] === 'object' && !Array.isArray(existingData[field])) {
             delete updates[field];
           } else {
             // No existing translations, set to empty
@@ -136,7 +167,9 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
     }
     
     // Handle non-translatable fields
-    if (updates.image !== undefined) updates.image = updates.image.trim();
+    if (updates.image !== undefined) {
+      updates.image = typeof updates.image === 'string' ? updates.image.trim() : String(updates.image || '');
+    }
     if (updates.order !== undefined) updates.order = Number(updates.order) || 0;
     
     // Add updated timestamp

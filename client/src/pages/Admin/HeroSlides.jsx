@@ -26,17 +26,26 @@ export default function AdminHeroSlides() {
   async function loadHeroSlides() {
     try {
       setLoadingSlides(true);
+      setSlideError(""); // Clear any previous errors
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error("You must be signed in");
       
-      // Fetch with all languages for admin
-      const res = await fetch(`${API}/api/hero-slides?all=true`, {
+      // Fetch with all languages for admin using the /all endpoint
+      const res = await fetch(`${API}/api/hero-slides/all?all=true`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Failed to load hero slides" }));
+        throw new Error(errorData.error || `Server error: ${res.status}`);
+      }
+      
       const data = await res.json();
       setHeroSlides(data.slides || []);
     } catch (err) {
-      setSlideError(err.message || "Failed to load hero slides");
+      // Show error instead of silently failing
+      setSlideError(err.message || "Failed to load hero slides. Please refresh the page.");
+      setHeroSlides([]); // Clear slides to avoid showing incomplete data
     } finally {
       setLoadingSlides(false);
     }
@@ -348,7 +357,7 @@ export default function AdminHeroSlides() {
                       {typeof slide.subtitle === 'string' ? slide.subtitle : (slide.subtitle?.en || slide.subtitle?.ar || slide.subtitle?.he || "No subtitle")}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Buttons: {typeof slide.button1 === 'string' ? slide.button1 : (slide.button1?.en || "None")} / {typeof slide.button2 === 'string' ? slide.button2 : (slide.button2?.en || "None")} | Order: {slide.order || 0}
+                      Buttons: {typeof slide.button1 === 'string' ? slide.button1 : (slide.button1?.en || slide.button1?.ar || slide.button1?.he || "None")} / {typeof slide.button2 === 'string' ? slide.button2 : (slide.button2?.en || slide.button2?.ar || slide.button2?.he || "None")} | Order: {slide.order || 0}
                     </div>
                   </div>
                   <div className="flex gap-2">
