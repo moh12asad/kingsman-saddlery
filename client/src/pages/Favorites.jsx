@@ -20,8 +20,25 @@ export default function Favorites() {
   const { currentLanguage } = useLanguage();
   const [confirmProduct, setConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [animationTrigger, setAnimationTrigger] = useState(null);
+
+  useEffect(() => {
+    async function loadBrands() {
+      try {
+        const response = await fetch(`${API}/api/brands`);
+        if (response.ok) {
+          const data = await response.json();
+          setBrands(data.brands || []);
+        }
+      } catch (err) {
+        console.error("Error loading brands:", err);
+      }
+    }
+
+    loadBrands();
+  }, []);
 
   useEffect(() => {
     async function loadProducts() {
@@ -36,7 +53,20 @@ export default function Favorites() {
           throw new Error(data.error || "Failed to fetch products");
         }
 
-        setProducts(data.products || []);
+        const allProducts = data.products || [];
+        
+        // Match brands with products
+        const productsWithBrands = allProducts.map(product => {
+          if (product.brand) {
+            const matchedBrand = brands.find(b => b.name === product.brand);
+            if (matchedBrand && matchedBrand.logo) {
+              return { ...product, brandLogo: matchedBrand.logo };
+            }
+          }
+          return product;
+        });
+
+        setProducts(productsWithBrands);
       } catch (err) {
         console.error("Error loading products:", err);
       } finally {
@@ -45,7 +75,7 @@ export default function Favorites() {
     }
 
     loadProducts();
-  }, [i18n.language]);
+  }, [i18n.language, brands]);
 
   // Get full product details for favorites
   const favoriteProducts = favorites.map(fav => {
@@ -143,42 +173,52 @@ export default function Favorites() {
               return (
                 <div 
                   key={product.id} 
-                  className="card-product"
+                  className="card-product-carousel"
                   onClick={handleCardClick}
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="relative">
-                    {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={getTranslated(product.name, i18n.language || 'en')}
-                        className="img-product"
-                      />
-                    ) : (
-                      <div className="img-placeholder">{t("cart.noImage")}</div>
-                    )}
-                    <button
-                      className="card-product-favorite active"
-                      onClick={handleFavoriteClick}
-                      aria-label={t("favorites.removeFromFavorites")}
-                      style={{ position: 'absolute', top: '0.75rem', right: '0.75rem' }}
-                    >
-                      <FaHeart />
-                    </button>
-                    {product.sale && (
-                      <span className="badge-sale absolute" style={{ top: '0.5rem', left: '0.5rem' }}>
-                        SALE
-                      </span>
+                  <div className="card-product-image-wrapper">
+                    <div className="card-product-image-container">
+                      {product.image ? (
+                        <img
+                          src={product.image}
+                          alt={getTranslated(product.name, i18n.language || 'en')}
+                          className="card-product-image"
+                        />
+                      ) : (
+                        <div className="card-product-placeholder">
+                          {t("cart.noImage")}
+                        </div>
+                      )}
+                      <button
+                        className="card-product-favorite active"
+                        onClick={handleFavoriteClick}
+                        aria-label={t("favorites.removeFromFavorites")}
+                      >
+                        <FaHeart />
+                      </button>
+                      {product.sale && (
+                        <span className="card-product-badge">
+                          <span className="badge-text">{t("favorites.sale") || "SALE"}</span>
+                        </span>
+                      )}
+                    </div>
+                    {product.brandLogo && (
+                      <div className="card-product-logo-section">
+                        <img
+                          src={product.brandLogo}
+                          alt={product.brand || ''}
+                          className="card-product-logo"
+                        />
+                      </div>
                     )}
                   </div>
-                  <div className="padding-sm flex-col flex-1">
-                    <h3 className="font-semibold text-small text-truncate-2 margin-bottom-sm">
+                  <div className="card-product-content">
+                    <h3 className="card-product-title">
                       {getTranslated(product.name, i18n.language || 'en')}
                     </h3>
-                    {product.category && (
-                      <p className="text-xs text-muted margin-bottom-sm">{getTranslated(product.category, i18n.language || 'en')}</p>
-                    )}
-                    <div className="flex-row flex-gap-sm margin-bottom-md">
+                    <div className="card-product-separator"></div>
+                    <div className="card-product-price">
                       {product.sale && product.sale_proce > 0 ? (
                         <>
                           <span className="price-sale">
@@ -194,13 +234,17 @@ export default function Favorites() {
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={handleAddToCartClick}
-                      className="btn btn-secondary btn-full padding-x-md padding-y-sm text-small font-medium transition"
-                    >
-                      <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-                      {t("favorites.addToCart")}
-                    </button>
+                    <div onClick={(e) => e.stopPropagation()} style={{ marginTop: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={handleAddToCartClick}
+                        className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+                        style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto', width: '100%' }}
+                      >
+                        <FaShoppingCart style={{ marginRight: '0.5rem' }} />
+                        {t("favorites.addToCart")}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
