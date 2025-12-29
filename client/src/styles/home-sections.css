@@ -30,20 +30,20 @@
 }
 
 .products-tab-button:hover {
-  background: var(--brand);
+  background: rgb(255, 198, 41);
   color: #000000;
   border-color: rgb(255, 198, 41);
 }
 
 .products-tab-button.active {
-  background: var(--brand);
+  background: rgb(255, 198, 41);
   color: #000000;
   border: 2px solid rgb(255, 198, 41);
   font-weight: 900;
 }
 
 .products-tab-button.active:hover {
-  background: var(--brand);
+  background: rgb(255, 198, 41);
   color: #000000;
   border-color: rgb(255, 198, 41);
 }

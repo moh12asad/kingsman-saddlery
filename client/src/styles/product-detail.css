@@ -564,9 +564,11 @@
 }
 
 .btn-outline:hover {
-  background: #f9f9f9;
+  background: rgba(255, 198, 41, 0.1);
   border-color: rgb(255, 198, 41);
   color: rgb(255, 198, 41);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 198, 41, 0.2);
 }
 
 /* Mobile styles for collapsible sections */

@@ -127,7 +127,7 @@
 }
 
 .promotional-banner-nav:hover {
-  background: var(--brand);
+  background: rgb(255, 198, 41);
   color: #000000;
   border-color: rgb(255, 198, 41);
   transform: translateY(-50%) scale(1.1);
