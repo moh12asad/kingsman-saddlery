@@ -233,15 +233,9 @@ export default function SubNavbar() {
   );
   const hoveredSubCategories = hoveredCategoryData
     ? (hoveredCategoryData.subCategories || []).filter((subCat) => {
-        const categoryName = getTranslated(hoveredCategoryData.name, i18n.language || 'en');
         const subCatName = getTranslated(subCat.name, i18n.language || 'en');
-        return products.some(p => {
-          const pCategory = getTranslated(p.category, i18n.language || 'en');
-          const pSubCategory = getTranslated(p.subCategory, i18n.language || 'en');
-          return pCategory === categoryName && 
-                 pSubCategory === subCatName && 
-                 p.available;
-        });
+        // Only filter out subcategories with empty names (missing translations)
+        return subCatName && subCatName.trim() !== '';
       })
     : [];
 
@@ -254,15 +248,11 @@ export default function SubNavbar() {
               const hasSubCategories = category.subCategories && category.subCategories.length > 0;
               const subCategories = category.subCategories || [];
               const categoryName = getTranslated(category.name, i18n.language || 'en');
+              // Show all subcategories that have a valid translated name, regardless of whether they have products
               const visibleSubCategories = subCategories.filter((subCat) => {
                 const subCatName = getTranslated(subCat.name, i18n.language || 'en');
-                return products.some(p => {
-                  const pCategory = getTranslated(p.category, i18n.language || 'en');
-                  const pSubCategory = getTranslated(p.subCategory, i18n.language || 'en');
-                  return pCategory === categoryName && 
-                         pSubCategory === subCatName && 
-                         p.available;
-                });
+                // Only filter out subcategories with empty names (missing translations)
+                return subCatName && subCatName.trim() !== '';
               });
 
               const categoryKey = category.id || categoryName;
