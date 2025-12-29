@@ -3,6 +3,13 @@
   min-height: 100vh;
   background: #f9fafb;
   padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+.product-detail-page .container-main {
+  max-width: 90rem; /* Increased from 72rem to 90rem (1440px) */
+  padding-left: 2rem;
+  padding-right: 2rem;
 }
 
 .breadcrumbs {
@@ -11,7 +18,7 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   color: #6b7280;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 @media (max-width: 768px) {
@@ -27,7 +34,7 @@
 }
 
 .breadcrumb-link {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -47,12 +54,23 @@
 
 .product-detail-grid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 350px;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 1fr 1.5fr 380px;
+  gap: 3rem;
+  margin-top: 2.5rem;
+}
+
+@media (max-width: 1400px) {
+  .product-detail-page .container-main {
+    max-width: 85rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
 }
 
 @media (max-width: 1200px) {
+  .product-detail-grid {
+    gap: 2.5rem;
+  }
   .product-detail-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -129,7 +147,7 @@
 .product-detail-images {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .product-main-image-wrapper {
@@ -146,7 +164,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .product-image-nav {
@@ -284,11 +302,11 @@
 }
 
 .product-thumbnail:hover {
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
 }
 
 .product-thumbnail.active {
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
@@ -314,13 +332,14 @@
 .product-detail-info {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
 }
 
 .product-detail-title {
   font-size: 2rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   line-height: 1.2;
   font-family: inherit;
 }
@@ -546,8 +565,8 @@
 
 .btn-outline:hover {
   background: #f9f9f9;
-  border-color: var(--brand);
-  color: var(--brand);
+  border-color: rgb(255, 198, 41);
+  color: rgb(255, 198, 41);
 }
 
 /* Mobile styles for collapsible sections */
@@ -622,6 +641,8 @@
   font-size: 0.875rem;
   color: #6b7280;
   font-family: inherit;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .product-action-links {
@@ -633,7 +654,7 @@
 .product-action-link {
   background: none;
   border: none;
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.875rem;
@@ -648,7 +669,9 @@
 .product-detail-pricing {
   display: flex;
   align-items: baseline;
-  gap: 1rem;
+  gap: 1.5rem;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .price-large {
@@ -660,6 +683,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem;
 }
 
 .product-quantity-label {
@@ -788,7 +813,8 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  margin-top: 0;
   font-family: inherit;
 }
 
@@ -804,7 +830,7 @@
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
 .product-details-text p {
@@ -819,7 +845,7 @@
 }
 
 .product-bullet {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-weight: bold;
   font-size: 1.2em;
   line-height: 1.4;
@@ -830,7 +856,7 @@
 .product-detail-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .product-benefits-card,
@@ -838,7 +864,7 @@
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
 .product-benefits-title {
@@ -855,7 +881,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .product-benefit-item {
@@ -871,28 +897,28 @@
   font-size: 1.25rem;
   flex-shrink: 0;
   transition: all 0.2s ease;
-  color: rgb(255, 198, 41);
-  fill: rgb(255, 198, 41);
+  color: #059669;
+  fill: #059669;
 }
 
 .product-benefit-item svg {
-  color: rgb(255, 198, 41);
-  fill: rgb(255, 198, 41);
+  color: #059669;
+  fill: #059669;
 }
 
 .product-benefit-item:hover .product-benefit-icon {
   transform: scale(1.1);
-  color: rgb(255, 180, 20);
-  fill: rgb(255, 180, 20);
+  color: #047857;
+  fill: #047857;
 }
 
 .product-benefit-item:hover svg {
-  color: rgb(255, 180, 20);
-  fill: rgb(255, 180, 20);
+  color: #047857;
+  fill: #047857;
 }
 
 .product-info-item {
-  padding: 0.75rem 0;
+  padding: 1rem 0;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.875rem;
   color: #4b5563;
@@ -937,9 +963,9 @@
 }
 
 .product-service-link svg {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-size: 1.125rem;
-  fill: var(--brand);
+  fill: rgb(255, 198, 41);
 }
 
 .product-whatsapp-cta {

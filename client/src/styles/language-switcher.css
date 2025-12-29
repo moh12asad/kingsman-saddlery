@@ -28,8 +28,8 @@
 
 .language-switcher-button:hover {
   background: rgba(255, 255, 255, 0.15);
-  border-color: var(--brand);
-  color: var(--brand);
+  border-color: rgb(255, 198, 41);
+  color: rgb(255, 198, 41);
   transform: translateY(-1px);
 }
 

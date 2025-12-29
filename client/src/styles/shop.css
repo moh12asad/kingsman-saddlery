@@ -276,15 +276,15 @@
 
 .shop-category-button:hover {
   background: rgba(251, 191, 36, 0.1);
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
   transform: translateX(4px);
 }
 
 .shop-category-button-active {
   background: transparent;
   color: var(--text);
-  border: 2px solid var(--brand);
+  border: 2px solid rgb(255, 198, 41);
   font-weight: 700;
   box-shadow: 0 2px 4px rgba(251, 191, 36, 0.2);
 }
@@ -337,14 +337,14 @@
 
 .shop-subcategory-button:hover {
   background: rgba(251, 191, 36, 0.1);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   padding-left: 1.25rem;
 }
 
 .shop-subcategory-button-active {
   background: transparent;
   color: var(--text);
-  border-left: 3px solid var(--brand);
+  border-left: 3px solid rgb(255, 198, 41);
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(251, 191, 36, 0.2);
   padding-left: 1.25rem;
@@ -352,7 +352,7 @@
 
 .shop-subcategory-button-active:hover {
   background: rgba(251, 191, 36, 0.15);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   padding-left: 1.5rem;
 }
 
@@ -378,7 +378,7 @@
 .shop-active-filter-value {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 .shop-clear-filter-btn {
@@ -394,8 +394,8 @@
 
 .shop-clear-filter-btn:hover {
   background: transparent;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
 }
 
 @media (max-width: 768px) {
@@ -549,7 +549,7 @@
 }
 
 .shop-section-link:hover {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 .shop-section-link span {

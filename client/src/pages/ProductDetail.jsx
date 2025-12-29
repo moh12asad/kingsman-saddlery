@@ -481,14 +481,6 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* Customer Service */}
-            <div className="product-service-links margin-top-md">
-              <button className="product-service-link">
-                <FaQuestionCircle />
-                <span>{t("productDetail.askAboutProduct")}</span>
-              </button>
-            </div>
-
           </div>
         </div>
       </div>

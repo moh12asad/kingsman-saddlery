@@ -32,20 +32,20 @@
 .products-tab-button:hover {
   background: var(--brand);
   color: #000000;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
 }
 
 .products-tab-button.active {
   background: var(--brand);
   color: #000000;
-  border: 2px solid var(--brand);
+  border: 2px solid rgb(255, 198, 41);
   font-weight: 900;
 }
 
 .products-tab-button.active:hover {
   background: var(--brand);
   color: #000000;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
 }
 
 .products-tabs-content {
@@ -137,7 +137,7 @@
 .brands-carousel-arrow:hover {
   background: var(--brand);
   color: #000000;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
 }
 
 .brands-carousel-arrow-left {
@@ -199,7 +199,7 @@
 }
 
 .group:hover .category-card-title {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 /* Categories Grid Mobile Styles */

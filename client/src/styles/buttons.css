@@ -14,8 +14,8 @@
 
 .btn-primary:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
@@ -71,8 +71,8 @@
 
 .btn-link:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
@@ -91,8 +91,8 @@
 
 .btn-secondary:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
 }
 
 .btn-full {

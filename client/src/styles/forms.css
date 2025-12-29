@@ -108,7 +108,7 @@ select.select {
 
 select.select:focus {
   outline: none;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
 }
 

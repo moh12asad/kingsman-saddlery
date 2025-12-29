@@ -9,7 +9,7 @@
   background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%) !important;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 3px solid var(--brand);
+  border-bottom: 3px solid rgb(255, 198, 41);
   width: 100%;
   box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(252, 211, 77, 0.2) inset;
   color: var(--text-light);
@@ -71,7 +71,7 @@
   font-weight: 900;
   letter-spacing: 0.15em;
   margin: 0;
-  color: var(--brand) !important; /* Fallback color */
+  color: rgb(255, 198, 41) !important; /* Fallback color */
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 50%, var(--brand-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -216,15 +216,15 @@
 }
 
 .nav-link:hover {
-  color: var(--brand) !important;
+  color: rgb(255, 198, 41) !important;
   transform: translateY(-2px);
 }
 
 .nav-link-active {
-  color: var(--brand) !important;
+  color: rgb(255, 198, 41) !important;
   visibility: visible !important;
   opacity: 1 !important;
-  border-bottom: 2px solid var(--brand);
+  border-bottom: 2px solid rgb(255, 198, 41);
 }
 
 /* Mobile Navbar Styles */
@@ -386,7 +386,7 @@
   background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%) !important;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 2px solid var(--brand);
+  border-top: 2px solid rgb(255, 198, 41);
   border-bottom: 1px solid rgba(252, 211, 77, 0.3);
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.3);
   width: 100%;
@@ -466,7 +466,7 @@
 }
 
 .subnavbar-link:hover {
-  color: var(--brand) !important;
+  color: rgb(255, 198, 41) !important;
   background-color: rgba(252, 211, 77, 0.1);
   transform: translateY(-1px);
 }
@@ -793,7 +793,7 @@
 .profile-dropdown-item:hover {
   background: rgba(252, 211, 77, 0.1);
   color: var(--brand-dark);
-  border-left: 3px solid var(--brand);
+  border-left: 3px solid rgb(255, 198, 41);
 }
 
 .profile-dropdown-item svg {

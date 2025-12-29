@@ -69,8 +69,8 @@ html {
 }
 
 .btn:hover {
-  border-color: var(--brand);
-  color: var(--brand);
+  border-color: rgb(255, 198, 41);
+  color: rgb(255, 198, 41);
   transform: translateY(-1px);
 }
 
@@ -86,7 +86,7 @@ html {
 
 .input:focus, .select:focus, select.select:focus, select.input:focus {
   outline: none;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
 }
 
@@ -110,7 +110,7 @@ html {
   font-size: 0.75rem;
   letter-spacing: 0.05em;
   padding: 1rem;
-  border-bottom: 2px solid var(--brand);
+  border-bottom: 2px solid rgb(255, 198, 41);
   white-space: nowrap;
   text-align: left;
 }
@@ -145,7 +145,7 @@ html {
   background-color: var(--surface-light);
   white-space: nowrap;
   color: var(--text);
-  border-bottom: 2px solid var(--brand);
+  border-bottom: 2px solid rgb(255, 198, 41);
 }
 
 .admin-products-table td {
@@ -213,7 +213,7 @@ html {
 }
 .table-input:focus {
   outline: none;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
 }
 
@@ -229,7 +229,7 @@ html {
 }
 .table-select:focus {
   outline: none;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 

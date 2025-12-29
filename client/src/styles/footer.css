@@ -28,7 +28,7 @@
 .footer-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   margin: 0 0 1rem 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -56,7 +56,7 @@
 }
 
 .footer-links a:hover {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   text-decoration: underline;
 }
 

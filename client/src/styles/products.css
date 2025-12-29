@@ -69,7 +69,7 @@ html {
 .product-carousel-arrow:hover:not(:disabled):not(.disabled) {
   background: var(--brand);
   color: #000000;
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 6px 16px rgba(251, 191, 36, 0.3);
   transform: translateY(-50%) scale(1.1);
 }
@@ -524,7 +524,7 @@ html {
 
 .quantity-button:hover {
   background: rgba(251, 191, 36, 0.1);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 .quantity-display {

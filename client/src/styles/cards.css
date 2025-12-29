@@ -14,7 +14,7 @@
 
 .card-product:hover {
   box-shadow: 0 4px 6px -1px rgba(251, 191, 36, 0.2);
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
 }
 
 .card-cart-item {
@@ -55,7 +55,7 @@
 }
 
 .order-card:hover {
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 4px 12px rgba(252, 211, 77, 0.15);
   transform: translateY(-2px);
 }
@@ -102,7 +102,7 @@
 
 .card-brand {
   background: var(--brand-light);
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   border-width: 2px;
 }
 

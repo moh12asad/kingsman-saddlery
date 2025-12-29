@@ -217,8 +217,8 @@
 
 .btn-hero-primary:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
