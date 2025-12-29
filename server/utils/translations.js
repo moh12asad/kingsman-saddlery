@@ -166,12 +166,54 @@ export function getTranslatedCategory(category, lang = DEFAULT_LANGUAGE) {
   translated.name = getTranslatedField(category.name, lang);
   translated.description = getTranslatedField(category.description, lang);
   
+  // Ensure category image is always a string (not a translation object)
+  // Images should be the same for all languages, so always use the same image regardless of language
+  if (category.image !== undefined) {
+    if (typeof category.image === 'string') {
+      translated.image = category.image;
+    } else if (typeof category.image === 'object' && category.image !== null) {
+      // If it's a translation object, use English as default (or first available)
+      // This ensures the same image is shown for all languages
+      translated.image = category.image.en || 
+                         category.image.ar || 
+                         category.image.he ||
+                         category.image[lang] ||
+                         Object.values(category.image).find(val => typeof val === 'string' && val.trim() !== '') ||
+                         '';
+    } else {
+      translated.image = String(category.image || '');
+    }
+  }
+  
   // Translate subcategories
   if (Array.isArray(category.subCategories)) {
-    translated.subCategories = category.subCategories.map(subCat => ({
-      ...subCat,
-      name: getTranslatedField(subCat.name, lang)
-    }));
+    translated.subCategories = category.subCategories.map(subCat => {
+      const translatedSubCat = {
+        ...subCat,
+        name: getTranslatedField(subCat.name, lang)
+      };
+      
+      // Ensure subcategory image is always a string (not a translation object)
+      // Images should be the same for all languages, so always use the same image regardless of language
+      if (subCat.image !== undefined) {
+        if (typeof subCat.image === 'string') {
+          translatedSubCat.image = subCat.image;
+        } else if (typeof subCat.image === 'object' && subCat.image !== null) {
+          // If it's a translation object, use English as default (or first available)
+          // This ensures the same image is shown for all languages
+          translatedSubCat.image = subCat.image.en || 
+                                    subCat.image.ar || 
+                                    subCat.image.he ||
+                                    subCat.image[lang] ||
+                                    Object.values(subCat.image).find(val => typeof val === 'string' && val.trim() !== '') ||
+                                    '';
+        } else {
+          translatedSubCat.image = String(subCat.image || '');
+        }
+      }
+      
+      return translatedSubCat;
+    });
   }
   
   return translated;
@@ -284,6 +326,25 @@ export function getTranslatedHeroSlide(slide, lang = DEFAULT_LANGUAGE) {
   translated.button1 = getTranslatedField(slide.button1, lang);
   translated.button2 = getTranslatedField(slide.button2, lang);
   
+  // Ensure image is always a string (not a translation object)
+  // Images should be the same for all languages, so always use the same image regardless of language
+  if (slide.image !== undefined) {
+    if (typeof slide.image === 'string') {
+      translated.image = slide.image;
+    } else if (typeof slide.image === 'object' && slide.image !== null) {
+      // If it's a translation object, use English as default (or first available)
+      // This ensures the same image is shown for all languages
+      translated.image = slide.image.en || 
+                         slide.image.ar || 
+                         slide.image.he ||
+                         slide.image[lang] ||
+                         Object.values(slide.image).find(val => typeof val === 'string' && val.trim() !== '') ||
+                         '';
+    } else {
+      translated.image = String(slide.image || '');
+    }
+  }
+  
   return translated;
 }
 
@@ -300,6 +361,25 @@ export function getTranslatedAd(ad, lang = DEFAULT_LANGUAGE) {
   
   translated.title = getTranslatedField(ad.title, lang);
   translated.subtitle = getTranslatedField(ad.subtitle, lang);
+  
+  // Ensure image is always a string (not a translation object)
+  // Images should be the same for all languages, so always use the same image regardless of language
+  if (ad.image !== undefined) {
+    if (typeof ad.image === 'string') {
+      translated.image = ad.image;
+    } else if (typeof ad.image === 'object' && ad.image !== null) {
+      // If it's a translation object, use English as default (or first available)
+      // This ensures the same image is shown for all languages
+      translated.image = ad.image.en || 
+                         ad.image.ar || 
+                         ad.image.he ||
+                         ad.image[lang] ||
+                         Object.values(ad.image).find(val => typeof val === 'string' && val.trim() !== '') ||
+                         '';
+    } else {
+      translated.image = String(ad.image || '');
+    }
+  }
   
   return translated;
 }
