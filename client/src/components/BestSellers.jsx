@@ -232,7 +232,7 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           <button
             type="button"
             onClick={handleAddToCartClick}
-            className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+            className="btn btn-secondary btn-full padding-x-md padding-y-sm text-small font-medium transition"
             style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto', width: '100%' }}
           >
             <FaShoppingCart style={{ marginRight: '0.5rem' }} />

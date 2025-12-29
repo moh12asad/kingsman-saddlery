@@ -196,7 +196,7 @@ export default function Favorites() {
                     </div>
                     <button
                       onClick={handleAddToCartClick}
-                      className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+                      className="btn btn-secondary btn-full padding-x-md padding-y-sm text-small font-medium transition"
                     >
                       <FaShoppingCart style={{ marginRight: '0.5rem' }} />
                       {t("favorites.addToCart")}
@@ -267,7 +267,7 @@ export default function Favorites() {
               </button>
               <button
                 onClick={confirmAddToCart}
-                className="btn-primary btn-full"
+                className="btn btn-secondary btn-full"
               >
                 {t("favorites.addToCart")}
               </button>

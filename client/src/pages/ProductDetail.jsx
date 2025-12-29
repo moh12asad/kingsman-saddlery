@@ -143,7 +143,7 @@ export default function ProductDetail() {
             <p className="text-error heading-3">{error || t("productDetail.notFound")}</p>
             <button
               onClick={() => navigate("/shop")}
-              className="btn btn-primary margin-top-md"
+              className="btn btn-secondary margin-top-md"
             >
               {t("productDetail.backToShop")}
             </button>
@@ -198,6 +198,14 @@ export default function ProductDetail() {
                     alt={getTranslated(product.name, i18n.language || 'en')}
                     className="product-main-image"
                   />
+                  {/* Favorite Button on Image */}
+                  <button
+                    className={`product-image-favorite ${isFav ? 'active' : ''}`}
+                    onClick={() => toggleFavorite(product)}
+                    aria-label={t("productDetail.addToFavorites")}
+                  >
+                    <FaHeart />
+                  </button>
                   {images.length > 1 && (
                     <>
                       <button
@@ -259,14 +267,6 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* Add to Favorites */}
-            <button
-              onClick={() => toggleFavorite(product)}
-              className={`product-favorite-btn ${isFav ? 'active' : ''} margin-top-lg`}
-            >
-              <FaHeart />
-              <span>{t("productDetail.addToFavorites")}</span>
-            </button>
 
             {/* Description */}
             {product.description && (
@@ -338,18 +338,31 @@ export default function ProductDetail() {
             <div className="product-purchase-buttons margin-top-lg">
               <button
                 onClick={handleAddToCart}
-                className="btn btn-primary btn-lg btn-full"
+                className="btn btn-secondary btn-lg"
               >
                 <FaShoppingCart style={{ marginRight: '0.5rem' }} />
                 {t("productDetail.addToCart")}
               </button>
               <button
                 onClick={handleBuyNow}
-                className="btn btn-secondary btn-lg btn-full margin-top-sm"
+                className="btn btn-cta btn-lg"
               >
                 {t("productDetail.buyNow")}
               </button>
             </div>
+
+            {/* WhatsApp Button - Close to Purchase Buttons */}
+            {whatsappNumber && (
+              <a
+                href={`https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`I'm interested in: ${getTranslated(product.name, i18n.language || 'en')}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="product-whatsapp-cta margin-top-md"
+              >
+                <FaWhatsapp />
+                <span>{t("productDetail.askOnWhatsApp")}</span>
+              </a>
+            )}
 
             {/* Technical Details Section */}
             {product.technicalDetails && (
@@ -474,24 +487,6 @@ export default function ProductDetail() {
                 <FaQuestionCircle />
                 <span>{t("productDetail.askAboutProduct")}</span>
               </button>
-              <a
-                href={whatsappNumber 
-                  ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`I'm interested in: ${getTranslated(product.name, i18n.language || 'en')}`)}`
-                  : "#"
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="product-service-link"
-                onClick={(e) => {
-                  if (!whatsappNumber) {
-                    e.preventDefault();
-                    alert(t("productDetail.whatsappNotConfigured"));
-                  }
-                }}
-              >
-                <FaWhatsapp />
-                <span>{t("productDetail.askOnWhatsApp")}</span>
-              </a>
             </div>
 
           </div>

@@ -201,6 +201,44 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.product-image-favorite {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+  color: #6b7280;
+}
+
+.product-image-favorite:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.1);
+}
+
+.product-image-favorite.active {
+  background: rgba(255, 255, 255, 0.95);
+  color: #dc2626;
+}
+
+.product-image-favorite.active svg {
+  fill: #dc2626;
+}
+
+.product-image-favorite svg {
+  font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
 .product-video-link {
   position: absolute;
   bottom: 1rem;
@@ -284,6 +322,7 @@
   color: #1f2937;
   margin-bottom: 1rem;
   line-height: 1.2;
+  font-family: inherit;
 }
 
 @media (max-width: 768px) {
@@ -329,6 +368,11 @@
     padding: 0.625rem 0.875rem;
   }
 
+  .product-whatsapp-cta {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+  }
+
   .product-favorite-btn {
     font-size: 0.8125rem;
     padding: 0.625rem 0.875rem;
@@ -370,6 +414,15 @@
   .product-image-zoom {
     width: 32px;
     height: 32px;
+  }
+
+  .product-image-favorite {
+    width: 36px;
+    height: 36px;
+  }
+
+  .product-image-favorite svg {
+    font-size: 1rem;
   }
 
   .product-video-link {
@@ -459,6 +512,11 @@
   }
 
   .product-purchase-buttons .btn {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+  }
+
+  .product-whatsapp-cta {
     font-size: 0.8125rem;
     padding: 0.625rem 0.875rem;
   }
@@ -563,6 +621,7 @@
 .product-sku {
   font-size: 0.875rem;
   color: #6b7280;
+  font-family: inherit;
 }
 
 .product-action-links {
@@ -606,6 +665,7 @@
 .product-quantity-label {
   font-weight: 600;
   color: #374151;
+  font-family: inherit;
 }
 
 .product-quantity-controls {
@@ -647,18 +707,51 @@
 
 .product-purchase-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
+}
+
+.product-purchase-buttons .btn {
+  flex: 1;
+}
+
+.product-purchase-buttons .btn-secondary {
+  background: #000000;
+  color: #ffffff;
+  border: 2px solid #000000;
+}
+
+.product-purchase-buttons .btn-secondary:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #000000;
+}
+
+.product-purchase-buttons .btn-cta {
+  flex: 1;
+  font-weight: 700;
+  letter-spacing: normal;
 }
 
 @media (max-width: 768px) {
   .product-purchase-buttons {
     gap: 0.5rem;
+    flex-direction: column;
   }
 
   .product-purchase-buttons .btn {
     font-size: 0.875rem;
     padding: 0.75rem 1rem;
+    width: 100%;
+  }
+
+  .product-image-favorite {
+    width: 40px;
+    height: 40px;
+  }
+
+  .product-image-favorite svg {
+    font-size: 1.125rem;
   }
 }
 
@@ -696,6 +789,7 @@
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 0.75rem;
+  font-family: inherit;
 }
 
 .product-description-text,
@@ -703,6 +797,7 @@
   color: #4b5563;
   line-height: 1.6;
   white-space: pre-wrap;
+  font-family: inherit;
 }
 
 .product-description-card {
@@ -751,6 +846,7 @@
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 1rem;
+  font-family: inherit;
 }
 
 .product-benefits-list {
@@ -768,12 +864,31 @@
   gap: 0.75rem;
   color: #4b5563;
   font-size: 0.875rem;
+  font-family: inherit;
 }
 
 .product-benefit-icon {
-  color: var(--brand);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
+  transition: all 0.2s ease;
+  color: rgb(255, 198, 41);
+  fill: rgb(255, 198, 41);
+}
+
+.product-benefit-item svg {
+  color: rgb(255, 198, 41);
+  fill: rgb(255, 198, 41);
+}
+
+.product-benefit-item:hover .product-benefit-icon {
+  transform: scale(1.1);
+  color: rgb(255, 180, 20);
+  fill: rgb(255, 180, 20);
+}
+
+.product-benefit-item:hover svg {
+  color: rgb(255, 180, 20);
+  fill: rgb(255, 180, 20);
 }
 
 .product-info-item {
@@ -781,6 +896,7 @@
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.875rem;
   color: #4b5563;
+  font-family: inherit;
 }
 
 .product-info-item:last-child {
@@ -812,6 +928,7 @@
   color: #374151;
   text-decoration: none;
   font-size: 0.875rem;
+  font-family: inherit;
 }
 
 .product-service-link:hover {
@@ -822,6 +939,37 @@
 .product-service-link svg {
   color: var(--brand);
   font-size: 1.125rem;
+  fill: var(--brand);
+}
+
+.product-whatsapp-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: #25D366;
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.product-whatsapp-cta:hover {
+  background: #20BA5A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+  color: white;
+}
+
+.product-whatsapp-cta svg {
+  font-size: 1.25rem;
+  fill: white;
 }
 
 .product-social-share {

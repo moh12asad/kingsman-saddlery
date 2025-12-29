@@ -3,6 +3,25 @@
 [dir="rtl"] {
   direction: rtl;
   text-align: right;
+  font-family: inherit;
+}
+
+/* Ensure Hebrew and Arabic text use the same font as the rest of the page */
+[dir="rtl"] button,
+[dir="rtl"] .btn,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] p,
+[dir="rtl"] span,
+[dir="rtl"] div,
+[dir="rtl"] a,
+[dir="rtl"] label,
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  font-family: inherit;
 }
 
 /* CRITICAL: All images must remain LTR to prevent flipping */

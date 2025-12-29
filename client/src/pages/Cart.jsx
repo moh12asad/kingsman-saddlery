@@ -216,7 +216,7 @@ export default function Cart() {
               {t("cart.continueShopping")}
             </Link>
             <button 
-              className="btn-primary btn-full"
+              className="btn btn-cta btn-full"
               onClick={handleCheckout}
               disabled={!user}
             >
