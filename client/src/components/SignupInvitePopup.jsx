@@ -157,15 +157,19 @@ export default function SignupInvitePopup() {
         </button>
 
         <div className="signup-invite-content">
+          <div className="signup-invite-image-container">
+            <img 
+              src="/signup invitation.png" 
+              alt="Signup invitation" 
+              className="signup-invite-image"
+            />
+          </div>
           <div className="signup-invite-header">
             <h2 className="signup-invite-title">{t("signupInvite.title")}</h2>
             <h3 className="signup-invite-subtitle">{t("signupInvite.subtitle")}</h3>
             <p className="signup-invite-description">
               {t("signupInvite.description")}
             </p>
-            <div className="signup-invite-discount">
-              <strong>🎉 {t("signupInvite.discountBanner")} 🎉</strong>
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="signup-invite-form">
