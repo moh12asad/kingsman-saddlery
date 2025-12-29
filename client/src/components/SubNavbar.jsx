@@ -84,10 +84,11 @@ export default function SubNavbar() {
   useEffect(() => {
     async function loadData() {
       try {
-        // Load categories
+        // Load categories with all languages to get translation objects
+        // We need the English names to compare with products
         const lang = i18n.language || 'en';
         const token = await auth.currentUser?.getIdToken().catch(() => null);
-        const categoriesRes = await fetch(`${API}/api/categories?lang=${lang}`, {
+        const categoriesRes = await fetch(`${API}/api/categories?all=true`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (categoriesRes.ok) {
@@ -187,10 +188,12 @@ export default function SubNavbar() {
 
   const handleCategoryClick = (category) => {
     const categoryName = getTranslated(category.name, i18n.language || 'en');
+    const categoryNameEn = getTranslated(category.name, 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     const hasProducts = products.some(p => {
-      const pCategory = getTranslated(p.category, i18n.language || 'en');
-      return pCategory === categoryName && p.available;
+      // Products store category as English string, so compare with English category name
+      const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+      return pCategory === categoryNameEn && p.available;
     });
     
     if (hasSubCategories) {
@@ -205,6 +208,7 @@ export default function SubNavbar() {
   const handleSubCategoryClick = (category, subCategory) => {
     const categoryName = getTranslated(category.name, i18n.language || 'en');
     const subCategoryName = getTranslated(subCategory.name, i18n.language || 'en');
+    // Products page accepts category/subcategory names in any language and converts to English for filtering
     navigate(`/products?category=${encodeURIComponent(categoryName)}&subcategory=${encodeURIComponent(subCategoryName)}`);
   };
 
@@ -213,11 +217,20 @@ export default function SubNavbar() {
   }
 
   // Filter categories that have products or subcategories
+  // Compare using English names since products store category as English strings
   const visibleCategories = categories.filter((category) => {
+    const categoryNameEn = getTranslated(category.name, 'en');
     const categoryName = getTranslated(category.name, i18n.language || 'en');
+    
+    // Filter out categories with empty names (missing translations)
+    if (!categoryNameEn || categoryNameEn.trim() === '') {
+      return false;
+    }
+    
     const hasProducts = products.some(p => {
-      const pCategory = getTranslated(p.category, i18n.language || 'en');
-      return pCategory === categoryName && p.available;
+      // Products store category as English string, so compare with English category name
+      const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+      return pCategory === categoryNameEn && p.available;
     });
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     return hasProducts || hasSubCategories;
@@ -233,15 +246,9 @@ export default function SubNavbar() {
   );
   const hoveredSubCategories = hoveredCategoryData
     ? (hoveredCategoryData.subCategories || []).filter((subCat) => {
-        const categoryName = getTranslated(hoveredCategoryData.name, i18n.language || 'en');
         const subCatName = getTranslated(subCat.name, i18n.language || 'en');
-        return products.some(p => {
-          const pCategory = getTranslated(p.category, i18n.language || 'en');
-          const pSubCategory = getTranslated(p.subCategory, i18n.language || 'en');
-          return pCategory === categoryName && 
-                 pSubCategory === subCatName && 
-                 p.available;
-        });
+        // Only filter out subcategories with empty names (missing translations)
+        return subCatName && subCatName.trim() !== '';
       })
     : [];
 
@@ -254,15 +261,12 @@ export default function SubNavbar() {
               const hasSubCategories = category.subCategories && category.subCategories.length > 0;
               const subCategories = category.subCategories || [];
               const categoryName = getTranslated(category.name, i18n.language || 'en');
+              const categoryNameEn = getTranslated(category.name, 'en');
+              // Show all subcategories that have a valid translated name, regardless of whether they have products
               const visibleSubCategories = subCategories.filter((subCat) => {
                 const subCatName = getTranslated(subCat.name, i18n.language || 'en');
-                return products.some(p => {
-                  const pCategory = getTranslated(p.category, i18n.language || 'en');
-                  const pSubCategory = getTranslated(p.subCategory, i18n.language || 'en');
-                  return pCategory === categoryName && 
-                         pSubCategory === subCatName && 
-                         p.available;
-                });
+                // Only filter out subcategories with empty names (missing translations)
+                return subCatName && subCatName.trim() !== '';
               });
 
               const categoryKey = category.id || categoryName;

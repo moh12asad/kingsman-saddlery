@@ -19,9 +19,10 @@ export default function CategoriesGrid() {
         // Get current language for translation
         const lang = i18n.language || 'en';
         
-        // Load categories
+        // Load categories with all languages to get translation objects
+        // We need the English names to compare with products
         const token = await auth.currentUser?.getIdToken().catch(() => null);
-        const categoriesRes = await fetch(`${API}/api/categories?lang=${lang}`, {
+        const categoriesRes = await fetch(`${API}/api/categories?all=true`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (categoriesRes.ok) {
@@ -50,10 +51,12 @@ export default function CategoriesGrid() {
 
   const handleCategoryClick = (category) => {
     const categoryName = getTranslated(category.name, i18n.language || 'en');
+    const categoryNameEn = getTranslated(category.name, 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     const hasProducts = products.some(p => {
-      const productCategory = getTranslated(p.category, i18n.language || 'en');
-      return productCategory === categoryName && p.available;
+      // Products store category as English string, so compare with English category name
+      const productCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+      return productCategory === categoryNameEn && p.available;
     });
     
     if (hasSubCategories) {
@@ -84,9 +87,17 @@ export default function CategoriesGrid() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ gap: '1rem' }}>
         {categories.map((category) => {
           const categoryName = getTranslated(category.name, i18n.language || 'en');
+          const categoryNameEn = getTranslated(category.name, 'en');
+          
+          // Filter out categories with empty names (missing translations)
+          if (!categoryNameEn || categoryNameEn.trim() === '') {
+            return null;
+          }
+          
           const hasProducts = products.some(p => {
-            const productCategory = getTranslated(p.category, i18n.language || 'en');
-            return productCategory === categoryName && p.available;
+            // Products store category as English string, so compare with English category name
+            const productCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+            return productCategory === categoryNameEn && p.available;
           });
           const hasSubCategories = category.subCategories && category.subCategories.length > 0;
           

@@ -319,6 +319,33 @@
   transform-origin: center center;
 }
 
+/* Fix category and subcategory card overlay shadow to cover entire image in RTL */
+[dir="rtl"] .aspect-square .absolute.inset-0,
+[dir="rtl"] .aspect-square.relative .absolute.inset-0 {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure overlay gradient covers entire image container in RTL */
+[dir="rtl"] .aspect-square.relative > .absolute[class*="bg-gradient"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+}
+
 [dir="rtl"] .card-product-favorite {
   right: auto;
   left: 0.75rem; /* Move favorite button to left in RTL */
