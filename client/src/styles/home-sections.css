@@ -210,19 +210,26 @@
     padding-bottom: 2rem !important;
   }
 
-  /* Make category cards more compact on mobile */
-  .grid.grid-cols-1 {
-    gap: 1rem !important;
+  /* Make category cards more compact on mobile - 2 columns */
+  .grid.grid-cols-2 {
+    gap: 0.75rem !important;
   }
 
-  /* Ensure category cards are fully visible */
+  /* Reduce category card size on mobile */
   .aspect-square {
-    min-height: 200px;
+    min-height: 140px;
+    max-height: 140px;
   }
 
   .category-card-title {
-    font-size: 1rem;
-    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
+    line-height: 1.2;
+  }
+
+  /* Reduce padding in overlay */
+  .aspect-square .absolute.inset-0 > div {
+    padding: 0.75rem !important;
   }
 }
 
@@ -232,17 +239,24 @@
     padding-bottom: 1rem;
   }
 
-  .grid.grid-cols-1 {
-    gap: 0.75rem;
+  .grid.grid-cols-2 {
+    gap: 0.5rem;
     padding: 0 0.5rem;
   }
 
   .aspect-square {
-    min-height: 180px;
+    min-height: 120px;
+    max-height: 120px;
   }
 
   .category-card-title {
-    font-size: 0.875rem;
-    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.375rem;
+    line-height: 1.1;
+  }
+
+  /* Reduce padding in overlay for very small screens */
+  .aspect-square .absolute.inset-0 > div {
+    padding: 0.5rem !important;
   }
 }
