@@ -7,7 +7,7 @@
   width: 3rem;
   height: 3rem;
   border: 2px solid var(--border);
-  border-top-color: var(--brand);
+  border-top-color: rgb(255, 198, 41);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -115,7 +115,7 @@
 
 /* Link styles */
 .link-brand {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-weight: 500;
 }
 

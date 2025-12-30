@@ -3,6 +3,13 @@
   min-height: 100vh;
   background: #f9fafb;
   padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+.product-detail-page .container-main {
+  max-width: 90rem; /* Increased from 72rem to 90rem (1440px) */
+  padding-left: 2rem;
+  padding-right: 2rem;
 }
 
 .breadcrumbs {
@@ -11,7 +18,7 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   color: #6b7280;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 @media (max-width: 768px) {
@@ -27,7 +34,7 @@
 }
 
 .breadcrumb-link {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -47,12 +54,23 @@
 
 .product-detail-grid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 350px;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 1fr 1.5fr 380px;
+  gap: 3rem;
+  margin-top: 2.5rem;
+}
+
+@media (max-width: 1400px) {
+  .product-detail-page .container-main {
+    max-width: 85rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
 }
 
 @media (max-width: 1200px) {
+  .product-detail-grid {
+    gap: 2.5rem;
+  }
   .product-detail-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -129,7 +147,7 @@
 .product-detail-images {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .product-main-image-wrapper {
@@ -146,7 +164,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .product-image-nav {
@@ -201,6 +219,44 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.product-image-favorite {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+  color: #6b7280;
+}
+
+.product-image-favorite:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.1);
+}
+
+.product-image-favorite.active {
+  background: rgba(255, 255, 255, 0.95);
+  color: #dc2626;
+}
+
+.product-image-favorite.active svg {
+  fill: #dc2626;
+}
+
+.product-image-favorite svg {
+  font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
 .product-video-link {
   position: absolute;
   bottom: 1rem;
@@ -246,11 +302,11 @@
 }
 
 .product-thumbnail:hover {
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
 }
 
 .product-thumbnail.active {
-  border-color: var(--brand);
+  border-color: rgb(255, 198, 41);
   box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
@@ -276,14 +332,16 @@
 .product-detail-info {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
 }
 
 .product-detail-title {
   font-size: 2rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   line-height: 1.2;
+  font-family: inherit;
 }
 
 @media (max-width: 768px) {
@@ -329,6 +387,11 @@
     padding: 0.625rem 0.875rem;
   }
 
+  .product-whatsapp-cta {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+  }
+
   .product-favorite-btn {
     font-size: 0.8125rem;
     padding: 0.625rem 0.875rem;
@@ -370,6 +433,15 @@
   .product-image-zoom {
     width: 32px;
     height: 32px;
+  }
+
+  .product-image-favorite {
+    width: 36px;
+    height: 36px;
+  }
+
+  .product-image-favorite svg {
+    font-size: 1rem;
   }
 
   .product-video-link {
@@ -463,6 +535,11 @@
     padding: 0.625rem 0.875rem;
   }
 
+  .product-whatsapp-cta {
+    font-size: 0.8125rem;
+    padding: 0.625rem 0.875rem;
+  }
+
   .product-technical-details,
   .product-additional-details {
     padding: 0.75rem !important;
@@ -487,9 +564,11 @@
 }
 
 .btn-outline:hover {
-  background: #f9f9f9;
-  border-color: var(--brand);
-  color: var(--brand);
+  background: rgba(255, 198, 41, 0.1);
+  border-color: rgb(255, 198, 41);
+  color: rgb(255, 198, 41);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 198, 41, 0.2);
 }
 
 /* Mobile styles for collapsible sections */
@@ -563,6 +642,9 @@
 .product-sku {
   font-size: 0.875rem;
   color: #6b7280;
+  font-family: inherit;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .product-action-links {
@@ -574,7 +656,7 @@
 .product-action-link {
   background: none;
   border: none;
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.875rem;
@@ -589,7 +671,9 @@
 .product-detail-pricing {
   display: flex;
   align-items: baseline;
-  gap: 1rem;
+  gap: 1.5rem;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 .price-large {
@@ -601,11 +685,14 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem;
 }
 
 .product-quantity-label {
   font-weight: 600;
   color: #374151;
+  font-family: inherit;
 }
 
 .product-quantity-controls {
@@ -647,18 +734,51 @@
 
 .product-purchase-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.75rem;
+}
+
+.product-purchase-buttons .btn {
+  flex: 1;
+}
+
+.product-purchase-buttons .btn-secondary {
+  background: #000000;
+  color: #ffffff;
+  border: 2px solid #000000;
+}
+
+.product-purchase-buttons .btn-secondary:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #000000;
+}
+
+.product-purchase-buttons .btn-cta {
+  flex: 1;
+  font-weight: 700;
+  letter-spacing: normal;
 }
 
 @media (max-width: 768px) {
   .product-purchase-buttons {
     gap: 0.5rem;
+    flex-direction: column;
   }
 
   .product-purchase-buttons .btn {
     font-size: 0.875rem;
     padding: 0.75rem 1rem;
+    width: 100%;
+  }
+
+  .product-image-favorite {
+    width: 40px;
+    height: 40px;
+  }
+
+  .product-image-favorite svg {
+    font-size: 1.125rem;
   }
 }
 
@@ -695,7 +815,9 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  margin-top: 0;
+  font-family: inherit;
 }
 
 .product-description-text,
@@ -703,13 +825,14 @@
   color: #4b5563;
   line-height: 1.6;
   white-space: pre-wrap;
+  font-family: inherit;
 }
 
 .product-description-card {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
 .product-details-text p {
@@ -724,7 +847,7 @@
 }
 
 .product-bullet {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-weight: bold;
   font-size: 1.2em;
   line-height: 1.4;
@@ -735,7 +858,7 @@
 .product-detail-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .product-benefits-card,
@@ -743,7 +866,7 @@
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
 .product-benefits-title {
@@ -751,6 +874,7 @@
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 1rem;
+  font-family: inherit;
 }
 
 .product-benefits-list {
@@ -759,7 +883,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .product-benefit-item {
@@ -768,19 +892,39 @@
   gap: 0.75rem;
   color: #4b5563;
   font-size: 0.875rem;
+  font-family: inherit;
 }
 
 .product-benefit-icon {
-  color: var(--brand);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
+  transition: all 0.2s ease;
+  color: #059669;
+  fill: #059669;
+}
+
+.product-benefit-item svg {
+  color: #059669;
+  fill: #059669;
+}
+
+.product-benefit-item:hover .product-benefit-icon {
+  transform: scale(1.1);
+  color: #047857;
+  fill: #047857;
+}
+
+.product-benefit-item:hover svg {
+  color: #047857;
+  fill: #047857;
 }
 
 .product-info-item {
-  padding: 0.75rem 0;
+  padding: 1rem 0;
   border-bottom: 1px solid #f3f4f6;
   font-size: 0.875rem;
   color: #4b5563;
+  font-family: inherit;
 }
 
 .product-info-item:last-child {
@@ -812,6 +956,7 @@
   color: #374151;
   text-decoration: none;
   font-size: 0.875rem;
+  font-family: inherit;
 }
 
 .product-service-link:hover {
@@ -820,8 +965,39 @@
 }
 
 .product-service-link svg {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-size: 1.125rem;
+  fill: rgb(255, 198, 41);
+}
+
+.product-whatsapp-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: #25D366;
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+}
+
+.product-whatsapp-cta:hover {
+  background: #20BA5A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+  color: white;
+}
+
+.product-whatsapp-cta svg {
+  font-size: 1.25rem;
+  fill: white;
 }
 
 .product-social-share {

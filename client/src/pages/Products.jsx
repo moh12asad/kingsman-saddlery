@@ -16,6 +16,7 @@ export default function Products() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [allProducts, setAllProducts] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]); // Store categories for filtering
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,6 +35,22 @@ export default function Products() {
   const searchInputRef = useRef(null);
 
   useEffect(() => {
+    async function loadBrands() {
+      try {
+        const response = await fetch(`${API}/api/brands`);
+        if (response.ok) {
+          const data = await response.json();
+          setBrands(data.brands || []);
+        }
+      } catch (err) {
+        console.error("Error loading brands:", err);
+      }
+    }
+
+    loadBrands();
+  }, []);
+
+  useEffect(() => {
     async function loadProducts() {
       try {
         setLoading(true);
@@ -50,7 +67,18 @@ export default function Products() {
           (product) => product.available === true
         );
 
-        setAllProducts(availableProducts);
+        // Match brands with products
+        const productsWithBrands = availableProducts.map(product => {
+          if (product.brand) {
+            const matchedBrand = brands.find(b => b.name === product.brand);
+            if (matchedBrand && matchedBrand.logo) {
+              return { ...product, brandLogo: matchedBrand.logo };
+            }
+          }
+          return product;
+        });
+
+        setAllProducts(productsWithBrands);
       } catch (err) {
         setError(err.message || t("products.failedToLoad"));
         console.error("Error loading products:", err);
@@ -76,7 +104,7 @@ export default function Products() {
 
     loadProducts();
     loadCategories();
-  }, [i18n.language]);
+  }, [i18n.language, brands]);
 
   // Focus search input when opened from navbar
   useEffect(() => {
@@ -406,7 +434,7 @@ export default function Products() {
               </button>
               <button
                 onClick={confirmAddToCart}
-                className="btn-primary btn-full"
+                className="btn btn-secondary btn-full"
               >
                 {t("products.addToCart")}
               </button>
@@ -585,34 +613,46 @@ function ProductCard({ product, onAddToCart }) {
   return (
     <div className="card-product-carousel" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
       <div className="card-product-image-wrapper">
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={getTranslated(product.name, i18n.language || 'en')}
-            className="card-product-image"
-          />
-        ) : (
-          <div className="card-product-placeholder">
-            {t("products.noImage")}
+        <div className="card-product-image-container">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={getTranslated(product.name, i18n.language || 'en')}
+              className="card-product-image"
+            />
+          ) : (
+            <div className="card-product-placeholder">
+              {t("products.noImage")}
+            </div>
+          )}
+          <button
+            className={`card-product-favorite ${isFav ? 'active' : ''}`}
+            onClick={handleFavoriteClick}
+            aria-label={isFav ? t("products.removeFromFavorites") : t("products.addToFavorites")}
+          >
+            <FaHeart />
+          </button>
+          {product.sale && (
+            <span className="card-product-badge">
+              <span className="badge-text">{t("products.sale")}</span>
+            </span>
+          )}
+        </div>
+        {product.brandLogo && (
+          <div className="card-product-logo-section">
+            <img
+              src={product.brandLogo}
+              alt={product.brand || ''}
+              className="card-product-logo"
+            />
           </div>
-        )}
-        <button
-          className={`card-product-favorite ${isFav ? 'active' : ''}`}
-          onClick={handleFavoriteClick}
-          aria-label={isFav ? t("products.removeFromFavorites") : t("products.addToFavorites")}
-        >
-          <FaHeart />
-        </button>
-        {product.sale && (
-          <span className="card-product-badge">
-            {t("products.sale")}
-          </span>
         )}
       </div>
       <div className="card-product-content">
         <h3 className="card-product-title">
           {getTranslated(product.name, i18n.language || 'en')}
         </h3>
+        <div className="card-product-separator"></div>
         <div className="card-product-price">
           {product.sale && product.sale_proce > 0 ? (
             <>

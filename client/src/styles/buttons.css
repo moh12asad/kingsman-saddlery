@@ -9,12 +9,13 @@
   font-size: 0.875rem;
   font-weight: 700;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .btn-primary:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
@@ -70,8 +71,8 @@
 
 .btn-link:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
@@ -85,12 +86,13 @@
   font-size: 0.875rem;
   font-weight: 700;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .btn-secondary:hover {
   background: #ffffff;
-  color: var(--brand);
-  border-color: var(--brand);
+  color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
 }
 
 .btn-full {
@@ -103,5 +105,32 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+}
+
+.btn-cta {
+  background: rgb(255, 198, 41);
+  color: #000000;
+  border: 2px solid rgb(255, 198, 41);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 198, 41, 0.3);
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
+.btn-cta:hover {
+  background: #ffffff;
+  border-color: rgb(255, 198, 41);
+  color: #000000;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 198, 41, 0.4);
+}
+
+.btn-cta:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 198, 41, 0.3);
 }
 

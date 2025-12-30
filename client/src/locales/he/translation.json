@@ -83,7 +83,7 @@
     }
   },
   "navbar": {
-    "home": "בית",
+    "home": "ראשי",
     "shop": "חנות",
     "products": "מוצרים",
     "cart": "עגלה",
@@ -93,7 +93,8 @@
     "admin": "ניהול",
     "signIn": "התחבר",
     "signOut": "התנתק",
-    "search": "חיפוש"
+    "search": "חיפוש",
+    "directions": "הגעה"
   },
   "cart": {
     "title": "העגלה שלך",
@@ -763,6 +764,46 @@
         "saved": "ההגדרות נשמרו בהצלחה!"
       }
     }
+  },
+  "aboutUs": {
+    "title": "אודותינו",
+    "welcome": "ברוכים הבאים לקינגסמן סדלרי, המקור המהימן שלכם לציוד רכיבה איכותי ואספקה.",
+    "dedication": "אנו מתמחים במתן אוכפים, רתמות ואביזרים באיכות הגבוהה ביותר לחובבי סוסים ולמקצוענים כאחד.",
+    "commitment": "המחויבות שלנו למצוינות ולשביעות רצון הלקוחות הפכה אותנו לשם מוביל בקהילת הרכיבה."
+  },
+  "contactUs": {
+    "title": "צור קשר",
+    "getInTouch": "צור קשר",
+    "phone": "טלפון:",
+    "whatsapp": "WhatsApp:",
+    "email": "אימייל:",
+    "emailLabel": "אימייל",
+    "address": "כתובת:",
+    "businessHours": "שעות פעילות:",
+    "sendMessage": "שלח לנו הודעה",
+    "name": "שם",
+    "namePlaceholder": "השם שלך",
+    "emailPlaceholder": "your.email@example.com",
+    "phoneLabel": "טלפון",
+    "phonePlaceholder": "+1234567890",
+    "subject": "נושא",
+    "subjectPlaceholder": "בנוגע למה?",
+    "message": "הודעה",
+    "messagePlaceholder": "ספר לנו איך אנחנו יכולים לעזור לך...",
+    "send": "שלח הודעה",
+    "sending": "שולח...",
+    "success": "תודה שפנית אלינו! נחזור אליך בקרוב.",
+    "error": "לא ניתן לשלוח הודעה. אנא נסה שוב."
+  },
+  "directions": {
+    "title": "הגעה",
+    "location": "מיקום",
+    "phone": "טלפון",
+    "whatsapp": "WhatsApp",
+    "waze": "נווט עם Waze",
+    "googleMaps": "קבל הנחיות עם Google Maps",
+    "call": "התקשר",
+    "contact": "צור קשר"
   }
 }
 

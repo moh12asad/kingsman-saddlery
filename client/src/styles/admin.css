@@ -54,14 +54,14 @@
 
 .sidebar a:hover {
   background: rgba(251, 191, 36, 0.1);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 .sidebar a.active {
   background: rgba(251, 191, 36, 0.15);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-weight: 700;
-  border-left: 3px solid var(--brand);
+  border-left: 3px solid rgb(255, 198, 41);
 }
 
 /* Mobile menu toggle */
@@ -102,14 +102,14 @@
 
 .orders-filter-nav a:hover {
   background: rgba(251, 191, 36, 0.1);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 .orders-filter-nav a.active {
   background: rgba(251, 191, 36, 0.15);
-  color: var(--brand);
+  color: rgb(255, 198, 41);
   font-weight: 700;
-  border-bottom-color: var(--brand);
+  border-bottom-color: rgb(255, 198, 41);
 }
 
 @media (max-width: 768px) {

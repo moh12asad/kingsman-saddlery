@@ -1,0 +1,148 @@
+/* Contact Us Page Styles */
+.page-contact-us {
+  min-height: calc(100vh - 200px);
+  padding: 2rem 0;
+}
+
+.page-contact-us .container-main {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 6rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.page-card {
+  background: #ffffff;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.contact-icon {
+  color: rgb(255, 198, 41);
+  font-size: 1.125rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.contact-item div {
+  flex: 1;
+}
+
+.contact-item strong {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.contact-link {
+  color: rgb(255, 198, 41);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.contact-link:hover {
+  color: rgb(217, 119, 6);
+  text-decoration: underline;
+}
+
+.contact-address {
+  margin: 0.25rem 0 0 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.contact-hours {
+  margin-top: 0.25rem;
+}
+
+.contact-hours p {
+  margin: 0.25rem 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .page-contact-us {
+    padding: 1rem 0;
+  }
+
+  .page-contact-us .container-main {
+    padding: 0 0.75rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .page-card {
+    padding: 1rem;
+  }
+
+  .page-section-title {
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .contact-item {
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .contact-icon {
+    font-size: 1rem;
+  }
+
+  .contact-form {
+    gap: 0.75rem;
+  }
+}
+

@@ -9,7 +9,7 @@
 .price-sale {
   font-size: 1rem;
   font-weight: 700;
-  color: #dc2626;
+  color: #10b981;
 }
 
 .price-original {
@@ -21,7 +21,7 @@
 .price-total {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 

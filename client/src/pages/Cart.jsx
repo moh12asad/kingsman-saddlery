@@ -112,23 +112,31 @@ export default function Cart() {
           </div>
 
         <div className="cart-items">
-          {cartItems.map((item) => (
+          {cartItems.map((item) => {
+            const handleItemClick = () => {
+              navigate(`/product/${item.id}`);
+            };
+
+            return (
             <div
               key={item.id}
               className="card-cart-item"
+              onClick={handleItemClick}
+              style={{ cursor: 'pointer' }}
             >
             {item.image ? (
               <img
                 src={item.image}
                 alt={getTranslated(item.name, i18n.language || 'en')}
                 className="img-cart"
+                onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <div className="img-placeholder" style={{ width: '4rem', height: '4rem' }}>
+              <div className="img-placeholder" style={{ width: '4rem', height: '4rem' }} onClick={(e) => e.stopPropagation()}>
                 {t("cart.noImage")}
               </div>
             )}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-semibold text-small text-truncate">{getTranslated(item.name, i18n.language || 'en')}</h3>
               {item.category && (
                 <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
@@ -150,7 +158,7 @@ export default function Cart() {
                 )}
               </div>
             </div>
-            <div className="flex-row flex-gap-sm">
+            <div className="flex-row flex-gap-sm" onClick={(e) => e.stopPropagation()}>
               <div className="quantity-controls">
                 <button
                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -183,7 +191,8 @@ export default function Cart() {
               </button>
             </div>
           </div>
-          ))}
+            );
+          })}
         </div>
 
         {!user && (
@@ -216,7 +225,7 @@ export default function Cart() {
               {t("cart.continueShopping")}
             </Link>
             <button 
-              className="btn-primary btn-full"
+              className="btn btn-cta btn-full"
               onClick={handleCheckout}
               disabled={!user}
             >

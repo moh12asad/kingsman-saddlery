@@ -26,12 +26,13 @@
 }
 
 .badge-sale {
-  background: #dc2626;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .badge-count {
@@ -80,7 +81,7 @@
 }
 
 .link-shop-all:hover {
-  color: var(--brand);
+  color: rgb(255, 198, 41);
 }
 
 .link-shop-all span {

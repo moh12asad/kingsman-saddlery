@@ -1035,7 +1035,7 @@ export default function OrderConfirmation() {
               {t("orderConfirmation.backToCart")}
             </Link>
             <button
-              className="btn-primary"
+              className="btn btn-cta"
               disabled={!hasCompleteAddress || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
               onClick={handleProceedToPayment}
             >
