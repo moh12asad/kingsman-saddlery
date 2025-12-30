@@ -45,7 +45,7 @@
 }
 
 [dir="rtl"] .navbar-links {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 /* Desktop RTL navbar order */
@@ -63,18 +63,20 @@
   }
 }
 
-/* Mobile: Keep brand first, links second regardless of RTL */
+/* Mobile: Match English layout - brand first, buttons second, links third */
 @media (max-width: 768px) {
   [dir="rtl"] .navbar-left {
-    order: 3;
+    order: 1;
   }
 
   [dir="rtl"] .navbar-brand-center {
-    order: 1 !important;
+    order: 0;
   }
 
   [dir="rtl"] .navbar-links {
-    order: 2 !important;
+    order: 2;
+    justify-content: center !important;
+    align-items: center !important;
   }
 }
 

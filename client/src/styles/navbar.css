@@ -464,6 +464,12 @@
     /* Don't clip positioned children */
     contain: none;
   }
+
+  /* Ensure RTL languages have same styling as LTR on mobile */
+  [dir="rtl"] .navbar-links {
+    justify-content: center !important;
+    align-items: center !important;
+  }
 }
 
 @media (max-width: 480px) {
