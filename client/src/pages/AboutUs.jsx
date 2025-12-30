@@ -1,18 +1,23 @@
+import { useTranslation } from "react-i18next";
+import "../styles/about-us.css";
+
 export default function AboutUs() {
+  const { t } = useTranslation();
+
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container-main padding-y-xl">
-        <h1 className="heading-1 margin-bottom-lg">About Us</h1>
-        <div className="card">
-          <div className="spacing-y-md">
-            <p className="text-lg">
-              Welcome to Kingsman Saddlery, your trusted source for premium equestrian equipment and supplies.
+    <main className="page-about-us">
+      <div className="container-main">
+        <h1 className="page-title">{t("aboutUs.title")}</h1>
+        <div className="page-card">
+          <div className="page-content">
+            <p className="page-text-large">
+              {t("aboutUs.welcome")}
             </p>
-            <p>
-              We are dedicated to providing the finest quality saddles, tack, and accessories for horse enthusiasts and professionals alike.
+            <p className="page-text">
+              {t("aboutUs.dedication")}
             </p>
-            <p>
-              Our commitment to excellence and customer satisfaction has made us a leading name in the equestrian community.
+            <p className="page-text">
+              {t("aboutUs.commitment")}
             </p>
           </div>
         </div>
@@ -20,9 +25,3 @@ export default function AboutUs() {
     </main>
   );
 }
-
-
-
-
-
-

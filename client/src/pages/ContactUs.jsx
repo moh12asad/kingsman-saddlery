@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FaPhone, FaWhatsapp, FaEnvelope, FaMapMarkerAlt, FaClock } from "react-icons/fa";
 import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
+import "../styles/contact-us.css";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function ContactUs() {
+  const { t } = useTranslation();
   const [storeInfo, setStoreInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -50,10 +53,10 @@ export default function ContactUs() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send message");
+        throw new Error(data.error || t("contactUs.error"));
       }
 
-      setSuccess("Thank you for contacting us! We'll get back to you soon.");
+      setSuccess(t("contactUs.success"));
       setFormData({
         name: "",
         email: "",
@@ -62,7 +65,7 @@ export default function ContactUs() {
         message: "",
       });
     } catch (err) {
-      setError(err.message || "Unable to send message. Please try again.");
+      setError(err.message || t("contactUs.error"));
     } finally {
       setSubmitting(false);
     }
@@ -70,10 +73,10 @@ export default function ContactUs() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="container-main padding-y-xl">
+      <main className="page-contact-us">
+        <div className="container-main">
           <div className="text-center">
-            <div className="text-muted">Loading...</div>
+            <div className="text-muted">{t("common.loading")}</div>
           </div>
         </div>
       </main>
@@ -81,22 +84,22 @@ export default function ContactUs() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container-main padding-y-xl">
-        <h1 className="heading-1 margin-bottom-lg">Contact Us</h1>
+    <main className="page-contact-us">
+      <div className="container-main">
+        <h1 className="page-title">{t("contactUs.title")}</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg" style={{marginTop: "7rem"}}>
+        <div className="contact-grid">
           {/* Contact Information */}
-          <div className="card">
-            <div className="spacing-y-md">
-              <h2 className="heading-3 margin-bottom-md">Get in Touch</h2>
+          <div className="page-card">
+            <div className="page-content">
+              <h2 className="page-section-title">{t("contactUs.getInTouch")}</h2>
               
               {storeInfo?.storePhone && (
-                <div className="flex-row flex-align-center flex-gap-md margin-bottom-md">
-                  <FaPhone className="text-primary" style={{ fontSize: "1.25rem" }} />
+                <div className="contact-item">
+                  <FaPhone className="contact-icon" />
                   <div>
-                    <strong>Phone:</strong>{" "}
-                    <a href={`tel:${storeInfo.storePhone}`} className="text-link">
+                    <strong>{t("contactUs.phone")}</strong>{" "}
+                    <a href={`tel:${storeInfo.storePhone}`} className="contact-link">
                       {storeInfo.storePhone}
                     </a>
                   </div>
@@ -104,15 +107,15 @@ export default function ContactUs() {
               )}
 
               {storeInfo?.whatsappNumber && (
-                <div className="flex-row flex-align-center flex-gap-md margin-bottom-md">
-                  <FaWhatsapp className="text-primary" style={{ fontSize: "1.25rem" }} />
+                <div className="contact-item">
+                  <FaWhatsapp className="contact-icon" />
                   <div>
-                    <strong>WhatsApp:</strong>{" "}
+                    <strong>{t("contactUs.whatsapp")}</strong>{" "}
                     <a 
                       href={getWhatsAppLink(storeInfo.whatsappNumber)} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-link"
+                      className="contact-link"
                     >
                       {storeInfo.whatsappNumber}
                     </a>
@@ -121,11 +124,11 @@ export default function ContactUs() {
               )}
 
               {storeInfo?.storeEmail && (
-                <div className="flex-row flex-align-center flex-gap-md margin-bottom-md">
-                  <FaEnvelope className="text-primary" style={{ fontSize: "1.25rem" }} />
+                <div className="contact-item">
+                  <FaEnvelope className="contact-icon" />
                   <div>
-                    <strong>Email:</strong>{" "}
-                    <a href={`mailto:${storeInfo.storeEmail}`} className="text-link">
+                    <strong>{t("contactUs.email")}</strong>{" "}
+                    <a href={`mailto:${storeInfo.storeEmail}`} className="contact-link">
                       {storeInfo.storeEmail}
                     </a>
                   </div>
@@ -133,26 +136,24 @@ export default function ContactUs() {
               )}
 
               {storeInfo?.location && formatAddress(storeInfo.location) && (
-                <div className="flex-row flex-align-start flex-gap-md margin-bottom-md">
-                  <FaMapMarkerAlt className="text-primary" style={{ fontSize: "1.25rem", marginTop: "4px" }} />
+                <div className="contact-item">
+                  <FaMapMarkerAlt className="contact-icon" />
                   <div>
-                    <strong>Address:</strong>
-                    <p style={{ margin: "4px 0 0 0" }}>{formatAddress(storeInfo.location)}</p>
+                    <strong>{t("contactUs.address")}</strong>
+                    <p className="contact-address">{formatAddress(storeInfo.location)}</p>
                   </div>
                 </div>
               )}
 
               {storeInfo?.workingHours && (
-                <div className="margin-top-md">
-                  <div className="flex-row flex-align-start flex-gap-md margin-bottom-md">
-                    <FaClock className="text-primary" style={{ fontSize: "1.25rem", marginTop: "4px" }} />
-                    <div>
-                      <strong>Business Hours:</strong>
-                      <div className="margin-top-sm">
-                        {formatWorkingHours(storeInfo.workingHours).map((line, idx) => (
-                          <p key={idx} style={{ margin: "4px 0" }}>{line}</p>
-                        ))}
-                      </div>
+                <div className="contact-item">
+                  <FaClock className="contact-icon" />
+                  <div>
+                    <strong>{t("contactUs.businessHours")}</strong>
+                    <div className="contact-hours">
+                      {formatWorkingHours(storeInfo.workingHours).map((line, idx) => (
+                        <p key={idx}>{line}</p>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -161,15 +162,15 @@ export default function ContactUs() {
           </div>
 
           {/* Contact Form */}
-          <div className="card">
-            <h2 className="heading-3 margin-bottom-md">Send us a Message</h2>
-            <form onSubmit={handleSubmit} className="spacing-y-md">
+          <div className="page-card">
+            <h2 className="page-section-title">{t("contactUs.sendMessage")}</h2>
+            <form onSubmit={handleSubmit} className="contact-form">
               <div className="form-group">
-                <label className="form-label form-label-required">Name</label>
+                <label className="form-label form-label-required">{t("contactUs.name")}</label>
                 <input
                   className="input"
                   type="text"
-                  placeholder="Your name"
+                  placeholder={t("contactUs.namePlaceholder")}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
@@ -177,11 +178,11 @@ export default function ContactUs() {
               </div>
 
               <div className="form-group">
-                <label className="form-label form-label-required">Email</label>
+                <label className="form-label form-label-required">{t("contactUs.emailLabel")}</label>
                 <input
                   className="input"
                   type="email"
-                  placeholder="your.email@example.com"
+                  placeholder={t("contactUs.emailPlaceholder")}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
@@ -189,22 +190,22 @@ export default function ContactUs() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Phone</label>
+                <label className="form-label">{t("contactUs.phoneLabel")}</label>
                 <input
                   className="input"
                   type="tel"
-                  placeholder="+1234567890"
+                  placeholder={t("contactUs.phonePlaceholder")}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label form-label-required">Subject</label>
+                <label className="form-label form-label-required">{t("contactUs.subject")}</label>
                 <input
                   className="input"
                   type="text"
-                  placeholder="What is this regarding?"
+                  placeholder={t("contactUs.subjectPlaceholder")}
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   required
@@ -212,11 +213,11 @@ export default function ContactUs() {
               </div>
 
               <div className="form-group">
-                <label className="form-label form-label-required">Message</label>
+                <label className="form-label form-label-required">{t("contactUs.message")}</label>
                 <textarea
                   className="input"
                   rows="6"
-                  placeholder="Tell us how we can help you..."
+                  placeholder={t("contactUs.messagePlaceholder")}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   required
@@ -231,7 +232,7 @@ export default function ContactUs() {
                 className="btn btn-primary"
                 disabled={submitting}
               >
-                {submitting ? "Sending..." : "Send Message"}
+                {submitting ? t("contactUs.sending") : t("contactUs.send")}
               </button>
             </form>
           </div>
@@ -240,9 +241,3 @@ export default function ContactUs() {
     </main>
   );
 }
-
-
-
-
-
-

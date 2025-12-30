@@ -846,6 +846,46 @@
         "saved": "Settings saved successfully!"
       }
     }
+  },
+  "aboutUs": {
+    "title": "About Us",
+    "welcome": "Welcome to Kingsman Saddlery, your trusted source for premium equestrian equipment and supplies.",
+    "dedication": "We are dedicated to providing the finest quality saddles, tack, and accessories for horse enthusiasts and professionals alike.",
+    "commitment": "Our commitment to excellence and customer satisfaction has made us a leading name in the equestrian community."
+  },
+  "contactUs": {
+    "title": "Contact Us",
+    "getInTouch": "Get in Touch",
+    "phone": "Phone:",
+    "whatsapp": "WhatsApp:",
+    "email": "Email:",
+    "emailLabel": "Email",
+    "address": "Address:",
+    "businessHours": "Business Hours:",
+    "sendMessage": "Send us a Message",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "your.email@example.com",
+    "phoneLabel": "Phone",
+    "phonePlaceholder": "+1234567890",
+    "subject": "Subject",
+    "subjectPlaceholder": "What is this regarding?",
+    "message": "Message",
+    "messagePlaceholder": "Tell us how we can help you...",
+    "send": "Send Message",
+    "sending": "Sending...",
+    "success": "Thank you for contacting us! We'll get back to you soon.",
+    "error": "Unable to send message. Please try again."
+  },
+  "directions": {
+    "title": "Directions",
+    "location": "Location",
+    "phone": "Phone",
+    "whatsapp": "WhatsApp",
+    "waze": "Navigate with Waze",
+    "googleMaps": "Get Directions with Google Maps",
+    "call": "Call",
+    "contact": "Contact Us"
   }
 }
 
