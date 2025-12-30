@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // Helper Functions
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the resource (by userId)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Validate email format
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    // Validate string length (min, max)
+    function isValidStringLength(str, min, max) {
+      return str is string && str.size() >= min && str.size() <= max;
+    }
+    
+    // Validate phone number (basic validation)
+    function isValidPhone(phone) {
+      return phone is string && phone.size() <= 20;
+    }
+    
+    // Validate positive number
+    function isPositiveNumber(num) {
+      return num is number && num >= 0;
+    }
+    
+    // Validate array is not empty
+    function isNonEmptyArray(arr) {
+      return arr is list && arr.size() > 0;
+    }
+    
+    // ============================================
+    // Settings Collection
+    // ============================================
+    // Read: Public (anyone can read store info for Footer, ContactUs page, etc.)
+    // Write: Deny all client writes (only backend API can write, with admin verification)
+    match /settings/{document=**} {
+      allow read: if true; // Public read access
+      allow write: if false; // No direct client writes - all writes go through backend API
+    }
+    
+    // ============================================
+    // Contact Submissions Collection
+    // ============================================
+    // Read: Only backend (admin routes enforce this)
+    // Write: Public create with validations (anyone can submit contact forms)
+    match /contact_submissions/{submissionId} {
+      // Only backend can read (admin routes)
+      allow read: if false;
+      
+      // Anyone can create, but with validations
+      allow create: if 
+        // Required fields validation
+        request.resource.data.keys().hasAll(['name', 'email', 'subject', 'message', 'status', 'createdAt']) &&
+        // Name validation: non-empty string, 2-100 characters
+        isValidStringLength(request.resource.data.name, 2, 100) &&
+        // Email validation: valid format and non-empty
+        isValidEmail(request.resource.data.email) &&
+        isValidStringLength(request.resource.data.email, 5, 255) &&
+        // Subject validation: non-empty string, 3-200 characters
+        isValidStringLength(request.resource.data.subject, 3, 200) &&
+        // Message validation: non-empty string, 10-5000 characters
+        isValidStringLength(request.resource.data.message, 10, 5000) &&
+        // Phone validation (optional): if provided, must be valid string
+        (!('phone' in request.resource.data) || 
+         request.resource.data.phone == null || 
+         (request.resource.data.phone is string && isValidPhone(request.resource.data.phone))) &&
+        // Status validation: must be "new" for new submissions
+        request.resource.data.status is string &&
+        request.resource.data.status == "new" &&
+        // Timestamp validation: createdAt must be server timestamp
+        request.resource.data.createdAt == request.time;
+      
+      // Only backend can update/delete
+      allow update, delete: if false;
+    }
+    
+    // ============================================
+    // Users Collection
+    // ============================================
+    match /users/{userId} {
+      // Users can only read their own data
+      allow read: if isOwner(userId);
+      
+      // All writes go through backend API (backend validates role, active status, etc.)
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Products Collection
+    // ============================================
+    match /products/{productId} {
+      // Public read access
+      allow read: if true;
+      
+      // All writes go through backend API
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Categories Collection
+    // ============================================
+    match /categories/{categoryId} {
+      // Public read access
+      allow read: if true;
+      
+      // All writes go through backend API
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Orders Collection
+    // ============================================
+    match /orders/{orderId} {
+      // Users can only read their own orders
+      // Validate ownership by checking customerId or customerEmail
+      allow read: if isAuthenticated() && resource != null && (
+        // Check if order belongs to authenticated user by customerId
+        ('customerId' in resource.data && 
+         resource.data.customerId is string && 
+         resource.data.customerId == request.auth.uid) ||
+        // OR check by customerEmail (for flexibility)
+        ('customerEmail' in resource.data && 
+         resource.data.customerEmail is string && 
+         resource.data.customerEmail == request.auth.token.email)
+      );
+      
+      // All writes go through backend API (backend validates prices, items, totals, etc.)
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Brands Collection
+    // ============================================
+    match /brands/{brandId} {
+      // Public read access
+      allow read: if true;
+      
+      // All writes go through backend API
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Hero Slides Collection
+    // ============================================
+    match /hero-slides/{slideId} {
+      // Public read access
+      allow read: if true;
+      
+      // All writes go through backend API
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Ads Collection
+    // ============================================
+    match /ads/{adId} {
+      // Public read access
+      allow read: if true;
+      
+      // All writes go through backend API
+      allow write: if false;
+    }
+    
+    // ============================================
+    // Default: Deny all other collections
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
