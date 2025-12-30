@@ -40,9 +40,11 @@ export default function BrandsCarousel() {
       // Wait for DOM to render
       setTimeout(() => {
         if (scrollRef.current) {
-          // Start from the middle set of brands (second set)
-          const cardWidth = 180; // brand card width
-          const gap = 32; // gap between cards (2rem = 32px)
+          // Responsive card width and gap based on screen size
+          const isMobile = window.innerWidth <= 768;
+          const isSmallMobile = window.innerWidth <= 480;
+          const cardWidth = isSmallMobile ? 90 : isMobile ? 100 : 180;
+          const gap = isMobile ? 16 : 32; // 1rem on mobile, 2rem on desktop
           const singleSetWidth = brands.length * (cardWidth + gap);
           // Scroll to start of second set
           scrollRef.current.scrollLeft = singleSetWidth;
@@ -64,8 +66,11 @@ export default function BrandsCarousel() {
     // Start auto-scroll
     autoScrollIntervalRef.current = setInterval(() => {
       if (scrollRef.current && !isPaused) {
-        const cardWidth = 180;
-        const gap = 32;
+        // Responsive card width and gap based on screen size
+        const isMobile = window.innerWidth <= 768;
+        const isSmallMobile = window.innerWidth <= 480;
+        const cardWidth = isSmallMobile ? 90 : isMobile ? 100 : 180;
+        const gap = isMobile ? 16 : 32;
         const singleSetWidth = brands.length * (cardWidth + gap);
         const currentScroll = scrollRef.current.scrollLeft;
         
@@ -92,8 +97,11 @@ export default function BrandsCarousel() {
       // Temporarily pause auto-scroll when using arrows
       setIsPaused(true);
       
-      const cardWidth = 180;
-      const gap = 32;
+      // Responsive card width and gap based on screen size
+      const isMobile = window.innerWidth <= 768;
+      const isSmallMobile = window.innerWidth <= 480;
+      const cardWidth = isSmallMobile ? 90 : isMobile ? 100 : 180;
+      const gap = isMobile ? 16 : 32;
       const scrollAmount = cardWidth + gap;
       
       scrollRef.current.scrollBy({
