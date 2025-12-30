@@ -24,12 +24,12 @@
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.75rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.5rem;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   width: 100%;
   overflow: visible;
   position: relative;
@@ -38,6 +38,79 @@
 .navbar-left {
   display: flex;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Add margin-right for Hebrew and Arabic (RTL) - Desktop only */
+@media (min-width: 769px) {
+  [lang="he"] .navbar-left,
+  [lang="ar"] .navbar-left {
+    margin-right: 12rem;
+  }
+}
+
+/* Phone Number */
+.navbar-phone {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+}
+
+.navbar-phone:hover {
+  color: rgb(255, 198, 41);
+  background-color: rgba(255, 198, 41, 0.1);
+}
+
+.navbar-phone-icon {
+  color: rgb(255, 198, 41);
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.navbar-phone-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Navigation Links */
+.navbar-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.navbar-nav-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.navbar-nav-link:hover {
+  color: rgb(255, 198, 41);
+  background-color: rgba(255, 198, 41, 0.1);
+}
+
+.navbar-nav-link-active {
+  color: rgb(255, 198, 41);
+  border-bottom: 2px solid rgb(255, 198, 41);
+}
+
+.navbar-nav-link-active:hover {
+  color: rgb(255, 198, 41);
 }
 
 .navbar-brand-center {
@@ -193,7 +266,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
   overflow-x: auto;
   overflow-y: visible;
@@ -213,6 +286,73 @@
   opacity: 1 !important;
   display: flex !important;
   pointer-events: auto !important;
+  font-size: 0.875rem;
+}
+
+/* Make icons smaller in navbar */
+.navbar-links .nav-link svg,
+.navbar-links .w-5,
+.navbar-links .h-5 {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+.navbar-links .w-4,
+.navbar-links .h-4 {
+  width: 0.75rem !important;
+  height: 0.75rem !important;
+}
+
+.navbar-links .w-3,
+.navbar-links .h-3 {
+  width: 0.625rem !important;
+  height: 0.625rem !important;
+}
+
+/* Make nav-link buttons smaller */
+.navbar-links .nav-link {
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Make admin button smaller */
+.navbar-links .btn-icon {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.navbar-links .btn-icon svg {
+  width: 0.75rem !important;
+  height: 0.75rem !important;
+}
+
+/* Make profile menu container smaller */
+.navbar-links .profile-menu-container {
+  gap: 0.25rem;
+}
+
+.navbar-links .profile-menu-container button {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.navbar-links .profile-menu-container .img-avatar {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+}
+
+/* Make badge counts smaller in navbar */
+.navbar-links .badge-count {
+  font-size: 0.5rem !important;
+  min-width: 0.75rem !important;
+  height: 0.75rem !important;
+  padding: 0 0.125rem !important;
+  top: -0.125rem !important;
+  right: -0.125rem !important;
 }
 
 .nav-link:hover {
@@ -230,25 +370,82 @@
 /* Mobile Navbar Styles */
 @media (max-width: 768px) {
   .navbar {
-    padding-top: 0.375rem;
-    padding-bottom: 0.375rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
     min-height: auto;
   }
 
   .navbar-content {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
-    padding-top: 0.375rem;
-    padding-bottom: 0.375rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
     grid-template-columns: 1fr;
-    gap: 0.5rem;
+    gap: 0.25rem;
     align-items: center;
   }
 
-  .navbar-brand-center {
+  .navbar-left {
     order: 1;
     width: 100%;
     justify-content: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 198, 41, 0.2);
+    margin-bottom: 0.25rem;
+    margin-right: 0 !important;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .navbar-left::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .navbar-left::-webkit-scrollbar-thumb {
+    background: rgba(255, 198, 41, 0.5);
+    border-radius: 2px;
+  }
+
+  .navbar-phone {
+    padding: 0.125rem 0.25rem;
+    font-size: 0.6875rem;
+  }
+
+  .navbar-phone-icon {
+    font-size: 0.6875rem;
+  }
+
+  .navbar-phone-text {
+    font-size: 0.6875rem;
+  }
+
+  .navbar-nav-links {
+    gap: 0.125rem;
+    justify-content: center;
+    flex-wrap: nowrap;
+    min-width: fit-content;
+  }
+
+  .navbar-nav-link {
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.375rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .navbar-phone {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .navbar-brand-center {
+    order: 0;
+    width: 100%;
+    justify-content: center;
+    padding: 0.125rem 0;
   }
 
   .navbar-links {
@@ -266,6 +463,35 @@
     position: relative;
     /* Don't clip positioned children */
     contain: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-left {
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    margin-right: 0 !important;
+  }
+
+  .navbar-phone {
+    padding: 0.25rem 0.375rem;
+  }
+
+  .navbar-phone-icon {
+    font-size: 0.6875rem;
+  }
+
+  .navbar-phone-text {
+    font-size: 0.6875rem;
+  }
+
+  .navbar-nav-links {
+    gap: 0.125rem;
+  }
+
+  .navbar-nav-link {
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.375rem;
   }
 
   /* Ensure profile container can escape overflow */
@@ -285,19 +511,19 @@
   }
 
   .navbar-links .nav-link {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     flex-shrink: 0;
-    min-width: 2.5rem;
-    height: 2.5rem;
+    min-width: 1.75rem;
+    height: 1.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem;
+    padding: 0.25rem;
   }
 
   .navbar-links .nav-link svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 0.875rem;
+    height: 0.875rem;
   }
 
   /* Ensure profile section is always visible and properly styled */
@@ -314,22 +540,22 @@
   }
 
   .navbar-links .img-avatar {
-    width: 2rem;
-    height: 2rem;
+    width: 1.5rem;
+    height: 1.5rem;
     flex-shrink: 0;
   }
 
   .navbar-links .btn-secondary {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.375rem;
+    font-size: 0.6875rem;
     white-space: nowrap;
     flex-shrink: 0;
     min-width: auto;
   }
 
   .navbar-links .btn-link {
-    font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -362,15 +588,15 @@
 
   /* Keep all nav items visible but allow scrolling */
   .navbar-links .nav-link {
-    font-size: 0.8125rem;
-    min-width: 2.25rem;
-    height: 2.25rem;
-    padding: 0.375rem;
+    font-size: 0.6875rem;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.25rem;
   }
 
   .navbar-links .nav-link svg {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 0.75rem;
+    height: 0.75rem;
   }
 }
 

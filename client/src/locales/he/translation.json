@@ -83,7 +83,7 @@
     }
   },
   "navbar": {
-    "home": "בית",
+    "home": "ראשי",
     "shop": "חנות",
     "products": "מוצרים",
     "cart": "עגלה",
@@ -93,7 +93,8 @@
     "admin": "ניהול",
     "signIn": "התחבר",
     "signOut": "התנתק",
-    "search": "חיפוש"
+    "search": "חיפוש",
+    "directions": "הגעה"
   },
   "cart": {
     "title": "העגלה שלך",

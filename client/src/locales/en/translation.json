@@ -93,7 +93,8 @@
     "admin": "Admin",
     "signIn": "Sign In",
     "signOut": "Sign Out",
-    "search": "Search"
+    "search": "Search",
+    "directions": "Directions"
   },
   "cart": {
     "title": "Your Cart",

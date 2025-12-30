@@ -1,13 +1,14 @@
 import { useAuth } from "../context/AuthContext";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { signInWithGoogle, signOutUser } from "../lib/firebase";
-import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch, FaShoppingBag, FaChevronDown } from "react-icons/fa";
+import { FaShoppingCart, FaCog, FaHeart, FaUser, FaSearch, FaShoppingBag, FaChevronDown, FaPhone } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { getStoreInfo } from "../utils/storeInfo";
 import "../styles/language-switcher.css";
 
 export default function Navbar() {
@@ -21,6 +22,7 @@ export default function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const [isMobile, setIsMobile] = useState(false);
+  const [storeInfo, setStoreInfo] = useState(null);
   const profileMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
 
@@ -37,6 +39,19 @@ export default function Navbar() {
       .filter(Boolean);
     return adminEmails.length === 0 || adminEmails.includes(user.email.toLowerCase());
   }, [user]);
+
+  // Load store info
+  useEffect(() => {
+    async function loadStoreInfo() {
+      try {
+        const storeData = await getStoreInfo();
+        setStoreInfo(storeData);
+      } catch (err) {
+        console.error("Failed to load store info:", err);
+      }
+    }
+    loadStoreInfo();
+  }, []);
 
   // Check if mobile and calculate dropdown position
   useEffect(() => {
@@ -106,7 +121,43 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <nav className="navbar-content">
-        <div className="navbar-left"></div>
+        <div className="navbar-left">
+          {/* Phone Number */}
+          {storeInfo?.storePhone && (
+            <a href={`tel:${storeInfo.storePhone}`} className="navbar-phone">
+              <FaPhone className="navbar-phone-icon" />
+              <span className="navbar-phone-text">{storeInfo.storePhone}</span>
+            </a>
+          )}
+          
+          {/* Navigation Links */}
+          <div className="navbar-nav-links">
+            <NavLink 
+              to="/" 
+              className={({ isActive }) => `navbar-nav-link ${isActive ? "navbar-nav-link-active" : ""}`}
+            >
+              {t("navbar.home")}
+            </NavLink>
+            <NavLink 
+              to="/about" 
+              className={({ isActive }) => `navbar-nav-link ${isActive ? "navbar-nav-link-active" : ""}`}
+            >
+              {t("footer.links.aboutUs")}
+            </NavLink>
+            <NavLink 
+              to="/contact" 
+              className={({ isActive }) => `navbar-nav-link ${isActive ? "navbar-nav-link-active" : ""}`}
+            >
+              {t("footer.links.contactUs")}
+            </NavLink>
+            <NavLink 
+              to="/shipping" 
+              className={({ isActive }) => `navbar-nav-link ${isActive ? "navbar-nav-link-active" : ""}`}
+            >
+              {t("navbar.directions")}
+            </NavLink>
+          </div>
+        </div>
         <Link to="/" className="navbar-brand-center">
           <div className="navbar-brand-wrapper">
             <h1 className="navbar-brand-title">KingsmanSaddlery</h1>
