@@ -886,6 +886,32 @@
     "googleMaps": "Get Directions with Google Maps",
     "call": "Call",
     "contact": "Contact Us"
+  },
+  "joinClub": {
+    "title": "Join Our Customer Club!",
+    "subtitle": "And enjoy exclusive benefits, gifts, and deals!",
+    "name": "Name:",
+    "phone": "Phone:",
+    "email": "Email:",
+    "namePlaceholder": "Your name",
+    "phonePlaceholder": "Phone number",
+    "emailPlaceholder": "Email address",
+    "consent": "Interested in receiving deals by email",
+    "submit": "Send",
+    "submitting": "Sending...",
+    "members": "Club Members",
+    "errors": {
+      "enterName": "Please enter your name",
+      "enterEmail": "Please enter your email address",
+      "validEmail": "Please enter a valid email address",
+      "enterPhone": "Please enter your phone number",
+      "consentRequired": "You must agree to receive emails",
+      "checkFailed": "Failed to check if user exists",
+      "emailAndPhoneExists": "An account with this email and phone number already exists. Please sign in instead.",
+      "emailExists": "An account with this email already exists. Please sign in instead.",
+      "phoneExists": "An account with this phone number already exists. Please sign in instead.",
+      "failed": "Something went wrong. Please try again."
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaTiktok, FaFacebook, FaInstagram, FaEnvelope, FaMapMarkerAlt, FaPhone, FaWhatsapp, FaClock } from "react-icons/fa";
 import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
@@ -12,6 +12,15 @@ export default function Footer() {
   const [categories, setCategories] = useState([]);
   const [storeInfo, setStoreInfo] = useState(null);
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const [joinClubForm, setJoinClubForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    emailConsent: false
+  });
+  const [joinClubError, setJoinClubError] = useState("");
+  const [joinClubSubmitting, setJoinClubSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -33,8 +42,183 @@ export default function Footer() {
     loadData();
   }, [i18n.language]);
 
+  const handleJoinClubSubmit = async (e) => {
+    e.preventDefault();
+    setJoinClubError("");
+
+    // Validation
+    if (!joinClubForm.name || !joinClubForm.name.trim()) {
+      setJoinClubError(t("joinClub.errors.enterName"));
+      return;
+    }
+
+    if (!joinClubForm.email || !joinClubForm.email.trim()) {
+      setJoinClubError(t("joinClub.errors.enterEmail"));
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(joinClubForm.email)) {
+      setJoinClubError(t("joinClub.errors.validEmail"));
+      return;
+    }
+
+    if (!joinClubForm.phone || !joinClubForm.phone.trim()) {
+      setJoinClubError(t("joinClub.errors.enterPhone"));
+      return;
+    }
+
+    if (!joinClubForm.emailConsent) {
+      setJoinClubError(t("joinClub.errors.consentRequired"));
+      return;
+    }
+
+    try {
+      setJoinClubSubmitting(true);
+      setJoinClubError("");
+
+      // Check if email or phone already exists
+      const fullPhone = `+972${joinClubForm.phone.trim()}`;
+      const checkRes = await fetch(`${API}/api/users/check-exists`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: joinClubForm.email.trim().toLowerCase(),
+          phone: fullPhone
+        })
+      });
+
+      if (!checkRes.ok) {
+        throw new Error(t("joinClub.errors.checkFailed"));
+      }
+
+      const checkData = await checkRes.json();
+
+      // If email or phone exists, redirect to sign in page
+      if (checkData.exists) {
+        if (checkData.emailExists && checkData.phoneExists) {
+          setJoinClubError(t("joinClub.errors.emailAndPhoneExists"));
+        } else if (checkData.emailExists) {
+          setJoinClubError(t("joinClub.errors.emailExists"));
+        } else if (checkData.phoneExists) {
+          setJoinClubError(t("joinClub.errors.phoneExists"));
+        }
+        
+        // Redirect to sign in page after a short delay
+        setTimeout(() => {
+          navigate("/signin", { state: { email: joinClubForm.email.trim() } });
+        }, 2000);
+        return;
+      }
+      
+      // Store the data in localStorage to use when user signs up
+      const signupData = {
+        email: joinClubForm.email.trim(),
+        phone: fullPhone,
+        displayName: joinClubForm.name.trim(),
+        emailConsent: true,
+        smsConsent: true,
+        joinClubDate: new Date().toISOString()
+      };
+      localStorage.setItem("signupInviteData", JSON.stringify(signupData));
+      
+      // Redirect to sign up page
+      navigate("/signup", { state: { fromJoinClub: true } });
+    } catch (err) {
+      console.error("Error saving join club data:", err);
+      setJoinClubError(err.message || t("joinClub.errors.failed"));
+    } finally {
+      setJoinClubSubmitting(false);
+    }
+  };
+
   return (
     <footer className="footer">
+      {/* Join Club Invitation Section */}
+      <div className="join-club-section">
+        <div className="join-club-background">
+          <img 
+            src="/join club invitation.png" 
+            alt="Join club invitation background" 
+            className="join-club-bg-image"
+          />
+          <div className="join-club-overlay"></div>
+        </div>
+        <div className="join-club-content">
+          <div className="join-club-header">
+            <h2 className="join-club-title">{t("joinClub.title")}</h2>
+            <p className="join-club-subtitle">{t("joinClub.subtitle")}</p>
+          </div>
+          <form onSubmit={handleJoinClubSubmit} className="join-club-form">
+            {joinClubError && (
+              <div className="join-club-error">
+                {joinClubError}
+              </div>
+            )}
+            <div className="join-club-form-row">
+              <div className="join-club-field">
+                <label className="join-club-label">{t("joinClub.name")}</label>
+                <input
+                  type="text"
+                  className="join-club-input"
+                  value={joinClubForm.name}
+                  onChange={(e) => setJoinClubForm({ ...joinClubForm, name: e.target.value })}
+                  placeholder={t("joinClub.namePlaceholder")}
+                  required
+                />
+              </div>
+              <div className="join-club-field">
+                <label className="join-club-label">{t("joinClub.phone")}</label>
+                <input
+                  type="tel"
+                  className="join-club-input"
+                  value={joinClubForm.phone}
+                  onChange={(e) => setJoinClubForm({ ...joinClubForm, phone: e.target.value.replace(/\D/g, "") })}
+                  placeholder={t("joinClub.phonePlaceholder")}
+                  required
+                />
+              </div>
+              <div className="join-club-field">
+                <label className="join-club-label">{t("joinClub.email")}</label>
+                <input
+                  type="email"
+                  className="join-club-input"
+                  value={joinClubForm.email}
+                  onChange={(e) => setJoinClubForm({ ...joinClubForm, email: e.target.value })}
+                  placeholder={t("joinClub.emailPlaceholder")}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="join-club-submit"
+                disabled={joinClubSubmitting}
+              >
+                {joinClubSubmitting ? t("joinClub.submitting") : t("joinClub.submit")}
+              </button>
+            </div>
+            <div className="join-club-consent-row">
+              <label className="join-club-checkbox-label">
+                <input
+                  type="checkbox"
+                  className="join-club-checkbox"
+                  checked={joinClubForm.emailConsent}
+                  onChange={(e) => setJoinClubForm({ ...joinClubForm, emailConsent: e.target.checked })}
+                  required
+                />
+                <span className="join-club-consent-text">
+                  {t("joinClub.consent")}
+                </span>
+              </label>
+            </div>
+          </form>
+          <div className="join-club-members-text">
+            <span>{t("joinClub.members")}</span>
+          </div>
+        </div>
+      </div>
+
       <div className="footer-content">
         {/* Site Map Column */}
         <div className="footer-column">
