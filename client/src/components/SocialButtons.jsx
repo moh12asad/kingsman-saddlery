@@ -30,7 +30,7 @@ export default function SocialButtons() {
           aria-label="WhatsApp"
           className="social-button social-button-whatsapp"
         >
-          <FaWhatsapp size={24} className="social-button-icon" />
+          <FaWhatsapp size={18} className="social-button-icon" />
         </a>
       )}
 
@@ -42,7 +42,7 @@ export default function SocialButtons() {
         aria-label="Facebook"
         className="social-button social-button-facebook"
       >
-        <FaFacebook size={24} className="social-button-icon" />
+        <FaFacebook size={18} className="social-button-icon" />
       </a>
 
       {/* Instagram */}
@@ -53,7 +53,7 @@ export default function SocialButtons() {
         aria-label="Instagram"
         className="social-button social-button-instagram"
       >
-        <FaInstagram size={24} className="social-button-icon" />
+        <FaInstagram size={18} className="social-button-icon" />
       </a>
 
       {/* TikTok */}
@@ -64,7 +64,7 @@ export default function SocialButtons() {
         aria-label="TikTok"
         className="social-button social-button-tiktok"
       >
-        <FaTiktok size={24} className="social-button-icon" />
+        <FaTiktok size={18} className="social-button-icon" />
       </a>
 
       {/* Email */}
@@ -74,7 +74,7 @@ export default function SocialButtons() {
           aria-label="Email"
           className="social-button social-button-email"
         >
-          <FaEnvelope size={24} className="social-button-icon" />
+          <FaEnvelope size={18} className="social-button-icon" />
         </a>
       )}
 
@@ -86,7 +86,7 @@ export default function SocialButtons() {
         aria-label="Google Maps"
         className="social-button social-button-googlemaps"
       >
-        <FaMapMarkerAlt size={24} className="social-button-icon" />
+        <FaMapMarkerAlt size={18} className="social-button-icon" />
       </a>
 
       {/* Waze */}
@@ -97,7 +97,7 @@ export default function SocialButtons() {
         aria-label="Navigate with Waze"
         className="social-button social-button-waze"
       >
-        <WazeIcon size={24} className="social-button-icon" />
+        <WazeIcon size={18} className="social-button-icon" />
       </a>
     </div>
   );
