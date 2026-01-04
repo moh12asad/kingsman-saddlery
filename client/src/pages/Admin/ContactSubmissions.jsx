@@ -6,7 +6,6 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 
 const STATUS_OPTIONS = {
   new: "New",
-  read: "Read",
   replied: "Replied",
 };
 
@@ -190,8 +189,6 @@ export default function ContactSubmissions() {
     switch (status) {
       case "new":
         return "badge bg-blue-100 text-blue-800";
-      case "read":
-        return "badge bg-yellow-100 text-yellow-800";
       case "replied":
         return "badge bg-green-100 text-green-800";
       default:
@@ -241,7 +238,6 @@ export default function ContactSubmissions() {
               >
                 <option value="all">All</option>
                 <option value="new">New</option>
-                <option value="read">Read</option>
                 <option value="replied">Replied</option>
               </select>
             </div>
@@ -338,10 +334,10 @@ export default function ContactSubmissions() {
                         {submission.status !== "replied" && (
                           <button
                             className="btn btn-sm btn-success"
-                            onClick={() => updateStatus(submission.id, submission.status === "new" ? "read" : "replied")}
-                            title={submission.status === "new" ? "Mark as Read" : "Mark as Replied"}
+                            onClick={() => updateStatus(submission.id, "replied")}
+                            title="Mark as Replied"
                           >
-                            {submission.status === "new" ? <FaCheckCircle /> : <FaCheckCircle />}
+                            <FaCheckCircle />
                           </button>
                         )}
                         <button
@@ -467,10 +463,10 @@ export default function ContactSubmissions() {
                   <button
                     className="btn btn-success"
                     onClick={() => {
-                      updateStatus(selectedSubmission.id, selectedSubmission.status === "new" ? "read" : "replied");
+                      updateStatus(selectedSubmission.id, "replied");
                     }}
                   >
-                    {selectedSubmission.status === "new" ? "Mark as Read" : "Mark as Replied"}
+                    Mark as Replied
                   </button>
                 )}
                 <button

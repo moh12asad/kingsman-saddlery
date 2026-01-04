@@ -284,16 +284,16 @@ export default function Products() {
 
   return (
     <main className="shop-page">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 products-page-container">
         {/* Header */}
-        <div className="mb-6 margin-top-xl">
+        <div className="mb-6 margin-top-xl products-page-header">
           <button
             onClick={() => navigate("/shop")}
-            className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center gap-2"
+            className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center gap-2 products-back-button"
           >
             {t("products.backToShop")}
           </button>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold products-page-title">
             {brandParam
               ? `${decodeURIComponent(brandParam)} ${t("products.productsLabel")}`
               : subcategoryParam 
@@ -303,12 +303,12 @@ export default function Products() {
               : t("products.allProducts")}
           </h1>
           {brandParam && (
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-2 products-page-subtitle">
               {t("products.showingProductsFromBrand")} <strong>{decodeURIComponent(brandParam)}</strong>
             </p>
           )}
           {categoryParam && subcategoryParam && !brandParam && (
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-2 products-page-subtitle">
               {decodeURIComponent(categoryParam)} → {decodeURIComponent(subcategoryParam)}
             </p>
           )}
@@ -540,8 +540,23 @@ function ProductCarousel({ products, onAddToCart }) {
 
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const cardWidth = 280;
-      const scrollAmount = cardWidth + 20;
+      // Responsive card width based on screen size
+      const screenWidth = window.innerWidth;
+      let cardWidth = 280;
+      let gap = 20;
+      
+      if (screenWidth <= 480) {
+        cardWidth = 130;
+        gap = 10;
+      } else if (screenWidth <= 640) {
+        cardWidth = 150;
+        gap = 12;
+      } else if (screenWidth <= 768) {
+        cardWidth = 150;
+        gap = 15;
+      }
+      
+      const scrollAmount = cardWidth + gap;
       // In RTL, scroll direction is reversed
       const effectiveDirection = isRTL ? (direction === 'left' ? 'right' : 'left') : direction;
       scrollRef.current.scrollBy({
