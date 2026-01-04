@@ -26,10 +26,10 @@ export default function SignupInvitePopup() {
     if (!loading && !user) {
       const hasShown = localStorage.getItem(STORAGE_KEY);
       if (!hasShown) {
-        // Delay showing popup slightly for better UX
+        // Delay showing popup to give users time to see the page content first
         const timer = setTimeout(() => {
           setShow(true);
-        }, 1000);
+        }, 3000); // 3 second delay
         return () => clearTimeout(timer);
       }
     } else {
