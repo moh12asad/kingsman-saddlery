@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
@@ -7,6 +8,7 @@ import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminHeroSlides() {
+  const { t } = useTranslation();
   const [heroSlides, setHeroSlides] = useState([]);
   const [loadingSlides, setLoadingSlides] = useState(false);
   const [slideForm, setSlideForm] = useState({
@@ -375,13 +377,13 @@ export default function AdminHeroSlides() {
                           onClick={() => deleteSlide(slide.id)}
                           disabled={deletingSlideId === slide.id}
                         >
-                          {deletingSlideId === slide.id ? "..." : "Confirm"}
+                          {deletingSlideId === slide.id ? "..." : t('admin.products.confirm')}
                         </button>
                         <button
                           className="btn btn-sm"
                           onClick={() => setConfirmDelete(null)}
                         >
-                          Cancel
+                          {t('admin.products.cancel')}
                         </button>
                       </div>
                     ) : (
@@ -390,7 +392,7 @@ export default function AdminHeroSlides() {
                         onClick={() => setConfirmDelete(slide.id)}
                         disabled={deletingSlideId === slide.id}
                       >
-                        Delete
+                        {t('admin.products.delete')}
                       </button>
                     )}
                   </div>

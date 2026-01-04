@@ -331,7 +331,11 @@
     },
     "brands": {
       "loading": "Loading brands...",
-      "brand": "Brand"
+      "brand": "Brand",
+      "deleteBrand": "Delete Brand?",
+      "deleteConfirmMessage": "Are you sure you want to delete",
+      "cannotBeUndone": "This action cannot be undone.",
+      "deleting": "Deleting..."
     },
     "common": {
       "scrollLeft": "Scroll left",
@@ -636,7 +640,11 @@
       "delete": "Delete",
       "confirm": "Confirm",
       "cancel": "Cancel",
-      "failedToDelete": "Failed to delete product"
+      "failedToDelete": "Failed to delete product",
+      "deleteProduct": "Delete Product?",
+      "deleteConfirmMessage": "Are you sure you want to delete",
+      "cannotBeUndone": "This action cannot be undone.",
+      "deleting": "Deleting..."
     },
     "createProduct": {
       "title": "Create Product",

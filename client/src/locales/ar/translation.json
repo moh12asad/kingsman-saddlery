@@ -249,7 +249,11 @@
     },
     "brands": {
       "loading": "جاري تحميل العلامات التجارية...",
-      "brand": "علامة تجارية"
+      "brand": "علامة تجارية",
+      "deleteBrand": "حذف العلامة التجارية؟",
+      "deleteConfirmMessage": "هل أنت متأكد أنك تريد حذف",
+      "cannotBeUndone": "لا يمكن التراجع عن هذا الإجراء.",
+      "deleting": "جاري الحذف..."
     },
     "common": {
       "scrollLeft": "التمرير لليسار",
@@ -554,7 +558,11 @@
       "delete": "حذف",
       "confirm": "تأكيد",
       "cancel": "إلغاء",
-      "failedToDelete": "فشل حذف المنتج"
+      "failedToDelete": "فشل حذف المنتج",
+      "deleteProduct": "حذف المنتج؟",
+      "deleteConfirmMessage": "هل أنت متأكد أنك تريد حذف",
+      "cannotBeUndone": "لا يمكن التراجع عن هذا الإجراء.",
+      "deleting": "جاري الحذف..."
     },
     "createProduct": {
       "title": "إنشاء منتج",

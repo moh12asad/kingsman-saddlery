@@ -8,7 +8,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminProducts(){
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rows, setRows] = useState([]);
   const [allRows, setAllRows] = useState([]); // Store all products
   const [categories, setCategories] = useState([]);
@@ -16,7 +16,7 @@ export default function AdminProducts(){
   const [searchQuery, setSearchQuery] = useState(""); // Search query
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // Store product object
 
   async function load(){
     // Fetch with all=true to get full translation objects for admin display
@@ -96,10 +96,6 @@ export default function AdminProducts(){
 
 
   async function deleteProduct(id){
-    if (confirmDelete !== id) {
-      setConfirmDelete(id);
-      return;
-    }
     setDeletingId(id);
     try {
       const token = await auth.currentUser?.getIdToken();
@@ -166,9 +162,14 @@ export default function AdminProducts(){
               onChange={e => setSelectedCategory(e.target.value)}
             >
               <option value="all">{t('admin.products.allCategories')}</option>
-              {productCategories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+              {productCategories.map(cat => {
+                // Find a product with this category to get the translation object
+                const sampleProduct = allRows.find(p => getEnglishName(p.category) === cat);
+                const translatedCat = sampleProduct ? getTranslated(sampleProduct.category, i18n.language || 'en') : cat;
+                return (
+                  <option key={cat} value={cat}>{translatedCat}</option>
+                );
+              })}
             </select>
             {(selectedCategory !== "all" || searchQuery) && (
               <button 
@@ -215,18 +216,18 @@ export default function AdminProducts(){
                   <tr key={p.id}>
                     <td>
                       {p.image ? (
-                        <img src={p.image} alt={typeof p.name === 'string' ? p.name : (p.name?.en || p.name?.ar || p.name?.he || '')} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
+                        <img src={p.image} alt={getTranslated(p.name, i18n.language || 'en') || ''} className="w-16 h-16 object-cover rounded-lg border shadow-sm" />
                       ) : (
                         <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-xs">{t('admin.products.noImage')}</div>
                       )}
                     </td>
-                    <td className="font-medium">{typeof p.name === 'string' ? p.name : (p.name?.en || p.name?.ar || p.name?.he || "-")}</td>
+                    <td className="font-medium">{getTranslated(p.name, i18n.language || 'en') || "-"}</td>
                     <td>₪{(p.price || 0).toFixed(2)}</td>
-                    <td>{typeof p.category === 'string' ? p.category : (p.category?.en || p.category?.ar || p.category?.he || "-")}</td>
-                    <td>{typeof p.subCategory === 'string' ? p.subCategory : (p.subCategory?.en || p.subCategory?.ar || p.subCategory?.he || "-")}</td>
+                    <td>{getTranslated(p.category, i18n.language || 'en') || "-"}</td>
+                    <td>{getTranslated(p.subCategory, i18n.language || 'en') || "-"}</td>
                     <td className="max-w-xs">
-                      <p className="text-sm text-gray-600 truncate" title={typeof p.description === 'string' ? p.description : (p.description?.en || p.description?.ar || p.description?.he || "")}>
-                        {typeof p.description === 'string' ? p.description : (p.description?.en || p.description?.ar || p.description?.he || "-")}
+                      <p className="text-sm text-gray-600 truncate" title={getTranslated(p.description, i18n.language || 'en') || ""}>
+                        {getTranslated(p.description, i18n.language || 'en') || "-"}
                       </p>
                     </td>
                     <td>{p.brand || "-"}</td>
@@ -263,31 +264,13 @@ export default function AdminProducts(){
                         >
                           {t('admin.products.edit')}
                         </button>
-                        {confirmDelete === p.id ? (
-                          <div className="flex gap-1">
-                            <button 
-                              className="btn btn-danger btn-sm" 
-                              onClick={()=>deleteProduct(p.id)}
-                              disabled={deletingId === p.id}
-                            >
-                              {deletingId === p.id ? "..." : t('admin.products.confirm')}
-                            </button>
-                            <button 
-                              className="btn btn-sm" 
-                              onClick={()=>setConfirmDelete(null)}
-                            >
-                              {t('admin.products.cancel')}
-                            </button>
-                          </div>
-                        ) : (
-                          <button 
-                            className="btn btn-danger btn-sm" 
-                            onClick={()=>setConfirmDelete(p.id)}
-                            disabled={deletingId === p.id}
-                          >
-                            {t('admin.products.delete')}
-                          </button>
-                        )}
+                        <button 
+                          className="btn btn-danger btn-sm" 
+                          onClick={() => setConfirmDelete(p)}
+                          disabled={deletingId === p.id}
+                        >
+                          {t('admin.products.delete')}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -297,6 +280,39 @@ export default function AdminProducts(){
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="modal-overlay" onClick={() => {
+          setConfirmDelete(null);
+          setDeletingId(null);
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2 className="heading-3 margin-bottom-md">{t('admin.products.deleteProduct')}</h2>
+            <p className="margin-bottom-lg">
+              {t('admin.products.deleteConfirmMessage')} "{typeof confirmDelete.name === 'string' ? confirmDelete.name : (confirmDelete.name?.en || confirmDelete.name?.ar || confirmDelete.name?.he || 'this product')}"? {t('admin.products.cannotBeUndone')}
+            </p>
+            <div className="flex-row flex-gap-md">
+              <button
+                className="btn-secondary btn-full"
+                onClick={() => {
+                  setConfirmDelete(null);
+                  setDeletingId(null);
+                }}
+              >
+                {t('admin.products.cancel')}
+              </button>
+              <button
+                className="btn-danger btn-full"
+                onClick={() => deleteProduct(confirmDelete.id)}
+                disabled={deletingId === confirmDelete.id}
+              >
+                {deletingId === confirmDelete.id ? t('admin.products.deleting') : t('admin.products.delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

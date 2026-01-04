@@ -249,7 +249,11 @@
     },
     "brands": {
       "loading": "טוען מותגים...",
-      "brand": "מותג"
+      "brand": "מותג",
+      "deleteBrand": "למחוק מותג?",
+      "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק",
+      "cannotBeUndone": "פעולה זו לא ניתנת לביטול.",
+      "deleting": "מוחק..."
     },
     "common": {
       "scrollLeft": "גלול שמאלה",
@@ -554,7 +558,11 @@
       "delete": "מחק",
       "confirm": "אישור",
       "cancel": "ביטול",
-      "failedToDelete": "נכשל במחיקת המוצר"
+      "failedToDelete": "נכשל במחיקת המוצר",
+      "deleteProduct": "למחוק מוצר?",
+      "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק",
+      "cannotBeUndone": "פעולה זו לא ניתנת לביטול.",
+      "deleting": "מוחק..."
     },
     "createProduct": {
       "title": "צור מוצר",

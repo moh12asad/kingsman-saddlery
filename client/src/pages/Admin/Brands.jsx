@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
@@ -8,6 +9,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminBrands() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -348,7 +350,7 @@ export default function AdminBrands() {
                           Edit
                         </button>
                         <button
-                          className="btn-secondary btn-small"
+                          className="btn-danger btn-small"
                           onClick={() => {
                             setConfirmDelete(brand);
                           }}
@@ -373,9 +375,9 @@ export default function AdminBrands() {
           setDeletingId(null);
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2 className="heading-3 margin-bottom-md">Delete Brand?</h2>
+            <h2 className="heading-3 margin-bottom-md">{t('brands.deleteBrand')}</h2>
             <p className="margin-bottom-lg">
-              Are you sure you want to delete "{confirmDelete.name}"? This action cannot be undone.
+              {t('brands.deleteConfirmMessage')} "{confirmDelete.name}"? {t('brands.cannotBeUndone')}
             </p>
             <div className="flex-row flex-gap-md">
               <button
@@ -385,14 +387,14 @@ export default function AdminBrands() {
                   setDeletingId(null);
                 }}
               >
-                Cancel
+                {t('admin.products.cancel')}
               </button>
               <button
                 className="btn-danger btn-full"
                 onClick={() => deleteBrand(confirmDelete.id)}
                 disabled={deletingId === confirmDelete.id}
               >
-                {deletingId === confirmDelete.id ? "Deleting..." : "Delete"}
+                {deletingId === confirmDelete.id ? t('brands.deleting') : t('admin.products.delete')}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
@@ -7,6 +8,7 @@ import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function AdminAds() {
+  const { t } = useTranslation();
   const [ads, setAds] = useState([]);
   const [loadingAds, setLoadingAds] = useState(false);
   const [adForm, setAdForm] = useState({
@@ -379,13 +381,13 @@ export default function AdminAds() {
                           onClick={() => deleteAd(ad.id)}
                           disabled={deletingAdId === ad.id}
                         >
-                          {deletingAdId === ad.id ? "..." : "Confirm"}
+                          {deletingAdId === ad.id ? "..." : t('admin.products.confirm')}
                         </button>
                         <button
                           className="btn btn-sm"
                           onClick={() => setConfirmDelete(null)}
                         >
-                          Cancel
+                          {t('admin.products.cancel')}
                         </button>
                       </div>
                     ) : (
@@ -394,7 +396,7 @@ export default function AdminAds() {
                         onClick={() => setConfirmDelete(ad.id)}
                         disabled={deletingAdId === ad.id}
                       >
-                        Delete
+                        {t('admin.products.delete')}
                       </button>
                     )}
                   </div>

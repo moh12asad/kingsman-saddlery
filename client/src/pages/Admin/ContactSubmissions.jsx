@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase";
 import { FaEnvelope, FaPhone, FaUser, FaCalendar, FaCheckCircle, FaTimesCircle, FaEye, FaTrash } from "react-icons/fa";
 
@@ -10,6 +11,7 @@ const STATUS_OPTIONS = {
 };
 
 export default function ContactSubmissions() {
+  const { t } = useTranslation();
   const [submissions, setSubmissions] = useState([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function ContactSubmissions() {
   }
 
   async function deleteSubmission(submissionId) {
-    if (!confirm("Are you sure you want to delete this submission? This action cannot be undone.")) {
+    if (!confirm(`${t('admin.products.deleteConfirmMessage')} this submission? ${t('admin.products.cannotBeUndone')}`)) {
       return;
     }
 
