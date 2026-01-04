@@ -160,8 +160,11 @@ export default function Navbar() {
         </div>
         <Link to="/" className="navbar-brand-center">
           <div className="navbar-brand-wrapper">
-            <h1 className="navbar-brand-title">KingsmanSaddlery</h1>
-            <p className="navbar-brand-subtitle">Saddles & Tack</p>
+            <img 
+              src="/kingsman-saddlery-logo.png" 
+              alt="Kingsman Saddlery Saddles & Tack" 
+              className="navbar-brand-logo"
+            />
           </div>
         </Link>
         <div className="navbar-links">
