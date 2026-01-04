@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
       subject: subject.trim(),
       message: message.trim(),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: "new", // new, read, replied
+      status: "new", // new, replied
     };
 
     const contactRef = await db.collection("contact_submissions").add(contactData);
@@ -144,9 +144,9 @@ router.patch("/submissions/:id", async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status || !["new", "read", "replied"].includes(status)) {
+    if (!status || !["new", "replied"].includes(status)) {
       return res.status(400).json({
-        error: "Invalid status. Must be 'new', 'read', or 'replied'",
+        error: "Invalid status. Must be 'new' or 'replied'",
       });
     }
 
