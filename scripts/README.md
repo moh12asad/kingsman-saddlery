@@ -43,6 +43,42 @@ Backups are saved to the `backups/` directory (created automatically if it doesn
 
 **Note:** The `backups/` directory is in `.gitignore` - backups are not committed to version control.
 
+### Translation Script
+Automatically translates English content to Arabic and Hebrew using Google Translate API.
+
+⚠️ **WARNING:** This will modify your database!
+
+**Prerequisites:**
+- Install `@google-cloud/translate`: `cd server && npm install @google-cloud/translate`
+- Set up Google Cloud credentials (see `TRANSLATION_SCRIPT_README.md`)
+- Enable Cloud Translation API in Google Cloud Console
+
+```bash
+# IMPORTANT: Run from server directory (where packages are installed)
+cd server
+
+# Dry run (see what would be translated, no modifications)
+node ../scripts/translate-fields.mjs --dry-run
+
+# Actually translate
+node ../scripts/translate-fields.mjs
+
+# Translate only products
+node ../scripts/translate-fields.mjs --collection=products
+
+# Skip specific languages
+node ../scripts/translate-fields.mjs --skip-ar  # Skip Arabic
+node ../scripts/translate-fields.mjs --skip-he  # Skip Hebrew
+```
+
+**What it does:**
+- Scans products and categories for fields with English but missing Arabic/Hebrew
+- Uses Google Translate API to translate missing languages
+- Preserves existing translations (won't overwrite)
+- Updates database with new translations
+
+**See `TRANSLATION_SCRIPT_README.md` for detailed setup instructions.**
+
 ### Migration Script
 Converts existing database content to translation format.
 
