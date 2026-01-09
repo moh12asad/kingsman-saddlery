@@ -354,7 +354,15 @@
     "more": "المزيد",
     "date": "التاريخ",
     "status": {
+      "new": "جديد",
+      "paid": "جديد",
       "pending": "قيد الانتظار",
+      "in-progress": "قيد التنفيذ",
+      "processing": "قيد المعالجة",
+      "ready": "جاهز",
+      "delivered-to-delivery": "تم التسليم للشحن",
+      "delivered-to-customer": "تم التسليم للعميل",
+      "fulfilled": "تم التسليم للعميل",
       "completed": "مكتمل",
       "cancelled": "ملغي"
     },

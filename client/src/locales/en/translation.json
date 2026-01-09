@@ -436,9 +436,17 @@
     "more": "more",
     "date": "Date",
     "status": {
-      "pending": "pending",
-      "completed": "completed",
-      "cancelled": "cancelled"
+      "new": "New",
+      "paid": "New",
+      "pending": "Pending",
+      "in-progress": "In Progress",
+      "processing": "Processing",
+      "ready": "Ready",
+      "delivered-to-delivery": "Delivered to Delivery",
+      "delivered-to-customer": "Delivered to Customer",
+      "fulfilled": "Delivered to Customer",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     },
     "errors": {
       "mustSignIn": "You must be signed in to view orders",

@@ -354,7 +354,15 @@
     "more": "עוד",
     "date": "תאריך",
     "status": {
+      "new": "חדש",
+      "paid": "חדש",
       "pending": "ממתין",
+      "in-progress": "בתהליך",
+      "processing": "מעבד",
+      "ready": "מוכן",
+      "delivered-to-delivery": "נמסר למשלוח",
+      "delivered-to-customer": "נמסר ללקוח",
+      "fulfilled": "נמסר ללקוח",
       "completed": "הושלם",
       "cancelled": "בוטל"
     },
