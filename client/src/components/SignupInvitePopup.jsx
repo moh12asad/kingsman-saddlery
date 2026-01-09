@@ -29,7 +29,7 @@ export default function SignupInvitePopup() {
         // Delay showing popup to give users time to see the page content first
         const timer = setTimeout(() => {
           setShow(true);
-        }, 3000); // 3 second delay
+        }, 7000); // 7 second delay
         return () => clearTimeout(timer);
       }
     } else {
