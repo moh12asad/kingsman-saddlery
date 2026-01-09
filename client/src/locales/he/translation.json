@@ -354,7 +354,15 @@
     "more": "עוד",
     "date": "תאריך",
     "status": {
+      "new": "חדש",
+      "paid": "חדש",
       "pending": "ממתין",
+      "in-progress": "בתהליך",
+      "processing": "מעבד",
+      "ready": "מוכן",
+      "delivered-to-delivery": "נמסר למשלוח",
+      "delivered-to-customer": "נמסר ללקוח",
+      "fulfilled": "נמסר ללקוח",
       "completed": "הושלם",
       "cancelled": "בוטל"
     },
@@ -715,6 +723,25 @@
         "failedToCreate": "נכשל ביצירת הקטגוריה",
         "failedToUpdate": "נכשל בעדכון הקטגוריה",
         "failedToDelete": "נכשל במחיקת הקטגוריה"
+      }
+    },
+    "contactSubmissions": {
+      "status": {
+        "new": "חדש",
+        "replied": "נענה"
+      },
+      "details": {
+        "title": "פרטי פניית יצירת קשר",
+        "status": "סטטוס",
+        "dateSubmitted": "תאריך שליחה",
+        "name": "שם",
+        "email": "אימייל",
+        "phone": "טלפון",
+        "subject": "נושא",
+        "message": "הודעה",
+        "markAsReplied": "סמן כנענה",
+        "deleteSubmission": "מחק פנייה",
+        "close": "סגור"
       }
     },
     "settings": {

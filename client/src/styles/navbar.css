@@ -42,13 +42,7 @@
   flex-wrap: wrap;
 }
 
-/* Add margin-right for Hebrew and Arabic (RTL) - Desktop only */
-@media (min-width: 769px) {
-  [lang="he"] .navbar-left,
-  [lang="ar"] .navbar-left {
-    margin-right: 12rem;
-  }
-}
+/* Note: Navbar stays LTR regardless of language - see RTL override section at end of file */
 
 /* Phone Number */
 .navbar-phone {
@@ -1139,5 +1133,107 @@
     width: 100% !important;
     display: flex !important;
   }
+}
+
+/* ============================================
+   NAVBAR RTL OVERRIDE - Keep navbar LTR always
+   ============================================ */
+
+/* Force navbar and all children to remain LTR regardless of document direction */
+[dir="rtl"] .navbar,
+[dir="rtl"] .navbar * {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+/* Override navbar-content RTL direction */
+[dir="rtl"] .navbar-content {
+  direction: ltr !important;
+}
+
+/* Override navbar-links justify-content */
+[dir="rtl"] .navbar-links {
+  justify-content: flex-end !important;
+}
+
+/* Override desktop RTL navbar order - keep original LTR order */
+@media (min-width: 769px) {
+  [dir="rtl"] .navbar-left {
+    order: 0 !important;
+  }
+
+  [dir="rtl"] .navbar-brand-center {
+    order: 0 !important;
+  }
+
+  [dir="rtl"] .navbar-links {
+    order: 0 !important;
+  }
+  
+  /* Remove margin-right adjustment for Hebrew/Arabic */
+  [dir="rtl"] .navbar-left,
+  [lang="he"] .navbar-left,
+  [lang="ar"] .navbar-left {
+    margin-right: 0 !important;
+  }
+}
+
+/* Override mobile RTL navbar order - keep original LTR order */
+@media (max-width: 768px) {
+  [dir="rtl"] .navbar-left {
+    order: 1 !important;
+  }
+
+  [dir="rtl"] .navbar-brand-center {
+    order: 0 !important;
+  }
+
+  [dir="rtl"] .navbar-links {
+    order: 2 !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+}
+
+/* Override profile dropdown positioning to stay on right */
+[dir="rtl"] .profile-dropdown {
+  right: 0 !important;
+  left: auto !important;
+}
+
+/* Override flex-row reverse in navbar */
+[dir="rtl"] .navbar .flex-row {
+  flex-direction: row !important;
+}
+
+/* Override flex-row reverse in navbar links */
+[dir="rtl"] .navbar-links .flex-row {
+  flex-direction: row !important;
+}
+
+/* Override icon order in navbar */
+[dir="rtl"] .navbar .flex-row.flex-gap-sm > svg,
+[dir="rtl"] .navbar .flex-row.flex-gap-md > svg,
+[dir="rtl"] .navbar .flex-row.flex-gap-lg > svg {
+  order: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Ensure navbar buttons stay in original position */
+[dir="rtl"] .navbar .btn-primary,
+[dir="rtl"] .navbar .btn-secondary,
+[dir="rtl"] .navbar .btn-link {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+/* Override text alignment in navbar */
+[dir="rtl"] .navbar .text-left {
+  text-align: left !important;
+}
+
+[dir="rtl"] .navbar .text-right {
+  text-align: right !important;
 }
 

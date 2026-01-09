@@ -436,9 +436,17 @@
     "more": "more",
     "date": "Date",
     "status": {
-      "pending": "pending",
-      "completed": "completed",
-      "cancelled": "cancelled"
+      "new": "New",
+      "paid": "New",
+      "pending": "Pending",
+      "in-progress": "In Progress",
+      "processing": "Processing",
+      "ready": "Ready",
+      "delivered-to-delivery": "Delivered to Delivery",
+      "delivered-to-customer": "Delivered to Customer",
+      "fulfilled": "Delivered to Customer",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     },
     "errors": {
       "mustSignIn": "You must be signed in to view orders",
@@ -797,6 +805,25 @@
         "failedToCreate": "Failed to create category",
         "failedToUpdate": "Failed to update category",
         "failedToDelete": "Failed to delete category"
+      }
+    },
+    "contactSubmissions": {
+      "status": {
+        "new": "New",
+        "replied": "Replied"
+      },
+      "details": {
+        "title": "Contact Submission Details",
+        "status": "Status",
+        "dateSubmitted": "Date Submitted",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "subject": "Subject",
+        "message": "Message",
+        "markAsReplied": "Mark as Replied",
+        "deleteSubmission": "Delete Submission",
+        "close": "Close"
       }
     },
     "settings": {

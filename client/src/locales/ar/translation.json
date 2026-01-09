@@ -354,7 +354,15 @@
     "more": "المزيد",
     "date": "التاريخ",
     "status": {
+      "new": "جديد",
+      "paid": "جديد",
       "pending": "قيد الانتظار",
+      "in-progress": "قيد التنفيذ",
+      "processing": "قيد المعالجة",
+      "ready": "جاهز",
+      "delivered-to-delivery": "تم التسليم للشحن",
+      "delivered-to-customer": "تم التسليم للعميل",
+      "fulfilled": "تم التسليم للعميل",
       "completed": "مكتمل",
       "cancelled": "ملغي"
     },
@@ -715,6 +723,25 @@
         "failedToCreate": "فشل إنشاء الفئة",
         "failedToUpdate": "فشل تحديث الفئة",
         "failedToDelete": "فشل حذف الفئة"
+      }
+    },
+    "contactSubmissions": {
+      "status": {
+        "new": "جديد",
+        "replied": "تم الرد"
+      },
+      "details": {
+        "title": "تفاصيل طلب الاتصال",
+        "status": "الحالة",
+        "dateSubmitted": "تاريخ الإرسال",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "subject": "الموضوع",
+        "message": "الرسالة",
+        "markAsReplied": "تمييز كتم الرد",
+        "deleteSubmission": "حذف الطلب",
+        "close": "إغلاق"
       }
     },
     "settings": {
