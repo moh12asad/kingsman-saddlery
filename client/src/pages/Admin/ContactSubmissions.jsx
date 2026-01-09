@@ -1,15 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase";
 import { FaEnvelope, FaPhone, FaUser, FaCalendar, FaCheckCircle, FaTimesCircle, FaEye, FaTrash } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
-const STATUS_OPTIONS = {
-  new: "New",
-  replied: "Replied",
-};
-
 export default function ContactSubmissions() {
+  const { t } = useTranslation();
   const [submissions, setSubmissions] = useState([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +14,11 @@ export default function ContactSubmissions() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const STATUS_OPTIONS = useMemo(() => ({
+    new: t("admin.contactSubmissions.status.new"),
+    replied: t("admin.contactSubmissions.status.replied"),
+  }), [t]);
 
   useEffect(() => {
     loadSubmissions();
@@ -381,11 +383,12 @@ export default function ContactSubmissions() {
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: "600px", width: "100%", maxHeight: "90vh", overflow: "auto" }}
           >
-            <div className="flex-row flex-align-center flex-justify-between margin-bottom-md">
-              <h3 className="section-subtitle">Contact Submission Details</h3>
+            <div className="contact-submission-modal-header flex-row flex-align-center flex-justify-between margin-bottom-md">
+              <h3 className="section-subtitle">{t("admin.contactSubmissions.details.title")}</h3>
               <button
-                className="btn btn-sm btn-secondary"
+                className="btn btn-sm btn-secondary contact-submission-modal-close"
                 onClick={() => setSelectedSubmission(null)}
+                aria-label={t("admin.contactSubmissions.details.close")}
               >
                 <FaTimesCircle />
               </button>
@@ -393,7 +396,7 @@ export default function ContactSubmissions() {
 
             <div className="spacing-y-md">
               <div>
-                <label className="form-label">Status</label>
+                <label className="form-label">{t("admin.contactSubmissions.details.status")}</label>
                 <div className="margin-top-sm">
                   <span className={getStatusBadgeClass(selectedSubmission.status)}>
                     {STATUS_OPTIONS[selectedSubmission.status] || selectedSubmission.status}
@@ -402,14 +405,14 @@ export default function ContactSubmissions() {
               </div>
 
               <div>
-                <label className="form-label">Date Submitted</label>
+                <label className="form-label">{t("admin.contactSubmissions.details.dateSubmitted")}</label>
                 <div className="margin-top-sm text-muted">
                   {formatDate(selectedSubmission.createdAt)}
                 </div>
               </div>
 
               <div>
-                <label className="form-label">Name</label>
+                <label className="form-label">{t("admin.contactSubmissions.details.name")}</label>
                 <div className="margin-top-sm">
                   <div className="flex-row flex-align-center flex-gap-sm">
                     <FaUser className="text-muted" />
@@ -419,7 +422,7 @@ export default function ContactSubmissions() {
               </div>
 
               <div>
-                <label className="form-label">Email</label>
+                <label className="form-label">{t("admin.contactSubmissions.details.email")}</label>
                 <div className="margin-top-sm">
                   <div className="flex-row flex-align-center flex-gap-sm">
                     <FaEnvelope className="text-muted" />
@@ -432,7 +435,7 @@ export default function ContactSubmissions() {
 
               {selectedSubmission.phone && (
                 <div>
-                  <label className="form-label">Phone</label>
+                  <label className="form-label">{t("admin.contactSubmissions.details.phone")}</label>
                   <div className="margin-top-sm">
                     <div className="flex-row flex-align-center flex-gap-sm">
                       <FaPhone className="text-muted" />
@@ -445,14 +448,14 @@ export default function ContactSubmissions() {
               )}
 
               <div>
-                <label className="form-label">Subject</label>
+                <label className="form-label">{t("admin.contactSubmissions.details.subject")}</label>
                 <div className="margin-top-sm">
                   <strong>{selectedSubmission.subject}</strong>
                 </div>
               </div>
 
               <div>
-                <label className="form-label">Message</label>
+                <label className="form-label">{t("admin.contactSubmissions.details.message")}</label>
                 <div className="margin-top-sm padding-md" style={{ backgroundColor: "#f9fafb", borderRadius: "4px", whiteSpace: "pre-wrap" }}>
                   {selectedSubmission.message}
                 </div>
@@ -466,7 +469,7 @@ export default function ContactSubmissions() {
                       updateStatus(selectedSubmission.id, "replied");
                     }}
                   >
-                    Mark as Replied
+                    {t("admin.contactSubmissions.details.markAsReplied")}
                   </button>
                 )}
                 <button
@@ -476,13 +479,13 @@ export default function ContactSubmissions() {
                     setSelectedSubmission(null);
                   }}
                 >
-                  Delete Submission
+                  {t("admin.contactSubmissions.details.deleteSubmission")}
                 </button>
                 <button
                   className="btn btn-secondary"
                   onClick={() => setSelectedSubmission(null)}
                 >
-                  Close
+                  {t("admin.contactSubmissions.details.close")}
                 </button>
               </div>
             </div>

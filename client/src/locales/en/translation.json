@@ -799,6 +799,25 @@
         "failedToDelete": "Failed to delete category"
       }
     },
+    "contactSubmissions": {
+      "status": {
+        "new": "New",
+        "replied": "Replied"
+      },
+      "details": {
+        "title": "Contact Submission Details",
+        "status": "Status",
+        "dateSubmitted": "Date Submitted",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "subject": "Subject",
+        "message": "Message",
+        "markAsReplied": "Mark as Replied",
+        "deleteSubmission": "Delete Submission",
+        "close": "Close"
+      }
+    },
     "settings": {
       "title": "Settings",
       "loading": "Loading settings...",

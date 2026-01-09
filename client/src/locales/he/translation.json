@@ -717,6 +717,25 @@
         "failedToDelete": "נכשל במחיקת הקטגוריה"
       }
     },
+    "contactSubmissions": {
+      "status": {
+        "new": "חדש",
+        "replied": "נענה"
+      },
+      "details": {
+        "title": "פרטי פניית יצירת קשר",
+        "status": "סטטוס",
+        "dateSubmitted": "תאריך שליחה",
+        "name": "שם",
+        "email": "אימייל",
+        "phone": "טלפון",
+        "subject": "נושא",
+        "message": "הודעה",
+        "markAsReplied": "סמן כנענה",
+        "deleteSubmission": "מחק פנייה",
+        "close": "סגור"
+      }
+    },
     "settings": {
       "title": "הגדרות",
       "loading": "טוען הגדרות...",

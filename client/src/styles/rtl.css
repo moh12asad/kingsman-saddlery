@@ -438,3 +438,36 @@
   direction: rtl;
 }
 
+/* Contact Submission Modal Header - Keep close button in top-right for all languages */
+.contact-submission-modal-header {
+  position: relative;
+}
+
+/* Override flex-row-reverse for modal header to keep close button on the right */
+[dir="rtl"] .contact-submission-modal-header.flex-row {
+  flex-direction: row !important;
+}
+
+/* Ensure close button stays in top-right corner for all languages */
+.contact-submission-modal-close {
+  margin-left: auto;
+  flex-shrink: 0;
+  order: 2;
+}
+
+[dir="rtl"] .contact-submission-modal-close {
+  margin-left: auto;
+  margin-right: 0;
+  order: 2;
+}
+
+/* Ensure title stays on the left in LTR and right in RTL */
+.contact-submission-modal-header .section-subtitle {
+  order: 1;
+  flex: 1;
+}
+
+[dir="rtl"] .contact-submission-modal-header .section-subtitle {
+  text-align: right;
+}
+

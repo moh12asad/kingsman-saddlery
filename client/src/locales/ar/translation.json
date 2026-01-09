@@ -717,6 +717,25 @@
         "failedToDelete": "فشل حذف الفئة"
       }
     },
+    "contactSubmissions": {
+      "status": {
+        "new": "جديد",
+        "replied": "تم الرد"
+      },
+      "details": {
+        "title": "تفاصيل طلب الاتصال",
+        "status": "الحالة",
+        "dateSubmitted": "تاريخ الإرسال",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "subject": "الموضوع",
+        "message": "الرسالة",
+        "markAsReplied": "تمييز كتم الرد",
+        "deleteSubmission": "حذف الطلب",
+        "close": "إغلاق"
+      }
+    },
     "settings": {
       "title": "الإعدادات",
       "loading": "جاري تحميل الإعدادات...",
