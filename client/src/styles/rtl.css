@@ -471,3 +471,42 @@
   text-align: right;
 }
 
+/* ============================================
+   PROFILE PAGE LABELS - Keep LTR layout for labels
+   ============================================ */
+
+/* Ensure labels are block elements and stay above inputs */
+[dir="rtl"] .container-main label {
+  display: block !important;
+  width: 100%;
+}
+
+/* Override flex-row reverse for labels with icons on profile page */
+[dir="rtl"] .container-main label.flex-row {
+  flex-direction: row !important;
+  display: flex !important;
+}
+
+/* Keep icon on left side of label text */
+[dir="rtl"] .container-main label.flex-row > svg {
+  order: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0.5rem !important;
+}
+
+/* Keep section titles with icons in LTR layout */
+[dir="rtl"] .container-main .section-title.flex-row {
+  flex-direction: row !important;
+}
+
+[dir="rtl"] .container-main .section-title.flex-row > svg {
+  order: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0.5rem !important;
+}
+
+/* Keep heading-1 text alignment left */
+[dir="rtl"] .container-main .heading-1 {
+  text-align: left !important;
+}
+
