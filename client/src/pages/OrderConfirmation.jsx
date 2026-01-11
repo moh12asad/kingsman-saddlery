@@ -622,7 +622,7 @@ export default function OrderConfirmation() {
 
   return (
     <AuthRoute>
-      <main className="page-with-navbar">
+      <main className="page-with-navbar order-confirmation-page">
         <div className="container-main padding-y-xl">
           <h1 className="heading-1 margin-bottom-lg">{t("orderConfirmation.title")}</h1>
 
@@ -746,6 +746,30 @@ export default function OrderConfirmation() {
                   )}
                 </div>
               </div>
+
+              {/* Action Buttons - Outside the card */}
+              {total !== null && !calculatingDiscount && !discountCalculationError && (
+                <div className="flex gap-4">
+                  <Link to="/cart" className="btn btn-secondary">
+                    {t("orderConfirmation.backToCart")}
+                  </Link>
+                  <button
+                    className="btn btn-cta"
+                    disabled={!hasCompleteAddress || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
+                    onClick={handleProceedToPayment}
+                  >
+                    {sendingEmail 
+                      ? t("orderConfirmation.processing")
+                      : calculatingDiscount
+                      ? t("orderConfirmation.calculatingDiscount")
+                      : !canProceedToPayment
+                      ? t("orderConfirmation.loadingOrderTotal")
+                      : !hasCompleteAddress || !profileData.phone
+                      ? t("orderConfirmation.completeInformationToContinue")
+                      : `${t("orderConfirmation.proceedToPayment")} (${formatPrice(total)})`}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Right Column: Delivery Information */}
@@ -1027,28 +1051,6 @@ export default function OrderConfirmation() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 margin-top-lg">
-            <Link to="/cart" className="btn btn-secondary">
-              {t("orderConfirmation.backToCart")}
-            </Link>
-            <button
-              className="btn btn-cta"
-              disabled={!hasCompleteAddress || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
-              onClick={handleProceedToPayment}
-            >
-              {sendingEmail 
-                ? t("orderConfirmation.processing")
-                : calculatingDiscount
-                ? t("orderConfirmation.calculatingDiscount")
-                : !canProceedToPayment
-                ? t("orderConfirmation.loadingOrderTotal")
-                : !hasCompleteAddress || !profileData.phone
-                ? t("orderConfirmation.completeInformationToContinue")
-                : `${t("orderConfirmation.proceedToPayment")} (${formatPrice(total)})`}
-            </button>
           </div>
 
           {(!hasCompleteAddress || !profileData.phone) && (
