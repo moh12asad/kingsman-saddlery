@@ -34,6 +34,19 @@ function validateEmail(email) {
   return trimmed;
 }
 
+// Security: Sanitize email subject lines (plain text, not HTML)
+// Remove newlines and control characters, but don't HTML escape
+function sanitizeSubject(subject) {
+  if (!subject || typeof subject !== 'string') return '';
+  // Remove newlines, carriage returns, and other control characters
+  // Limit length to prevent header injection
+  return subject
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim()
+    .substring(0, 200); // RFC 5322 recommends max 78 chars, but we allow more for modern clients
+}
+
 // Create reusable transporter
 let transporter = null;
 
@@ -319,10 +332,13 @@ export async function sendOrderConfirmationEmail(orderData) {
     // Security: Validate email address to prevent injection
     const validatedEmail = validateEmail(customerEmail);
     
+    // Security: Sanitize subject line (plain text, not HTML)
+    const sanitizedSubject = sanitizeSubject(`Order Confirmation #${orderNumber} - ${storeName}`);
+    
     const mailOptions = {
       from: `"${storeName}" <${process.env.SMTP_USER}>`,
       to: validatedEmail,
-      subject: `Order Confirmation #${orderNumber} - ${storeName}`,
+      subject: sanitizedSubject,
       html: await generateOrderEmailTemplate(orderData),
       text: textEmail,
     };
@@ -605,11 +621,16 @@ export async function sendContactFormEmail(contactData) {
       `Message:\n${contactData.message}\n\n` +
       `Date: ${new Date().toLocaleString()}`;
 
+    // Security: Sanitize subject line (plain text, not HTML - don't use escapeHtml)
+    const sanitizedSubject = sanitizeSubject(
+      `New Contact Form: ${contactData.subject || ''} - ${storeInfo.storeName || 'Kingsman Saddlery'}`
+    );
+    
     const mailOptions = {
       from: `"${storeInfo.storeName || 'Kingsman Saddlery'}" <${process.env.SMTP_USER}>`,
       to: validatedRecipientEmail,
       replyTo: validatedContactEmail,
-      subject: `New Contact Form: ${escapeHtml(contactData.subject || '')} - ${storeInfo.storeName || 'Kingsman Saddlery'}`,
+      subject: sanitizedSubject,
       html: generateContactFormEmailTemplate(contactData, storeInfo),
       text: textEmail,
     };
