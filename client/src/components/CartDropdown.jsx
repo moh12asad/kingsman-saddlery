@@ -40,10 +40,21 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
       const updatePosition = () => {
         const buttonRect = buttonRef.current?.getBoundingClientRect();
         if (buttonRect) {
-          setDropdownPosition({
-            top: buttonRect.bottom + 8,
-            right: window.innerWidth - buttonRect.right
-          });
+          if (isMobile) {
+            // On mobile, position below navbar and center horizontally
+            const navbar = document.querySelector('.navbar');
+            const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 60;
+            setDropdownPosition({
+              top: navbarHeight + 8,
+              right: 0 // Will be overridden by CSS to center
+            });
+          } else {
+            // On desktop, align to the right of the button
+            setDropdownPosition({
+              top: buttonRect.bottom + 8,
+              right: window.innerWidth - buttonRect.right
+            });
+          }
         }
       };
 
@@ -56,7 +67,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
         window.removeEventListener('scroll', updatePosition, true);
       };
     }
-  }, [isOpen, buttonRef]);
+  }, [isOpen, buttonRef, isMobile]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -109,7 +120,9 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
       style={isMobile ? {
         position: 'fixed',
         top: `${dropdownPosition.top}px`,
-        right: `${dropdownPosition.right}px`,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        right: 'auto',
         zIndex: 1011
       } : {}}
       onClick={(e) => e.stopPropagation()}

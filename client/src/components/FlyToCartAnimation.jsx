@@ -16,25 +16,37 @@ export default function FlyToCartAnimation({ productImage, startPosition, onComp
         // Get cart icon position from DOM - try multiple selectors
         let cartIcon = null;
         
-        // Try multiple ways to find the cart icon
-        const selectors = [
-          'a[href="/cart"]',
-          'a[href*="cart"]',
-          '.navbar-links a',
-          'nav a'
-        ];
+        // First, try to find the cart button by data attribute (new dropdown button)
+        cartIcon = document.querySelector('button[data-cart-button="true"]');
         
-        for (const selector of selectors) {
-          const elements = document.querySelectorAll(selector);
-          for (let el of elements) {
-            const href = el.getAttribute('href');
-            const hasCartIcon = el.querySelector('svg') || el.textContent?.toLowerCase().includes('cart');
-            if (href?.includes('cart') || (hasCartIcon && href)) {
+        if (!cartIcon) {
+          // Try to find cart button by title attribute
+          const buttons = document.querySelectorAll('button, a');
+          for (let el of buttons) {
+            const title = el.getAttribute('title')?.toLowerCase() || '';
+            if (title.includes('cart') || el.getAttribute('data-cart-button') === 'true') {
               cartIcon = el;
               break;
             }
           }
-          if (cartIcon) break;
+        }
+        
+        if (!cartIcon) {
+          // Try multiple ways to find the cart icon (legacy support for links)
+          const selectors = [
+            'a[href="/cart"]',
+            'a[href*="cart"]',
+            '.navbar-links a[href*="cart"]',
+            'nav a[href*="cart"]'
+          ];
+          
+          for (const selector of selectors) {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > 0) {
+              cartIcon = elements[0];
+              break;
+            }
+          }
         }
         
         let targetX = window.innerWidth - 100;
@@ -45,15 +57,21 @@ export default function FlyToCartAnimation({ productImage, startPosition, onComp
           targetX = rect.left + rect.width / 2;
           targetY = rect.top + rect.height / 2;
         } else {
-          // Fallback: try to find any shopping cart icon
-          const svgIcons = document.querySelectorAll('svg');
-          for (let svg of svgIcons) {
-            const parent = svg.closest('a, button');
-            if (parent && (parent.getAttribute('href')?.includes('cart') || parent.textContent?.toLowerCase().includes('cart'))) {
-              const rect = parent.getBoundingClientRect();
-              targetX = rect.left + rect.width / 2;
-              targetY = rect.top + rect.height / 2;
-              break;
+          // Final fallback: look in navbar for any button with shopping cart icon
+          const navbar = document.querySelector('.navbar-links');
+          if (navbar) {
+            const buttons = navbar.querySelectorAll('button, a');
+            for (let el of buttons) {
+              // Check if it has a badge-count (cart indicator) or title with cart
+              const hasBadge = el.querySelector('.badge-count');
+              const title = el.getAttribute('title')?.toLowerCase() || '';
+              if (hasBadge || title.includes('cart')) {
+                const rect = el.getBoundingClientRect();
+                targetX = rect.left + rect.width / 2;
+                targetY = rect.top + rect.height / 2;
+                cartIcon = el;
+                break;
+              }
             }
           }
         }

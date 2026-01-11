@@ -200,6 +200,7 @@ export default function Navbar() {
             className={`relative flex-row-center nav-link ${showCartDropdown ? "nav-link-active" : ""}`}
             title={t("cart.title")}
             style={{ background: "none", border: "none", cursor: "pointer" }}
+            data-cart-button="true"
           >
             <FaShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
