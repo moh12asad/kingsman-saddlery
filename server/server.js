@@ -28,8 +28,31 @@ app.get("/", (_req, res) => res.json({ ok: true, service: "kingsman API" })); //
 
 
 // ---------- Middleware ----------
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+// Security: Restrict CORS to specific origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) || [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5174',
+];
+
+app.use(cors({ 
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true 
+}));
+
+// Security: Limit request body size to prevent DoS attacks
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan("dev"));
 
 // ---------- Health ----------

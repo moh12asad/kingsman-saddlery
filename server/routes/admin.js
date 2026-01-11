@@ -2,9 +2,13 @@ import { Router } from "express";
 
 import admin from "firebase-admin";
 
-import admin from "../middlewares/auth.js";
+import { verifyFirebaseToken } from "../middlewares/auth.js";
+import { requireRole } from "../middlewares/roles.js";
 
 const router = Router();
+
+// All admin routes require authentication
+router.use(verifyFirebaseToken);
 
 // Example secure endpoint
 router.get("/hello", (req, res) => {
@@ -15,8 +19,9 @@ router.get("/hello", (req, res) => {
 /**
  * DELETE /api/admin/owners/:id
  * Deletes the Firestore owner doc and the linked Firebase Auth user.
+ * SECURITY: Requires ADMIN role
  */
-router.delete("/owners/:id", async (req, res) => {
+router.delete("/owners/:id", requireRole("ADMIN"), async (req, res) => {
     const { id } = req.params;
     const db = admin.firestore();
 
