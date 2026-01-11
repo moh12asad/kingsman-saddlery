@@ -1,6 +1,13 @@
 // Email service using nodemailer
 import nodemailer from "nodemailer";
 import { db } from "./firebaseAdmin.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Security: HTML escaping function to prevent XSS attacks
 function escapeHtml(text) {
@@ -45,6 +52,30 @@ function sanitizeSubject(subject) {
     .replace(/[\x00-\x1F\x7F]/g, '')
     .trim()
     .substring(0, 200); // RFC 5322 recommends max 78 chars, but we allow more for modern clients
+}
+
+/**
+ * Get logo attachment for emails
+ */
+function getLogoAttachment() {
+  try {
+    const logoPath = path.join(__dirname, '../../client/public/kingsman-saddlery-logo.png');
+    
+    // Check if file exists
+    if (!fs.existsSync(logoPath)) {
+      console.warn(`[EMAIL] Logo file not found at ${logoPath}`);
+      return null;
+    }
+    
+    return {
+      filename: 'kingsman-saddlery-logo.png',
+      path: logoPath,
+      cid: 'logo' // Content-ID for referencing in HTML
+    };
+  } catch (error) {
+    console.error('[EMAIL] Error getting logo attachment:', error);
+    return null;
+  }
 }
 
 // Create reusable transporter
@@ -164,14 +195,7 @@ export async function generateOrderEmailTemplate(orderData) {
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
       <div style="background: #000000; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
-        <h1 style="margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 2px 4px rgba(255, 215, 0, 0.3);">
-          ${storeName.toUpperCase().replace(/\s+/g, '')}
-        </h1>
-        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
-        <p style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #FFFFFF; margin-top: 10px;">
-          SADDLES & TACK
-        </p>
-        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
+        <img src="cid:logo" alt="${storeName}" style="max-width: 200px; height: auto;" />
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -335,12 +359,17 @@ export async function sendOrderConfirmationEmail(orderData) {
     // Security: Sanitize subject line (plain text, not HTML)
     const sanitizedSubject = sanitizeSubject(`Order Confirmation #${orderNumber} - ${storeName}`);
     
+    // Get logo attachment
+    const logoAttachment = getLogoAttachment();
+    const attachments = logoAttachment ? [logoAttachment] : [];
+
     const mailOptions = {
       from: `"${storeName}" <${process.env.SMTP_USER}>`,
       to: validatedEmail,
       subject: sanitizedSubject,
       html: await generateOrderEmailTemplate(orderData),
       text: textEmail,
+      attachments: attachments,
     };
 
     console.log(`[EMAIL] Attempting to connect to SMTP server...`);
@@ -508,14 +537,7 @@ function generateContactFormEmailTemplate(contactData, storeInfo) {
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
       <div style="background: #000000; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
-        <h1 style="margin: 0; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 2px 4px rgba(255, 215, 0, 0.3);">
-          ${storeName.toUpperCase().replace(/\s+/g, '')}
-        </h1>
-        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
-        <p style="margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #FFFFFF; margin-top: 10px;">
-          NEW CONTACT FORM SUBMISSION
-        </p>
-        <div style="width: 200px; height: 2px; background: linear-gradient(to right, transparent, #FFD700, transparent); margin: 15px auto;"></div>
+        <img src="cid:logo" alt="${storeName}" style="max-width: 200px; height: auto;" />
       </div>
       
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -626,6 +648,10 @@ export async function sendContactFormEmail(contactData) {
       `New Contact Form: ${contactData.subject || ''} - ${storeInfo.storeName || 'Kingsman Saddlery'}`
     );
     
+    // Get logo attachment
+    const logoAttachment = getLogoAttachment();
+    const attachments = logoAttachment ? [logoAttachment] : [];
+
     const mailOptions = {
       from: `"${storeInfo.storeName || 'Kingsman Saddlery'}" <${process.env.SMTP_USER}>`,
       to: validatedRecipientEmail,
@@ -633,6 +659,7 @@ export async function sendContactFormEmail(contactData) {
       subject: sanitizedSubject,
       html: generateContactFormEmailTemplate(contactData, storeInfo),
       text: textEmail,
+      attachments: attachments,
     };
 
     console.log(`[EMAIL] Sending contact form email to ${recipientEmail}...`);
