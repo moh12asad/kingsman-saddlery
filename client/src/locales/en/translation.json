@@ -102,14 +102,17 @@
     "empty": "Your cart is empty",
     "continueShopping": "Continue Shopping",
     "clearCart": "Clear Cart",
+    "clearCartConfirm": "Are you sure you want to clear your cart?",
     "noImage": "No image",
     "removeItem": "Remove item",
     "signInRequired": "Sign in required:",
     "signInRequiredMessage": "Please sign in to proceed to checkout.",
     "signInToCheckout": "Sign in to Checkout",
     "total": "Total:",
+    "subtotal": "Subtotal",
     "proceedToCheckout": "Proceed to Checkout",
-    "items": "items"
+    "items": "items",
+    "item": "item"
   },
   "favorites": {
     "title": "My Favorites",
