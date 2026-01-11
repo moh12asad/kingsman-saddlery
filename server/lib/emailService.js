@@ -2,6 +2,51 @@
 import nodemailer from "nodemailer";
 import { db } from "./firebaseAdmin.js";
 
+// Security: HTML escaping function to prevent XSS attacks
+function escapeHtml(text) {
+  if (text == null || text === undefined) return '';
+  const str = String(text);
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return str.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Security: Validate and sanitize email address to prevent injection
+function validateEmail(email) {
+  if (!email || typeof email !== 'string') {
+    throw new Error('Email is required and must be a string');
+  }
+  const trimmed = email.trim().toLowerCase();
+  // Check for email format
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(trimmed)) {
+    throw new Error('Invalid email format');
+  }
+  // Check for injection attempts (newlines, carriage returns)
+  if (/[\r\n]/.test(trimmed)) {
+    throw new Error('Email contains invalid characters');
+  }
+  return trimmed;
+}
+
+// Security: Sanitize email subject lines (plain text, not HTML)
+// Remove newlines and control characters, but don't HTML escape
+function sanitizeSubject(subject) {
+  if (!subject || typeof subject !== 'string') return '';
+  // Remove newlines, carriage returns, and other control characters
+  // Limit length to prevent header injection
+  return subject
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim()
+    .substring(0, 200); // RFC 5322 recommends max 78 chars, but we allow more for modern clients
+}
+
 // Create reusable transporter
 let transporter = null;
 
@@ -90,12 +135,12 @@ export async function generateOrderEmailTemplate(orderData) {
   const itemsHtml = items.map(item => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
-        <img src="${item.image || ''}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid #FCD34D;" />
+        <img src="${escapeHtml(item.image || '')}" alt="${escapeHtml(item.name || '')}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid #FCD34D;" />
       </td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #000000; font-weight: 600;">${item.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #000000; font-weight: 600;">${item.quantity}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #000000; font-weight: 600;">${item.price.toFixed(2)} ILS</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #000000; font-weight: 700;">${(item.price * item.quantity).toFixed(2)} ILS</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #000000; font-weight: 600;">${escapeHtml(item.name || '')}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #000000; font-weight: 600;">${escapeHtml(item.quantity || 0)}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #000000; font-weight: 600;">${(item.price || 0).toFixed(2)} ILS</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #000000; font-weight: 700;">${((item.price || 0) * (item.quantity || 0)).toFixed(2)} ILS</td>
     </tr>
   `).join("");
 
@@ -103,9 +148,9 @@ export async function generateOrderEmailTemplate(orderData) {
     ? `<p style="margin: 0; padding: 4px 0; font-weight: 700; color: #000000;">Store Pickup</p><p style="margin: 4px 0; padding: 4px 0; color: #000000; font-weight: 600;">Please pick up your order from our store.</p>`
     : shippingAddress 
     ? `
-    <p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${shippingAddress.street}</p>
-    <p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${shippingAddress.city} ${shippingAddress.zipCode}</p>
-    ${shippingAddress.country ? `<p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${shippingAddress.country}</p>` : ""}
+    <p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${escapeHtml(shippingAddress.street || '')}</p>
+    <p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${escapeHtml(shippingAddress.city || '')} ${escapeHtml(shippingAddress.zipCode || '')}</p>
+    ${shippingAddress.country ? `<p style="margin: 0; padding: 4px 0; color: #000000; font-weight: 600;">${escapeHtml(shippingAddress.country)}</p>` : ""}
   `
     : "";
 
@@ -132,7 +177,7 @@ export async function generateOrderEmailTemplate(orderData) {
       <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
         <h2 style="color: #000000; margin-top: 0; font-size: 24px; font-weight: 700; border-bottom: 3px solid #FCD34D; padding-bottom: 10px; display: inline-block;">Order Confirmation</h2>
         
-        <p style="font-size: 16px; color: #000000; font-weight: 600;">Dear ${customerName},</p>
+        <p style="font-size: 16px; color: #000000; font-weight: 600;">Dear ${escapeHtml(customerName || 'Customer')},</p>
         
         <p style="font-size: 16px; color: #000000;">Thank you for your order! We've received your order and will process it shortly.</p>
         
@@ -284,10 +329,16 @@ export async function sendOrderConfirmationEmail(orderData) {
     
     textEmail += `\nTotal: ${orderData.total.toFixed(2)} ILS\n\nBest regards,\n${storeName} Team`;
 
+    // Security: Validate email address to prevent injection
+    const validatedEmail = validateEmail(customerEmail);
+    
+    // Security: Sanitize subject line (plain text, not HTML)
+    const sanitizedSubject = sanitizeSubject(`Order Confirmation #${orderNumber} - ${storeName}`);
+    
     const mailOptions = {
       from: `"${storeName}" <${process.env.SMTP_USER}>`,
-      to: customerEmail,
-      subject: `Order Confirmation #${orderNumber} - ${storeName}`,
+      to: validatedEmail,
+      subject: sanitizedSubject,
       html: await generateOrderEmailTemplate(orderData),
       text: textEmail,
     };
@@ -481,34 +532,34 @@ function generateContactFormEmailTemplate(contactData, storeInfo) {
           
           <div style="margin: 12px 0;">
             <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
-              <strong>Name:</strong> ${name}
+              <strong>Name:</strong> ${escapeHtml(name || '')}
             </p>
           </div>
           
           <div style="margin: 12px 0;">
             <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
-              <strong>Email:</strong> <a href="mailto:${email}" style="color: #000000; text-decoration: underline;">${email}</a>
+              <strong>Email:</strong> <a href="mailto:${escapeHtml(email || '')}" style="color: #000000; text-decoration: underline;">${escapeHtml(email || '')}</a>
             </p>
           </div>
           
           ${phone ? `
           <div style="margin: 12px 0;">
             <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
-              <strong>Phone:</strong> <a href="tel:${phone}" style="color: #000000; text-decoration: underline;">${phone}</a>
+              <strong>Phone:</strong> <a href="tel:${escapeHtml(phone)}" style="color: #000000; text-decoration: underline;">${escapeHtml(phone)}</a>
             </p>
           </div>
           ` : ""}
           
           <div style="margin: 12px 0;">
             <p style="margin: 4px 0; font-size: 14px; color: #000000; font-weight: 600;">
-              <strong>Subject:</strong> ${subject}
+              <strong>Subject:</strong> ${escapeHtml(subject || '')}
             </p>
           </div>
         </div>
 
         <div style="margin-top: 20px; padding: 20px; background: linear-gradient(to right, #FCD34D 0%, #FBBF24 100%); border: 2px solid #000000; border-radius: 6px;">
           <h3 style="color: #000000; font-size: 18px; margin-top: 0; margin-bottom: 15px; font-weight: 700; border-bottom: 2px solid #000000; padding-bottom: 8px; display: inline-block;">Message</h3>
-          <p style="margin: 0; font-size: 14px; color: #000000; font-weight: 600; white-space: pre-wrap;">${message}</p>
+          <p style="margin: 0; font-size: 14px; color: #000000; font-weight: 600; white-space: pre-wrap;">${escapeHtml(message || '')}</p>
         </div>
 
         <p style="font-size: 16px; margin-top: 30px; color: #000000;">
@@ -547,6 +598,9 @@ export async function sendContactFormEmail(contactData) {
       throw new Error("Contact email is required");
     }
 
+    // Security: Validate email address to prevent injection
+    const validatedContactEmail = validateEmail(contactData.email);
+
     // Get store info
     const storeInfo = await getStoreInfo();
     const recipientEmail = storeInfo.storeEmail || process.env.SMTP_USER;
@@ -554,6 +608,9 @@ export async function sendContactFormEmail(contactData) {
     if (!recipientEmail) {
       throw new Error("Store email not configured");
     }
+    
+    // Security: Validate recipient email as well
+    const validatedRecipientEmail = validateEmail(recipientEmail);
 
     // Generate plain text version
     const textEmail = `New Contact Form Submission #${contactData.id}\n\n` +
@@ -564,11 +621,16 @@ export async function sendContactFormEmail(contactData) {
       `Message:\n${contactData.message}\n\n` +
       `Date: ${new Date().toLocaleString()}`;
 
+    // Security: Sanitize subject line (plain text, not HTML - don't use escapeHtml)
+    const sanitizedSubject = sanitizeSubject(
+      `New Contact Form: ${contactData.subject || ''} - ${storeInfo.storeName || 'Kingsman Saddlery'}`
+    );
+    
     const mailOptions = {
       from: `"${storeInfo.storeName || 'Kingsman Saddlery'}" <${process.env.SMTP_USER}>`,
-      to: recipientEmail,
-      replyTo: contactData.email,
-      subject: `New Contact Form: ${contactData.subject} - ${storeInfo.storeName || 'Kingsman Saddlery'}`,
+      to: validatedRecipientEmail,
+      replyTo: validatedContactEmail,
+      subject: sanitizedSubject,
       html: generateContactFormEmailTemplate(contactData, storeInfo),
       text: textEmail,
     };
