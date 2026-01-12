@@ -148,6 +148,23 @@
       "failed": "Sign-in failed."
     }
   },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "description": "Enter your email address and we'll send you a link to reset your password.",
+    "emailPlaceholder": "you@example.com",
+    "sendResetLink": "Send reset link",
+    "sending": "Sending...",
+    "backToSignIn": "Back to Sign In",
+    "success": {
+      "linkSent": "Password reset link sent! Check your email inbox."
+    },
+    "errors": {
+      "userNotFound": "No account found with this email address.",
+      "invalidEmail": "Invalid email address.",
+      "tooManyRequests": "Too many requests. Please try again later.",
+      "failed": "Failed to send reset email."
+    }
+  },
   "signUp": {
     "title": "Create Your Account",
     "description": "Sign up to get started and receive 5% off on all purchases for the next 3 months!",

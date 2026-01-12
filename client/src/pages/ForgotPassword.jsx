@@ -3,12 +3,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
     const [msg, setMsg] = useState("");
     const [err, setErr] = useState("");
     const [loading, setLoading] = useState(false);
+    const { t } = useTranslation();
 
     async function onSubmit(e) {
         e.preventDefault();
@@ -20,17 +22,17 @@ export default function ForgotPassword() {
                 url: `${window.location.origin}/signin`,
                 handleCodeInApp: false,
             });
-            setMsg("Password reset link sent! Check your email inbox.");
+            setMsg(t("forgotPassword.success.linkSent"));
         } catch (e) {
             const code = e.code || "";
-            let errorMessage = e.message || "Failed to send reset email.";
+            let errorMessage = t("forgotPassword.errors.failed");
             
             if (code === "auth/user-not-found") {
-                errorMessage = "No account found with this email address.";
+                errorMessage = t("forgotPassword.errors.userNotFound");
             } else if (code === "auth/invalid-email") {
-                errorMessage = "Invalid email address.";
+                errorMessage = t("forgotPassword.errors.invalidEmail");
             } else if (code === "auth/too-many-requests") {
-                errorMessage = "Too many requests. Please try again later.";
+                errorMessage = t("forgotPassword.errors.tooManyRequests");
             }
             
             setErr(errorMessage);
@@ -42,9 +44,9 @@ export default function ForgotPassword() {
     return (
         <main className="signin-page-container">
             <div className="max-w-md mx-auto px-4 py-12">
-                <h1 className="text-2xl font-bold mb-2">Forgot Password</h1>
+                <h1 className="text-2xl font-bold mb-2">{t("forgotPassword.title")}</h1>
                 <p className="text-muted mb-6">
-                    Enter your email address and we'll send you a link to reset your password.
+                    {t("forgotPassword.description")}
                 </p>
 
                 <form onSubmit={onSubmit} className="space-y-4">
@@ -53,7 +55,7 @@ export default function ForgotPassword() {
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
-                        placeholder="you@example.com"
+                        placeholder={t("forgotPassword.emailPlaceholder")}
                         required
                         disabled={loading}
                     />
@@ -78,7 +80,7 @@ export default function ForgotPassword() {
                         }}
                         disabled={loading}
                     >
-                        {loading ? "Sending..." : "Send reset link"}
+                        {loading ? t("forgotPassword.sending") : t("forgotPassword.sendResetLink")}
                     </button>
                 </form>
 
@@ -96,7 +98,7 @@ export default function ForgotPassword() {
 
                 <div className="mt-6 text-center">
                     <Link to="/signin" style={{ color: 'var(--brand)' }} className="hover:underline text-sm">
-                        Back to Sign In
+                        {t("forgotPassword.backToSignIn")}
                     </Link>
                 </div>
             </div>
