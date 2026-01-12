@@ -23,8 +23,10 @@ router.get("/test-smtp", async (req, res) => {
         message: "Resend API is configured and ready",
         service: "Resend",
         config: {
-          fromEmail: process.env.RESEND_FROM_EMAIL || process.env.SMTP_USER || "NOT SET",
-          apiKey: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 7) + "***" : "NOT SET"
+          fromEmail: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+          replyToEmail: process.env.RESEND_REPLY_TO || process.env.SMTP_USER || "NOT SET",
+          apiKey: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 7) + "***" : "NOT SET",
+          note: "Emails will be sent FROM the 'fromEmail' address, but replies will go to 'replyToEmail' (your Gmail)"
         }
       });
       return;

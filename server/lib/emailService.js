@@ -385,10 +385,20 @@ export async function sendOrderConfirmationEmail(orderData) {
     // Get store info for email
     const storeInfo = await getStoreInfo();
     const storeName = storeInfo?.storeName || "Kingsman Saddlery";
-    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_USER;
+    
+    // For Resend: Use test email as "from" (required), Gmail as "reply-to"
+    // For SMTP: Use Gmail directly as "from"
+    const gmailEmail = process.env.RESEND_REPLY_TO || process.env.SMTP_USER;
+    const resendFromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+    const fromEmail = isResendConfigured() ? resendFromEmail : (process.env.SMTP_USER || gmailEmail);
+    const replyToEmail = isResendConfigured() ? gmailEmail : undefined;
     
     if (!fromEmail) {
-      throw new Error("From email not configured. Set RESEND_FROM_EMAIL or SMTP_USER");
+      throw new Error("From email not configured. Set RESEND_FROM_EMAIL (for Resend) or SMTP_USER (for SMTP)");
+    }
+    
+    if (isResendConfigured() && !gmailEmail) {
+      throw new Error("Gmail email not configured for reply-to. Set RESEND_REPLY_TO or SMTP_USER");
     }
 
     // Security: Validate email address to prevent injection
@@ -431,14 +441,22 @@ export async function sendOrderConfirmationEmail(orderData) {
       const attachments = logoAttachment ? [logoAttachment] : [];
 
       const sendStartTime = Date.now();
-      const { data, error } = await resend.emails.send({
+      const emailOptions = {
         from: `"${storeName}" <${fromEmail}>`,
         to: [validatedEmail],
         subject: sanitizedSubject,
         html: htmlContent,
         text: textEmail,
         attachments: attachments,
-      });
+      };
+      
+      // Add reply-to if Gmail email is configured
+      if (replyToEmail) {
+        emailOptions.replyTo = replyToEmail;
+        console.log(`[EMAIL] Reply-to set to: ${replyToEmail}`);
+      }
+      
+      const { data, error } = await resend.emails.send(emailOptions);
 
       if (error) {
         throw new Error(`Resend API error: ${error.message || JSON.stringify(error)}`);
@@ -729,11 +747,20 @@ export async function sendContactFormEmail(contactData) {
     // Get store info
     const storeInfo = await getStoreInfo();
     const storeName = storeInfo.storeName || 'Kingsman Saddlery';
-    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_USER;
-    const recipientEmail = storeInfo.storeEmail || fromEmail;
+    
+    // For Resend: Use test email as "from" (required)
+    // For SMTP: Use Gmail directly as "from"
+    const gmailEmail = process.env.RESEND_REPLY_TO || process.env.SMTP_USER;
+    const resendFromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+    const fromEmail = isResendConfigured() ? resendFromEmail : (process.env.SMTP_USER || gmailEmail);
+    const recipientEmail = storeInfo.storeEmail || gmailEmail;
 
     if (!recipientEmail) {
-      throw new Error("Store email not configured. Set RESEND_FROM_EMAIL or SMTP_USER");
+      throw new Error("Store email not configured. Set RESEND_REPLY_TO or SMTP_USER");
+    }
+    
+    if (isResendConfigured() && !gmailEmail) {
+      throw new Error("Gmail email not configured. Set RESEND_REPLY_TO or SMTP_USER");
     }
     
     // Security: Validate recipient email as well
@@ -765,15 +792,17 @@ export async function sendContactFormEmail(contactData) {
       const attachments = logoAttachment ? [logoAttachment] : [];
 
       const sendStartTime = Date.now();
-      const { data, error } = await resend.emails.send({
+      const emailOptions = {
         from: `"${storeName}" <${fromEmail}>`,
         to: [validatedRecipientEmail],
-        replyTo: validatedContactEmail,
+        replyTo: validatedContactEmail, // Reply to the person who submitted the form
         subject: sanitizedSubject,
         html: htmlContent,
         text: textEmail,
         attachments: attachments,
-      });
+      };
+      
+      const { data, error } = await resend.emails.send(emailOptions);
 
       if (error) {
         throw new Error(`Resend API error: ${error.message || JSON.stringify(error)}`);
