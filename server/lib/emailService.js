@@ -401,10 +401,7 @@ export async function sendOrderConfirmationEmail(orderData) {
       throw new Error("From email not configured. Set RESEND_FROM_EMAIL (for Resend) or SMTP_USER (for SMTP)");
     }
     
-    if (isResendConfigured() && !gmailEmail) {
-      throw new Error("Gmail email not configured for reply-to. Set RESEND_REPLY_TO or SMTP_USER");
-    }
-    
+    // Note: replyToEmail is optional - only added if gmailEmail is configured (see line 466)
     // Log which email is being used
     if (isResendConfigured()) {
       console.log(`[EMAIL] Resend From: ${fromEmail}`);
@@ -771,10 +768,8 @@ export async function sendContactFormEmail(contactData) {
       throw new Error("Store email not configured. Set RESEND_REPLY_TO or SMTP_USER");
     }
     
-    if (isResendConfigured() && !gmailEmail) {
-      throw new Error("Gmail email not configured. Set RESEND_REPLY_TO or SMTP_USER");
-    }
-    
+    // Note: replyTo uses validatedContactEmail (contact form submitter's email), not gmailEmail
+    // The recipientEmail validation above already ensures we have a valid recipient
     // Security: Validate recipient email as well
     const validatedRecipientEmail = validateEmail(recipientEmail);
 

@@ -117,22 +117,30 @@ export function CurrencyProvider({ children }) {
             timeoutPromise
           ]);
           
+          // Check for rate limit (429) or other errors
+          if (ipResponse.status === 429) {
+            console.warn("ipapi.co rate limit reached, trying fallback");
+            throw new Error("Rate limit");
+          }
+          
           if (ipResponse.ok) {
             const ipData = await ipResponse.json();
             detectedCountry = ipData.country_code;
             setCountry(ipData.country_name || null);
+          } else {
+            throw new Error(`ipapi.co returned status ${ipResponse.status}`);
           }
         } catch (ipError) {
           console.warn("IP geolocation failed, trying fallback:", ipError);
           
-          // Fallback: try ip-api.com
+          // Fallback: try ip-api.com (using HTTPS to avoid mixed content errors)
           try {
             const timeoutPromise = new Promise((_, reject) =>
               setTimeout(() => reject(new Error("Timeout")), 5000)
             );
             
             const fallbackResponse = await Promise.race([
-              fetch("http://ip-api.com/json/?fields=countryCode,country"),
+              fetch("https://ip-api.com/json/?fields=countryCode,country"),
               timeoutPromise
             ]);
             
