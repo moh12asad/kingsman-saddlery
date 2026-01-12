@@ -748,7 +748,7 @@ export default function OrderConfirmation() {
               </div>
 
               {/* Action Buttons - Outside the card */}
-              {total !== null && !calculatingDiscount && !discountCalculationError && (
+              {total !== null && !discountCalculationError && (
                 <div className="flex gap-4">
                   <Link to="/cart" className="btn btn-secondary">
                     {t("orderConfirmation.backToCart")}

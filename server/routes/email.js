@@ -1,8 +1,51 @@
 import { Router } from "express";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
-import { sendOrderConfirmationEmail } from "../lib/emailService.js";
+import { sendOrderConfirmationEmail, getTransporter } from "../lib/emailService.js";
 
 const router = Router();
+
+// Test SMTP connection (for debugging)
+router.get("/test-smtp", async (req, res) => {
+  try {
+    const transporter = getTransporter();
+    
+    if (!transporter) {
+      return res.status(500).json({
+        ok: false,
+        error: "Email service not configured",
+        details: "SMTP_USER and SMTP_PASS environment variables are required"
+      });
+    }
+
+    console.log("[EMAIL-TEST] Testing SMTP connection...");
+    await transporter.verify();
+    
+    res.json({
+      ok: true,
+      message: "SMTP connection verified successfully",
+      config: {
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port: process.env.SMTP_PORT || "587",
+        secure: process.env.SMTP_SECURE === "true",
+        user: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 3) + "***" : "NOT SET"
+      }
+    });
+  } catch (error) {
+    console.error("[EMAIL-TEST] SMTP test failed:", error);
+    res.status(500).json({
+      ok: false,
+      error: "SMTP connection test failed",
+      details: error.message,
+      code: error.code || "N/A",
+      possibleCauses: [
+        "Railway might be blocking outbound SMTP connections",
+        "Gmail might be blocking connections from Railway IPs",
+        "Incorrect SMTP credentials (check App Password)",
+        "Network/firewall issue"
+      ]
+    });
+  }
+});
 
 // Send order confirmation email
 router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {

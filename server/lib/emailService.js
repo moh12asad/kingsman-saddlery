@@ -81,7 +81,7 @@ function getLogoAttachment() {
 // Create reusable transporter
 let transporter = null;
 
-function getTransporter() {
+export function getTransporter() {
   if (transporter) {
     return transporter;
   }
