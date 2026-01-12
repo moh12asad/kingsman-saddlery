@@ -386,9 +386,13 @@ export async function sendOrderConfirmationEmail(orderData) {
     const storeInfo = await getStoreInfo();
     const storeName = storeInfo?.storeName || "Kingsman Saddlery";
     
-    // For Resend: Use test email as "from" (required), Gmail as "reply-to"
+    // For Resend: Use custom domain email if configured, otherwise use test email
     // For SMTP: Use Gmail directly as "from"
     const gmailEmail = process.env.RESEND_REPLY_TO || process.env.SMTP_USER;
+    
+    // Priority: RESEND_FROM_EMAIL > default onboarding email
+    // If you set RESEND_FROM_EMAIL to your domain email (e.g., noreply@yourdomain.com),
+    // it will use that. Otherwise, it falls back to onboarding@resend.dev
     const resendFromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
     const fromEmail = isResendConfigured() ? resendFromEmail : (process.env.SMTP_USER || gmailEmail);
     const replyToEmail = isResendConfigured() ? gmailEmail : undefined;
@@ -399,6 +403,14 @@ export async function sendOrderConfirmationEmail(orderData) {
     
     if (isResendConfigured() && !gmailEmail) {
       throw new Error("Gmail email not configured for reply-to. Set RESEND_REPLY_TO or SMTP_USER");
+    }
+    
+    // Log which email is being used
+    if (isResendConfigured()) {
+      console.log(`[EMAIL] Resend From: ${fromEmail}`);
+      if (replyToEmail) {
+        console.log(`[EMAIL] Resend Reply-To: ${replyToEmail}`);
+      }
     }
 
     // Security: Validate email address to prevent injection
