@@ -43,6 +43,7 @@ import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
 import EditCategory from "./pages/Admin/EditCategory.jsx";
 import ContactSubmissions from "./pages/Admin/ContactSubmissions.jsx";
+import BulkEmail from "./pages/Admin/BulkEmail.jsx";
 import OrdersManagementLayout from "./pages/Admin/OrdersManagement/index.jsx";
 import OrdersDashboard from "./pages/Admin/OrdersManagement/Dashboard.jsx";
 import AdminOrderDetail from "./pages/Admin/OrdersManagement/OrderDetail.jsx";
@@ -110,6 +111,7 @@ const router = createBrowserRouter([
           { path: "ads", element: <AdminAds /> },
           { path: "brands", element: <AdminBrands /> },
           { path: "contact-submissions", element: <ContactSubmissions /> },
+          { path: "bulk-email", element: <BulkEmail /> },
           { path: "settings", element: <AdminSettings /> },
           // Orders Management with sidebar
           {

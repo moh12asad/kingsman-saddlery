@@ -17,6 +17,7 @@ import emailRoutes from "./routes/email.js";
 import settingsAdmin from "./routes/settings.admin.js";
 import paymentRoutes from "./routes/payment.js";
 import contactRoutes from "./routes/contact.js";
+import bulkEmailAdmin from "./routes/bulkEmail.admin.js";
 import { verifyFirebaseToken } from "./middlewares/auth.js";
 
 dotenv.config();
@@ -176,6 +177,7 @@ app.use("/api/email", emailRoutes);
 app.use("/api/settings", settingsAdmin);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/admin/bulk-email", bulkEmailAdmin);
 
 // ---------- Fallback ----------
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));

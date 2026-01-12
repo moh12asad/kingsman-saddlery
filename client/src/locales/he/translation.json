@@ -525,6 +525,7 @@
       "brands": "מותגים",
       "users": "משתמשים",
       "contactSubmissions": "פניות יצירת קשר",
+      "bulkEmail": "דואר אלקטרוני המוני",
       "settings": "הגדרות"
     },
     "dashboard": {
@@ -760,6 +761,26 @@
         "deleteSubmission": "מחק פנייה",
         "close": "סגור"
       }
+    },
+    "bulkEmail": {
+      "title": "שלח דואר אלקטרוני המוני",
+      "description": "שלח הודעות דואר אלקטרוני פרסומיות, עדכונים והצעות לכל המשתמשים שנרשמו להתראות דואר אלקטרוני.",
+      "subjectLabel": "נושא",
+      "subjectPlaceholder": "הזן נושא דואר אלקטרוני",
+      "messageLabel": "הודעה",
+      "messagePlaceholder": "הזן את ההודעה שלך כאן. אתה יכול להשתמש בעיצוב HTML.",
+      "messageHint": "אתה יכול להשתמש בתגי HTML לעיצוב (למשל <p>, <strong>, <a>, וכו'). כדי להוסיף תמונות, השתמש ב: <img src=\"https://example.com/image.jpg\" alt=\"תיאור\" style=\"max-width: 100%; height: auto;\">",
+      "imageExample": "דוגמה: <img src=\"https://your-image-url.com/image.jpg\" alt=\"מוצר\" style=\"max-width: 100%; height: auto;\">",
+      "sendButton": "שלח דואר אלקטרוני",
+      "sending": "שולח...",
+      "refreshCount": "רענן מספר",
+      "loadingCount": "טוען מספר מנויים...",
+      "subscriberCount": "סה\"כ מנויים: {{count}}",
+      "success": "נשלח בהצלחה ל-{{count}} מנויים.",
+      "errorSubjectRequired": "נושא נדרש",
+      "errorMessageRequired": "הודעה נדרשת",
+      "errorNotSignedIn": "עליך להתחבר כדי לשלוח דואר אלקטרוני המוני",
+      "errorSendFailed": "שליחת דואר אלקטרוני המוני נכשלה. אנא נסה שוב."
     },
     "settings": {
       "title": "הגדרות",

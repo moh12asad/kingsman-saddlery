@@ -525,6 +525,7 @@
       "brands": "العلامات التجارية",
       "users": "المستخدمون",
       "contactSubmissions": "طلبات الاتصال",
+      "bulkEmail": "البريد الإلكتروني الجماعي",
       "settings": "الإعدادات"
     },
     "dashboard": {
@@ -760,6 +761,26 @@
         "deleteSubmission": "حذف الطلب",
         "close": "إغلاق"
       }
+    },
+    "bulkEmail": {
+      "title": "إرسال بريد إلكتروني جماعي",
+      "description": "إرسال رسائل بريد إلكتروني ترويجية وتحديثات وعروض لجميع المستخدمين الذين اشتركوا في إشعارات البريد الإلكتروني.",
+      "subjectLabel": "الموضوع",
+      "subjectPlaceholder": "أدخل موضوع البريد الإلكتروني",
+      "messageLabel": "الرسالة",
+      "messagePlaceholder": "أدخل رسالتك هنا. يمكنك استخدام تنسيق HTML.",
+      "messageHint": "يمكنك استخدام علامات HTML للتنسيق (مثل <p>، <strong>، <a>، إلخ). لإضافة الصور، استخدم: <img src=\"https://example.com/image.jpg\" alt=\"الوصف\" style=\"max-width: 100%; height: auto;\">",
+      "imageExample": "مثال: <img src=\"https://your-image-url.com/image.jpg\" alt=\"المنتج\" style=\"max-width: 100%; height: auto;\">",
+      "sendButton": "إرسال البريد الإلكتروني",
+      "sending": "جاري الإرسال...",
+      "refreshCount": "تحديث العدد",
+      "loadingCount": "جاري تحميل عدد المشتركين...",
+      "subscriberCount": "إجمالي المشتركين: {{count}}",
+      "success": "تم إرسال البريد الإلكتروني بنجاح إلى {{count}} مشترك.",
+      "errorSubjectRequired": "الموضوع مطلوب",
+      "errorMessageRequired": "الرسالة مطلوبة",
+      "errorNotSignedIn": "يجب تسجيل الدخول لإرسال بريد إلكتروني جماعي",
+      "errorSendFailed": "فشل إرسال البريد الإلكتروني الجماعي. يرجى المحاولة مرة أخرى."
     },
     "settings": {
       "title": "الإعدادات",
