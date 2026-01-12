@@ -1,5 +1,6 @@
-// Email service using nodemailer
+// Email service using nodemailer and Resend
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { db } from "./firebaseAdmin.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -78,12 +79,70 @@ function getLogoAttachment() {
   }
 }
 
-// Create reusable transporter
+/**
+ * Get logo attachment as base64 for Resend
+ */
+function getLogoAttachmentBase64() {
+  try {
+    const logoPath = path.join(__dirname, '../../client/public/kingsman-saddlery-logo.png');
+    
+    // Check if file exists
+    if (!fs.existsSync(logoPath)) {
+      console.warn(`[EMAIL] Logo file not found at ${logoPath}`);
+      return null;
+    }
+    
+    const fileBuffer = fs.readFileSync(logoPath);
+    const base64Content = fileBuffer.toString('base64');
+    
+    return {
+      filename: 'kingsman-saddlery-logo.png',
+      content: base64Content,
+      cid: 'logo'
+    };
+  } catch (error) {
+    console.error('[EMAIL] Error getting logo attachment (base64):', error);
+    return null;
+  }
+}
+
+// Create reusable transporter and Resend client
 let transporter = null;
+let resendClient = null;
+
+/**
+ * Check if Resend is configured
+ */
+export function isResendConfigured() {
+  return !!process.env.RESEND_API_KEY;
+}
+
+/**
+ * Get Resend client instance
+ */
+export function getResendClient() {
+  if (resendClient) {
+    return resendClient;
+  }
+
+  if (!isResendConfigured()) {
+    return null;
+  }
+
+  resendClient = new Resend(process.env.RESEND_API_KEY);
+  console.log(`[EMAIL] Resend client created successfully`);
+  return resendClient;
+}
 
 export function getTransporter() {
   if (transporter) {
     return transporter;
+  }
+
+  // If Resend is configured, we don't need SMTP transporter
+  if (isResendConfigured()) {
+    console.log(`[EMAIL] Resend is configured, skipping SMTP transporter creation`);
+    return null;
   }
 
   // Detect hosting environment
@@ -99,12 +158,16 @@ export function getTransporter() {
   // For development, you can use Gmail or a service like Mailtrap
   const emailConfig = {
     host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+    port: parseInt(process.env.SMTP_PORT || "465"), // Default to 465 for Railway compatibility
+    secure: process.env.SMTP_SECURE !== "false", // Default to true for port 465, false for 587
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Add connection timeout and retry options for Railway
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   };
 
   console.log(`[EMAIL] SMTP Configuration:`);
@@ -115,7 +178,7 @@ export function getTransporter() {
 
   // If no SMTP config, return null (emails won't be sent)
   if (!emailConfig.auth.user || !emailConfig.auth.pass) {
-    console.warn("⚠️  Email service not configured. Set SMTP_USER and SMTP_PASS environment variables.");
+    console.warn("⚠️  Email service not configured. Set SMTP_USER and SMTP_PASS (for SMTP) or RESEND_API_KEY (for Resend) environment variables.");
     return null;
   }
 
@@ -309,13 +372,6 @@ export async function sendOrderConfirmationEmail(orderData) {
     console.log(`[EMAIL] Order Number: ${orderData.orderNumber}`);
     console.log(`[EMAIL] Recipient: ${orderData.customerEmail}`);
     
-    const emailTransporter = getTransporter();
-    
-    if (!emailTransporter) {
-      console.warn("[EMAIL] Email service not configured. Email not sent.");
-      return { success: false, error: "Email service not configured" };
-    }
-
     const {
       customerEmail,
       customerName,
@@ -325,6 +381,21 @@ export async function sendOrderConfirmationEmail(orderData) {
     if (!customerEmail) {
       throw new Error("Customer email is required");
     }
+
+    // Get store info for email
+    const storeInfo = await getStoreInfo();
+    const storeName = storeInfo?.storeName || "Kingsman Saddlery";
+    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_USER;
+    
+    if (!fromEmail) {
+      throw new Error("From email not configured. Set RESEND_FROM_EMAIL or SMTP_USER");
+    }
+
+    // Security: Validate email address to prevent injection
+    const validatedEmail = validateEmail(customerEmail);
+    
+    // Security: Sanitize subject line (plain text, not HTML)
+    const sanitizedSubject = sanitizeSubject(`Order Confirmation #${orderNumber} - ${storeName}`);
 
     // Generate plain text version with discount info
     let textEmail = `Order Confirmation #${orderNumber}\n\nDear ${customerName},\n\nThank you for your order! We've received your order and will process it shortly.\n\nOrder Number: #${orderNumber}\n`;
@@ -346,28 +417,63 @@ export async function sendOrderConfirmationEmail(orderData) {
       textEmail += `Delivery: ${orderData.deliveryCost.toFixed(2)} ILS\n`;
     }
     
-    // Get store info for text email
-    // Get store info for email
-    const storeInfo = await getStoreInfo();
-    const storeName = storeInfo?.storeName || "Kingsman Saddlery";
-    
     textEmail += `\nTotal: ${orderData.total.toFixed(2)} ILS\n\nBest regards,\n${storeName} Team`;
 
-    // Security: Validate email address to prevent injection
-    const validatedEmail = validateEmail(customerEmail);
+    const htmlContent = await generateOrderEmailTemplate(orderData);
+
+    // Try Resend first if configured
+    if (isResendConfigured()) {
+      console.log(`[EMAIL] Using Resend API to send email...`);
+      const resend = getResendClient();
+      
+      // Get logo attachment for Resend (base64)
+      const logoAttachment = getLogoAttachmentBase64();
+      const attachments = logoAttachment ? [logoAttachment] : [];
+
+      const sendStartTime = Date.now();
+      const { data, error } = await resend.emails.send({
+        from: `"${storeName}" <${fromEmail}>`,
+        to: [validatedEmail],
+        subject: sanitizedSubject,
+        html: htmlContent,
+        text: textEmail,
+        attachments: attachments,
+      });
+
+      if (error) {
+        throw new Error(`Resend API error: ${error.message || JSON.stringify(error)}`);
+      }
+
+      const sendTime = Date.now() - sendStartTime;
+      const totalTime = Date.now() - startTime;
+      
+      console.log(`[EMAIL] ✓ Email sent successfully via Resend!`);
+      console.log(`[EMAIL]   Message ID: ${data?.id || 'N/A'}`);
+      console.log(`[EMAIL]   Send Time: ${sendTime}ms`);
+      console.log(`[EMAIL]   Total Time: ${totalTime}ms`);
+      console.log(`[EMAIL] ===== Email Send Completed =====`);
+      
+      return { success: true, messageId: data?.id || 'resend-' + Date.now() };
+    }
+
+    // Fallback to SMTP
+    console.log(`[EMAIL] Using SMTP to send email...`);
+    const emailTransporter = getTransporter();
     
-    // Security: Sanitize subject line (plain text, not HTML)
-    const sanitizedSubject = sanitizeSubject(`Order Confirmation #${orderNumber} - ${storeName}`);
-    
-    // Get logo attachment
+    if (!emailTransporter) {
+      console.warn("[EMAIL] Email service not configured. Email not sent.");
+      return { success: false, error: "Email service not configured. Set RESEND_API_KEY or SMTP credentials." };
+    }
+
+    // Get logo attachment for SMTP
     const logoAttachment = getLogoAttachment();
     const attachments = logoAttachment ? [logoAttachment] : [];
 
     const mailOptions = {
-      from: `"${storeName}" <${process.env.SMTP_USER}>`,
+      from: `"${storeName}" <${fromEmail}>`,
       to: validatedEmail,
       subject: sanitizedSubject,
-      html: await generateOrderEmailTemplate(orderData),
+      html: htmlContent,
       text: textEmail,
       attachments: attachments,
     };
@@ -396,6 +502,7 @@ export async function sendOrderConfirmationEmail(orderData) {
         console.error(`[EMAIL]    1. Render/Railway blocking outbound SMTP connections`);
         console.error(`[EMAIL]    2. Firewall blocking port ${process.env.SMTP_PORT}`);
         console.error(`[EMAIL]    3. Network routing issue from hosting provider`);
+        console.error(`[EMAIL]    Consider using Resend API (set RESEND_API_KEY) to bypass SMTP issues.`);
       }
       
       throw verifyError;
@@ -408,7 +515,7 @@ export async function sendOrderConfirmationEmail(orderData) {
     const sendTime = Date.now() - sendStartTime;
     const totalTime = Date.now() - startTime;
     
-    console.log(`[EMAIL] ✓ Email sent successfully!`);
+    console.log(`[EMAIL] ✓ Email sent successfully via SMTP!`);
     console.log(`[EMAIL]   Message ID: ${info.messageId}`);
     console.log(`[EMAIL]   Send Time: ${sendTime}ms`);
     console.log(`[EMAIL]   Total Time: ${totalTime}ms`);
@@ -433,18 +540,21 @@ export async function sendOrderConfirmationEmail(orderData) {
           console.error(`[EMAIL]     - Render/Railway blocking SMTP port ${process.env.SMTP_PORT}`);
           console.error(`[EMAIL]     - Gmail SMTP server not reachable from hosting IP`);
           console.error(`[EMAIL]     - Network routing issue`);
+          console.error(`[EMAIL]   Solution: Use Resend API (set RESEND_API_KEY) to bypass SMTP issues.`);
           break;
         case 'ECONNREFUSED':
           console.error(`[EMAIL]   ECONNREFUSED: Connection refused`);
           console.error(`[EMAIL]   Possible causes:`);
           console.error(`[EMAIL]     - Port ${process.env.SMTP_PORT} is blocked by hosting provider`);
           console.error(`[EMAIL]     - SMTP server is down or unreachable`);
+          console.error(`[EMAIL]   Solution: Use Resend API (set RESEND_API_KEY) to bypass SMTP issues.`);
           break;
         case 'ECONNRESET':
           console.error(`[EMAIL]   ECONNRESET: Connection reset by peer`);
           console.error(`[EMAIL]   Possible causes:`);
           console.error(`[EMAIL]     - Firewall closing connection`);
           console.error(`[EMAIL]     - Gmail blocking connection from hosting IP`);
+          console.error(`[EMAIL]   Solution: Use Resend API (set RESEND_API_KEY) to bypass SMTP issues.`);
           break;
         case 'EHOSTUNREACH':
           console.error(`[EMAIL]   EHOSTUNREACH: Host unreachable`);
@@ -609,13 +719,6 @@ export async function sendContactFormEmail(contactData) {
     console.log(`[EMAIL] Submission ID: ${contactData.id}`);
     console.log(`[EMAIL] From: ${contactData.email}`);
     
-    const emailTransporter = getTransporter();
-    
-    if (!emailTransporter) {
-      console.warn("[EMAIL] Email service not configured. Email not sent.");
-      return { success: false, error: "Email service not configured" };
-    }
-
     if (!contactData.email) {
       throw new Error("Contact email is required");
     }
@@ -625,10 +728,12 @@ export async function sendContactFormEmail(contactData) {
 
     // Get store info
     const storeInfo = await getStoreInfo();
-    const recipientEmail = storeInfo.storeEmail || process.env.SMTP_USER;
+    const storeName = storeInfo.storeName || 'Kingsman Saddlery';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_USER;
+    const recipientEmail = storeInfo.storeEmail || fromEmail;
 
     if (!recipientEmail) {
-      throw new Error("Store email not configured");
+      throw new Error("Store email not configured. Set RESEND_FROM_EMAIL or SMTP_USER");
     }
     
     // Security: Validate recipient email as well
@@ -645,19 +750,66 @@ export async function sendContactFormEmail(contactData) {
 
     // Security: Sanitize subject line (plain text, not HTML - don't use escapeHtml)
     const sanitizedSubject = sanitizeSubject(
-      `New Contact Form: ${contactData.subject || ''} - ${storeInfo.storeName || 'Kingsman Saddlery'}`
+      `New Contact Form: ${contactData.subject || ''} - ${storeName}`
     );
+
+    const htmlContent = generateContactFormEmailTemplate(contactData, storeInfo);
+
+    // Try Resend first if configured
+    if (isResendConfigured()) {
+      console.log(`[EMAIL] Using Resend API to send contact form email...`);
+      const resend = getResendClient();
+      
+      // Get logo attachment for Resend (base64)
+      const logoAttachment = getLogoAttachmentBase64();
+      const attachments = logoAttachment ? [logoAttachment] : [];
+
+      const sendStartTime = Date.now();
+      const { data, error } = await resend.emails.send({
+        from: `"${storeName}" <${fromEmail}>`,
+        to: [validatedRecipientEmail],
+        replyTo: validatedContactEmail,
+        subject: sanitizedSubject,
+        html: htmlContent,
+        text: textEmail,
+        attachments: attachments,
+      });
+
+      if (error) {
+        throw new Error(`Resend API error: ${error.message || JSON.stringify(error)}`);
+      }
+
+      const sendTime = Date.now() - sendStartTime;
+      const totalTime = Date.now() - startTime;
+      
+      console.log(`[EMAIL] ✓ Contact form email sent successfully via Resend!`);
+      console.log(`[EMAIL]   Message ID: ${data?.id || 'N/A'}`);
+      console.log(`[EMAIL]   Send Time: ${sendTime}ms`);
+      console.log(`[EMAIL]   Total Time: ${totalTime}ms`);
+      console.log(`[EMAIL] ===== Contact Form Email Completed =====`);
+      
+      return { success: true, messageId: data?.id || 'resend-' + Date.now() };
+    }
+
+    // Fallback to SMTP
+    console.log(`[EMAIL] Using SMTP to send contact form email...`);
+    const emailTransporter = getTransporter();
     
-    // Get logo attachment
+    if (!emailTransporter) {
+      console.warn("[EMAIL] Email service not configured. Email not sent.");
+      return { success: false, error: "Email service not configured. Set RESEND_API_KEY or SMTP credentials." };
+    }
+    
+    // Get logo attachment for SMTP
     const logoAttachment = getLogoAttachment();
     const attachments = logoAttachment ? [logoAttachment] : [];
 
     const mailOptions = {
-      from: `"${storeInfo.storeName || 'Kingsman Saddlery'}" <${process.env.SMTP_USER}>`,
+      from: `"${storeName}" <${fromEmail}>`,
       to: validatedRecipientEmail,
       replyTo: validatedContactEmail,
       subject: sanitizedSubject,
-      html: generateContactFormEmailTemplate(contactData, storeInfo),
+      html: htmlContent,
       text: textEmail,
       attachments: attachments,
     };
@@ -669,7 +821,7 @@ export async function sendContactFormEmail(contactData) {
     const sendTime = Date.now() - sendStartTime;
     const totalTime = Date.now() - startTime;
     
-    console.log(`[EMAIL] ✓ Contact form email sent successfully!`);
+    console.log(`[EMAIL] ✓ Contact form email sent successfully via SMTP!`);
     console.log(`[EMAIL]   Message ID: ${info.messageId}`);
     console.log(`[EMAIL]   Send Time: ${sendTime}ms`);
     console.log(`[EMAIL]   Total Time: ${totalTime}ms`);
