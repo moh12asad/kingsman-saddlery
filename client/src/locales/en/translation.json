@@ -148,6 +148,23 @@
       "failed": "Sign-in failed."
     }
   },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "description": "Enter your email address and we'll send you a link to reset your password.",
+    "emailPlaceholder": "you@example.com",
+    "sendResetLink": "Send reset link",
+    "sending": "Sending...",
+    "backToSignIn": "Back to Sign In",
+    "success": {
+      "linkSent": "Password reset link sent! Check your email inbox."
+    },
+    "errors": {
+      "userNotFound": "No account found with this email address.",
+      "invalidEmail": "Invalid email address.",
+      "tooManyRequests": "Too many requests. Please try again later.",
+      "failed": "Failed to send reset email."
+    }
+  },
   "signUp": {
     "title": "Create Your Account",
     "description": "Sign up to get started and receive 5% off on all purchases for the next 3 months!",
@@ -593,6 +610,7 @@
       "brands": "Brands",
       "users": "Users",
       "contactSubmissions": "Contact Submissions",
+      "bulkEmail": "Bulk Email",
       "settings": "Settings"
     },
     "dashboard": {
@@ -828,6 +846,26 @@
         "deleteSubmission": "Delete Submission",
         "close": "Close"
       }
+    },
+    "bulkEmail": {
+      "title": "Send Bulk Email",
+      "description": "Send promotional emails, updates, and offers to all users who have signed up for email notifications.",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Enter email subject",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Enter your message here. You can use HTML formatting.",
+      "messageHint": "You can use HTML tags for formatting (e.g., <p>, <strong>, <a>, etc.). To add images, use: <img src=\"https://example.com/image.jpg\" alt=\"Description\" style=\"max-width: 100%; height: auto;\">",
+      "imageExample": "Example: <img src=\"https://your-image-url.com/image.jpg\" alt=\"Product\" style=\"max-width: 100%; height: auto;\">",
+      "sendButton": "Send Email",
+      "sending": "Sending...",
+      "refreshCount": "Refresh Count",
+      "loadingCount": "Loading subscriber count...",
+      "subscriberCount": "Total subscribers: {{count}}",
+      "success": "Successfully sent emails to {{count}} subscribers.",
+      "errorSubjectRequired": "Subject is required",
+      "errorMessageRequired": "Message is required",
+      "errorNotSignedIn": "You must be signed in to send bulk emails",
+      "errorSendFailed": "Failed to send bulk email. Please try again."
     },
     "settings": {
       "title": "Settings",

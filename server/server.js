@@ -17,6 +17,7 @@ import emailRoutes from "./routes/email.js";
 import settingsAdmin from "./routes/settings.admin.js";
 import paymentRoutes from "./routes/payment.js";
 import contactRoutes from "./routes/contact.js";
+import bulkEmailAdmin from "./routes/bulkEmail.admin.js";
 import { verifyFirebaseToken } from "./middlewares/auth.js";
 
 dotenv.config();
@@ -47,6 +48,11 @@ app.use(cors({
     
     // Allow all Railway domains (for dynamic deployments)
     if (origin.endsWith('.up.railway.app') || origin.endsWith('.railway.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow production domain
+    if (origin === 'https://www.moh12asad.com' || origin === 'https://moh12asad.com') {
       return callback(null, true);
     }
     
@@ -171,6 +177,7 @@ app.use("/api/email", emailRoutes);
 app.use("/api/settings", settingsAdmin);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/admin/bulk-email", bulkEmailAdmin);
 
 // ---------- Fallback ----------
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));

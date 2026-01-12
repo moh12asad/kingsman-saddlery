@@ -1,47 +1,84 @@
 import { Router } from "express";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
-import { sendOrderConfirmationEmail, getTransporter } from "../lib/emailService.js";
+import { sendOrderConfirmationEmail, getTransporter, isResendConfigured, getResendClient } from "../lib/emailService.js";
 
 const router = Router();
 
-// Test SMTP connection (for debugging)
+// Test email service connection (Resend or SMTP)
 router.get("/test-smtp", async (req, res) => {
   try {
+    // Check if Resend is configured
+    if (isResendConfigured()) {
+      console.log("[EMAIL-TEST] Testing Resend API...");
+      const resend = getResendClient();
+      
+      // Test by sending a simple verification request
+      // Resend doesn't have a verify method, so we'll just check if the client is created
+      if (!resend) {
+        throw new Error("Resend client could not be created");
+      }
+      
+      res.json({
+        ok: true,
+        message: "Resend API is configured and ready",
+        service: "Resend",
+        config: {
+          fromEmail: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+          replyToEmail: process.env.RESEND_REPLY_TO || process.env.SMTP_USER || "NOT SET",
+          apiKey: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 7) + "***" : "NOT SET",
+          note: "Emails will be sent FROM the 'fromEmail' address, but replies will go to 'replyToEmail' (your Gmail)"
+        }
+      });
+      return;
+    }
+
+    // Fallback to SMTP test
+    console.log("[EMAIL-TEST] Testing SMTP connection...");
     const transporter = getTransporter();
     
     if (!transporter) {
       return res.status(500).json({
         ok: false,
         error: "Email service not configured",
-        details: "SMTP_USER and SMTP_PASS environment variables are required"
+        details: "Set RESEND_API_KEY (for Resend) or SMTP_USER and SMTP_PASS (for SMTP) environment variables",
+        availableServices: {
+          resend: !process.env.RESEND_API_KEY ? "Not configured (set RESEND_API_KEY)" : "Configured",
+          smtp: !process.env.SMTP_USER || !process.env.SMTP_PASS ? "Not configured (set SMTP_USER and SMTP_PASS)" : "Configured"
+        }
       });
     }
 
-    console.log("[EMAIL-TEST] Testing SMTP connection...");
     await transporter.verify();
     
     res.json({
       ok: true,
       message: "SMTP connection verified successfully",
+      service: "SMTP",
       config: {
         host: process.env.SMTP_HOST || "smtp.gmail.com",
-        port: process.env.SMTP_PORT || "587",
-        secure: process.env.SMTP_SECURE === "true",
+        port: process.env.SMTP_PORT || "465",
+        secure: process.env.SMTP_SECURE !== "false",
         user: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 3) + "***" : "NOT SET"
       }
     });
   } catch (error) {
-    console.error("[EMAIL-TEST] SMTP test failed:", error);
+    console.error("[EMAIL-TEST] Email service test failed:", error);
     res.status(500).json({
       ok: false,
-      error: "SMTP connection test failed",
+      error: isResendConfigured() ? "Resend API test failed" : "SMTP connection test failed",
       details: error.message,
       code: error.code || "N/A",
-      possibleCauses: [
+      service: isResendConfigured() ? "Resend" : "SMTP",
+      possibleCauses: isResendConfigured() ? [
+        "Invalid RESEND_API_KEY",
+        "Resend API service issue",
+        "Invalid RESEND_FROM_EMAIL domain (must be verified in Resend)"
+      ] : [
         "Railway might be blocking outbound SMTP connections",
         "Gmail might be blocking connections from Railway IPs",
         "Incorrect SMTP credentials (check App Password)",
-        "Network/firewall issue"
+        "Network/firewall issue",
+        "Consider using Resend API (set RESEND_API_KEY) to bypass SMTP issues"
       ]
     });
   }
