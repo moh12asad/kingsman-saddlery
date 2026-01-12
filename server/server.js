@@ -50,6 +50,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow production domain
+    if (origin === 'https://www.moh12asad.com' || origin === 'https://moh12asad.com') {
+      return callback(null, true);
+    }
+    
     // Block if not allowed
     console.warn(`[CORS] Blocked request from origin: ${origin}`);
     callback(new Error('Not allowed by CORS'));
