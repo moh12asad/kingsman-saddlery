@@ -71,3 +71,141 @@
   padding: 0.5rem 1rem;
 }
 
+/* ============================================
+   RTL (Right-to-Left) Support for Order Confirmation
+   ============================================ */
+
+/* Main container RTL */
+[dir="rtl"] .order-confirmation-page {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Grid layout RTL - ensure proper direction */
+[dir="rtl"] .order-confirmation-page .grid.gap-6 {
+  direction: rtl;
+}
+
+/* Section titles with icons RTL */
+[dir="rtl"] .order-confirmation-page .section-title.flex.items-center.gap-2 {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .order-confirmation-page .section-title.flex.items-center.gap-2 > svg {
+  order: 2;
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+/* Order items flex container RTL */
+[dir="rtl"] .order-confirmation-page .flex.gap-4.padding-y-sm {
+  flex-direction: row-reverse;
+}
+
+/* Item details text alignment RTL */
+[dir="rtl"] .order-confirmation-page .flex-1.min-w-0 {
+  text-align: right;
+}
+
+/* Price summary - keep prices aligned right */
+[dir="rtl"] .order-confirmation-page .flex.justify-between.items-center > span:first-child {
+  text-align: right;
+}
+
+[dir="rtl"] .order-confirmation-page .flex.justify-between.items-center > span:last-child {
+  text-align: left;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Buttons container RTL - reverse order */
+[dir="rtl"] .order-confirmation-page .flex.gap-4.margin-top-lg {
+  flex-direction: row-reverse;
+}
+
+/* Radio buttons RTL */
+[dir="rtl"] .order-confirmation-page label.flex.items-center.gap-3 {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .order-confirmation-page label.flex.items-center.gap-3 input[type="radio"] {
+  order: 2;
+  margin-left: 0.75rem;
+  margin-right: 0;
+}
+
+/* Address header buttons RTL */
+[dir="rtl"] .order-confirmation-page .flex.items-center.justify-between .flex.gap-2 {
+  flex-direction: row-reverse;
+}
+
+/* Form inputs RTL - already handled by global RTL, but ensure consistency */
+[dir="rtl"] .order-confirmation-page .input {
+  text-align: right;
+  direction: rtl;
+}
+
+[dir="rtl"] .order-confirmation-page .input::placeholder {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Grid form inputs RTL */
+[dir="rtl"] .order-confirmation-page .grid.grid-cols-2 {
+  direction: rtl;
+}
+
+/* Contact information icons RTL */
+[dir="rtl"] .order-confirmation-page .flex.items-center.gap-2 > svg {
+  order: 2;
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+/* Location button RTL */
+[dir="rtl"] .order-confirmation-location-button {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Action buttons RTL */
+[dir="rtl"] .order-confirmation-page .btn {
+  direction: rtl;
+}
+
+/* Keep images LTR in RTL */
+[dir="rtl"] .order-confirmation-page img {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
+/* Heading alignment - left for LTR, right for RTL */
+.order-confirmation-page .heading-1,
+.order-confirmation-page .container-main .heading-1 {
+  text-align: left;
+}
+
+/* Override the rtl.css rule for order confirmation page - must be more specific */
+[dir="rtl"] .order-confirmation-page .container-main .heading-1 {
+  text-align: right !important;
+}
+
+[dir="rtl"] .order-confirmation-page .heading-1 {
+  text-align: right !important;
+}
+
+/* Address display RTL */
+[dir="rtl"] .order-confirmation-page .space-y-2.text-sm p {
+  text-align: right;
+}
+
+/* Links RTL */
+[dir="rtl"] .order-confirmation-page a {
+  direction: rtl;
+}
+
+/* Flex row with gap RTL */
+[dir="rtl"] .order-confirmation-page .flex-row.flex-gap-sm {
+  flex-direction: row-reverse;
+}
+

@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { getStoreInfo } from "../utils/storeInfo";
+import CartDropdown from "./CartDropdown";
 import "../styles/language-switcher.css";
 
 export default function Navbar() {
@@ -20,11 +21,13 @@ export default function Navbar() {
   const cartCount = getTotalItems();
   const favoriteCount = getFavoriteCount();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showCartDropdown, setShowCartDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const [isMobile, setIsMobile] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
   const profileMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
+  const cartButtonRef = useRef(null);
 
   const handleSearchClick = () => {
     navigate("/products?search=true");
@@ -188,9 +191,16 @@ export default function Navbar() {
               </span>
             )}
           </NavLink>
-          <NavLink 
-            to="/cart" 
-            className={({ isActive }) => `relative flex-row-center ${isActive ? "nav-link-active" : "nav-link"}`}
+          <button
+            ref={cartButtonRef}
+            onClick={() => {
+              setShowCartDropdown(!showCartDropdown);
+              setShowProfileMenu(false); // Close profile menu if open
+            }}
+            className={`relative flex-row-center nav-link ${showCartDropdown ? "nav-link-active" : ""}`}
+            title={t("cart.title")}
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+            data-cart-button="true"
           >
             <FaShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
@@ -198,7 +208,12 @@ export default function Navbar() {
                 {cartCount > 9 ? '9+' : cartCount}
               </span>
             )}
-          </NavLink>
+          </button>
+          <CartDropdown
+            isOpen={showCartDropdown}
+            onClose={() => setShowCartDropdown(false)}
+            buttonRef={cartButtonRef}
+          />
           {isAdmin && (
             <NavLink
               to="/admin"

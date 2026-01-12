@@ -15,7 +15,7 @@ export default defineConfig({
     },
     preview: {
         host: true,              // allow access via Network URL
-        port: 5174,              // matches the port in package.json preview script
+        port: process.env.PORT ? parseInt(process.env.PORT, 10) : 5174,  // Use Railway's PORT or default to 5174
         // Allow all hosts for Railway deployment (dynamic domains)
         // In production preview mode, this is safe as the app is already built
         allowedHosts: true,
