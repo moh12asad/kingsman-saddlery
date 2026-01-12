@@ -158,17 +158,8 @@ export function CurrencyProvider({ children }) {
         let targetCurrency = BASE_CURRENCY; // Default to ILS (store's base currency)
         if (detectedCountry && countryToCurrency[detectedCountry]) {
           targetCurrency = countryToCurrency[detectedCountry];
-        } else {
-          // Fallback: try browser locale
-          const browserLocale = navigator.language || navigator.userLanguage;
-          if (browserLocale) {
-            const localeParts = browserLocale.split("-");
-            const localeCountry = localeParts[1]?.toUpperCase();
-            if (localeCountry && countryToCurrency[localeCountry]) {
-              targetCurrency = countryToCurrency[localeCountry];
-            }
-          }
         }
+        // If geolocation fails, always default to ILS (don't use browser locale)
 
         setCurrency(targetCurrency);
 
