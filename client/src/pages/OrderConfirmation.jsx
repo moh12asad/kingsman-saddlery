@@ -13,7 +13,7 @@ import "../styles/order-confirmation.css";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function OrderConfirmation() {
-  const { cartItems, getTotalPrice, isLoaded, clearCart } = useCart();
+  const { cartItems, getTotalPrice, getTotalWeight, isLoaded, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
@@ -50,6 +50,7 @@ export default function OrderConfirmation() {
   const [deliveryType, setDeliveryType] = useState("delivery"); // "delivery" or "pickup"
   const [discountInfo, setDiscountInfo] = useState(null); // Store discount information
   const [calculatedTotal, setCalculatedTotal] = useState(null); // Store calculated total with discount
+  const [calculatedTax, setCalculatedTax] = useState(null); // Store calculated tax from server (null = not calculated yet)
   const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
   const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
   
@@ -84,7 +85,7 @@ export default function OrderConfirmation() {
       }
 
       const subtotal = getTotalPrice();
-      const deliveryCost = requestDeliveryType === "delivery" ? DELIVERY_COST : 0;
+      const requestDeliveryCost = requestDeliveryType === "delivery" ? DELIVERY_COST : 0;
 
       const res = await fetch(`${API}/api/payment/calculate-total`, {
         method: "POST",
@@ -94,8 +95,8 @@ export default function OrderConfirmation() {
         },
         body: JSON.stringify({
           subtotal,
-          tax: 0,
-          deliveryCost
+          tax: subtotal * 0.18, // Tax on subtotal (will be recalculated server-side)
+          deliveryCost: requestDeliveryCost // Base delivery cost (server will add tax)
         })
       });
 
@@ -112,6 +113,7 @@ export default function OrderConfirmation() {
         if (currentRequestRef.current === requestId) {
           setDiscountInfo(data.discount);
           setCalculatedTotal(data.total);
+          setCalculatedTax(data.tax ?? null); // Store tax from server calculation (0 is valid, null means not set)
           setDiscountCalculationError(null);
         }
       } else {
@@ -242,6 +244,16 @@ export default function OrderConfirmation() {
   const isDiscountCalculationReady = !calculatingDiscount && !discountCalculationError && calculatedTotal !== null;
   const total = isDiscountCalculationReady ? calculatedTotal : null; // null means not ready for payment
   const subtotalAfterDiscount = discountInfo ? (subtotal - discountInfo.amount) : subtotal;
+  
+  // Calculate base amount (subtotal + delivery) before tax
+  const baseAmount = subtotalAfterDiscount + deliveryCost;
+  
+  // Calculate tax on the total (subtotal + delivery) (18% VAT)
+  // SECURITY: Use tax from server calculation if available (even if 0), otherwise calculate client-side
+  const VAT_RATE = 0.18;
+  const tax = isDiscountCalculationReady && calculatedTax !== null
+    ? calculatedTax 
+    : baseAmount * VAT_RATE;
   
   // Check if payment can proceed (discount calculation must be complete)
   const canProceedToPayment = isDiscountCalculationReady && total !== null;
@@ -496,7 +508,7 @@ export default function OrderConfirmation() {
         total: total, // This is guaranteed to be the correct total with discount
         subtotal: subtotalAfterDiscount, // Use subtotal after discount
         subtotalBeforeDiscount: subtotal, // Original subtotal before discount
-        tax: 0,
+        tax: tax, // 18% VAT on subtotal after discount
         status: "pending"
       };
 
@@ -511,7 +523,7 @@ export default function OrderConfirmation() {
           amount: total,
           currency: "ILS",
           subtotal: subtotal,
-          tax: 0,
+          tax: tax,
           deliveryCost: deliveryCost,
           // Add other payment method details as needed
         })
@@ -566,7 +578,7 @@ export default function OrderConfirmation() {
           subtotal: subtotalAfterDiscount,
           subtotalBeforeDiscount: subtotal,
           discount: discountInfo,
-          tax: 0,
+          tax: tax,
           metadata: {
             paymentMethod: "credit_card",
             deliveryType: deliveryType,
@@ -688,6 +700,13 @@ export default function OrderConfirmation() {
                         )}
                         <div className="flex items-center gap-2 margin-top-xs">
                           <span className="text-sm text-muted">{t("orderConfirmation.qty")} {item.quantity}</span>
+                          {item.weight && item.weight > 0 && (
+                            <span className="text-sm text-muted">
+                              {t("orderConfirmation.weight")}: {((item.weight || 0) * item.quantity).toFixed(2)} kg
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 margin-top-xs">
                           <span className="text-sm font-semibold">
                             {formatPrice(item.price * item.quantity)}
                           </span>
@@ -734,13 +753,26 @@ export default function OrderConfirmation() {
                       )}
                       {deliveryType === "delivery" && (
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted">{t("orderConfirmation.delivery")}</span>
+                          <span className="text-sm text-muted">{t("orderConfirmation.delivery")}:</span>
                           <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
                         </div>
                       )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted">{t("orderConfirmation.tax")} (18%):</span>
+                        <span className="text-sm font-semibold">{formatPrice(tax)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted">{t("orderConfirmation.totalWeight")}</span>
+                        <span className="text-sm font-semibold">{getTotalWeight().toFixed(2)} kg</span>
+                      </div>
                       <div className="flex justify-between items-center padding-top-sm border-top">
                         <span className="font-semibold">{t("orderConfirmation.total")}</span>
                         <span className="text-lg font-bold">{formatPrice(total)}</span>
+                      </div>
+                      <div className="margin-top-sm padding-top-sm border-top">
+                        <p className="text-xs text-muted text-center">
+                          {t("orderConfirmation.vatNote")}
+                        </p>
                       </div>
                     </>
                   )}

@@ -222,15 +222,21 @@ router.post("/create", async (req, res) => {
     // Apply discount to subtotal (discount applies to product prices, before tax and delivery)
     const orderSubtotal = Math.max(0, orderSubtotalBeforeDiscount - discountAmount);
     
-    const orderTax = typeof tax === "number" && tax >= 0 ? tax : 0;
-    
     // Delivery cost constant (must match client-side)
     const DELIVERY_COST = 50;
     const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
     
+    // Calculate base amount (subtotal + delivery) before tax
+    const baseAmount = orderSubtotal + deliveryCost;
+    
+    // Calculate tax on the total (subtotal + delivery) (18% VAT)
+    // SECURITY: Recalculate tax server-side based on total amount
+    const VAT_RATE = 0.18;
+    const orderTax = baseAmount * VAT_RATE;
+    
     // Calculate expected total on server (trusted calculation)
-    // Total = (Subtotal - Discount) + Tax + Delivery
-    const expectedTotal = Math.max(0, orderSubtotal + orderTax + deliveryCost);
+    // Total = (Subtotal + Delivery) + Tax on Total
+    const expectedTotal = Math.max(0, baseAmount + orderTax);
     
     // SECURITY: Ensure total is a valid finite number
     if (!isFinite(expectedTotal)) {

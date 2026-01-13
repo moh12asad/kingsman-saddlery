@@ -46,7 +46,20 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     }
 
     const validatedTax = typeof tax === "number" && tax >= 0 && isFinite(tax) ? tax : 0;
-    const validatedDeliveryCost = typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost) ? deliveryCost : 0;
+    // Delivery cost from client (base cost, server will add tax)
+    // SECURITY: Validate delivery cost - should be 0 (pickup) or DELIVERY_COST (delivery)
+    const DELIVERY_COST = 50;
+    let validatedDeliveryCost = 0;
+    if (typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)) {
+      // Allow 0 (pickup) or DELIVERY_COST (delivery) with small tolerance for floating point
+      if (deliveryCost === 0 || Math.abs(deliveryCost - DELIVERY_COST) < 0.01) {
+        validatedDeliveryCost = deliveryCost === 0 ? 0 : DELIVERY_COST;
+      } else {
+        // Log security warning for unexpected delivery cost
+        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Unexpected delivery cost: ${deliveryCost}, expected 0 or ${DELIVERY_COST}`);
+        validatedDeliveryCost = DELIVERY_COST; // Default to delivery cost for security
+      }
+    }
 
     console.log(`[PAYMENT] [${requestId}] Validated Inputs:`, {
       subtotal: subtotal,
@@ -81,17 +94,28 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
       console.log(`[PAYMENT] [${requestId}] No discount applied: ${discountCheck.reason || "Not eligible"}`);
     }
 
-    // Calculate final total: (Subtotal - Discount) + Tax + Delivery
+    // Calculate final total: (Subtotal - Discount) + Delivery, then apply tax on total
     // SECURITY: Ensure values are never negative
     const finalSubtotal = Math.max(0, subtotal - discountAmount);
-    const finalTotal = Math.max(0, finalSubtotal + validatedTax + validatedDeliveryCost);
+    
+    // Calculate base amount (subtotal + delivery) before tax
+    const baseAmount = finalSubtotal + validatedDeliveryCost;
+    
+    // Calculate tax on the total (subtotal + delivery) (18% VAT)
+    // SECURITY: Recalculate tax server-side based on total amount
+    const VAT_RATE = 0.18;
+    const calculatedTax = baseAmount * VAT_RATE;
+    
+    // Final total = base amount + tax
+    const finalTotal = Math.max(0, baseAmount + calculatedTax);
 
     console.log(`[PAYMENT] [${requestId}] Calculation Breakdown:`, {
       subtotalBeforeDiscount: subtotal,
       discountAmount: discountAmount,
       subtotalAfterDiscount: finalSubtotal,
-      tax: validatedTax,
       deliveryCost: validatedDeliveryCost,
+      baseAmount: baseAmount,
+      tax: calculatedTax,
       total: finalTotal
     });
 
@@ -111,7 +135,7 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
         percentage: discountCheck.discountPercentage,
         type: "new_user"
       } : null,
-      tax: validatedTax,
+      tax: calculatedTax,
       deliveryCost: validatedDeliveryCost,
       total: finalTotal
     };
@@ -204,14 +228,27 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       }
 
       const finalSubtotal = Math.max(0, subtotal - discountAmount);
-      const expectedTotal = finalSubtotal + tax + deliveryCost;
+      
+      // SECURITY: Validate delivery cost (should be 0 or 50, but allow any non-negative value)
+      const validatedDeliveryCost = typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost) ? deliveryCost : 0;
+      
+      // Calculate base amount (subtotal + delivery) before tax
+      const baseAmount = finalSubtotal + validatedDeliveryCost;
+      
+      // SECURITY: Recalculate tax server-side (never trust client-provided tax)
+      const VAT_RATE = 0.18;
+      const calculatedTax = baseAmount * VAT_RATE;
+      
+      // Calculate expected total
+      const expectedTotal = Math.max(0, baseAmount + calculatedTax);
       
       console.log(`[PAYMENT] [${requestId}] Expected Total Calculation:`, {
         subtotalBeforeDiscount: subtotal,
         discountAmount: discountAmount,
         subtotalAfterDiscount: finalSubtotal,
-        tax: tax,
-        deliveryCost: deliveryCost,
+        deliveryCost: validatedDeliveryCost,
+        baseAmount: baseAmount,
+        calculatedTax: calculatedTax,
         expectedTotal: expectedTotal
       });
       

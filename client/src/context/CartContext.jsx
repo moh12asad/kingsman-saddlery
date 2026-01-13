@@ -8,6 +8,7 @@ const CartContext = createContext({
   clearCart: () => {},
   getTotalItems: () => 0,
   getTotalPrice: () => 0,
+  getTotalWeight: () => 0,
 });
 
 export function CartProvider({ children }) {
@@ -65,6 +66,7 @@ export function CartProvider({ children }) {
           description: product.description || "",
           sale: product.sale,
           originalPrice: product.price,
+          weight: product.weight || 0,
           quantity: 1,
         },
       ];
@@ -99,6 +101,10 @@ export function CartProvider({ children }) {
     return cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   };
 
+  const getTotalWeight = () => {
+    return cartItems.reduce((sum, item) => sum + (item.weight || 0) * item.quantity, 0);
+  };
+
   const value = useMemo(
     () => ({
       cartItems,
@@ -108,6 +114,7 @@ export function CartProvider({ children }) {
       clearCart,
       getTotalItems,
       getTotalPrice,
+      getTotalWeight,
       isLoaded,
     }),
     [cartItems, isLoaded]

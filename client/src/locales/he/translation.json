@@ -309,7 +309,8 @@
     "deliveryTimeValue": "7 ימים, אפשרות איסוף עצמי זמינה",
     "askAboutProduct": "שאל אותנו על המוצר הזה",
     "askOnWhatsApp": "שאל אותנו ב-WhatsApp",
-    "whatsappNotConfigured": "מספר WhatsApp לא מוגדר. אנא פנה למנהל."
+    "whatsappNotConfigured": "מספר WhatsApp לא מוגדר. אנא פנה למנהל.",
+    "priceNote": "* המחיר אינו כולל מע\"ם (18%)"
   },
   "footer": {
     "siteMap": "מפת האתר",
@@ -476,6 +477,17 @@
     "delivery": "משלוח:",
     "total": "סה\"כ:",
     "qty": "כמות:",
+    "weight": "משקל",
+    "totalWeight": "משקל כולל:",
+    "price": "מחיר",
+    "tax": "מע\"ם",
+    "taxOnSubtotal": "מע\"ם על סה\"כ ביניים",
+    "taxOnDelivery": "מע\"ם על משלוח",
+    "totalTax": "מע\"ם כולל",
+    "deliveryTax": "מע\"ם על משלוח",
+    "deliveryTotal": "משלוח כולל מע\"ם",
+    "withTax": "כולל מע\"ם",
+    "vatNote": "* המחירים אינם כוללים מע\"ם (18%) ומשלוח",
     "noImage": "אין תמונה",
     "pleaseFillMandatoryFields": "אנא מלא את כל השדות החובה (מסומנים ב",
     "completeMandatoryAddress": "השלם את שדות כתובת המשלוח החובה למעלה (כתובת רחוב, עיר, מיקוד).",

@@ -31,6 +31,7 @@ export default function CreateProduct(){
     shippingInfo: { en: "", ar: "", he: "" },
     videoUrl: "",
     additionalImages: [],
+    weight: 0,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingImages, setUploadingImages] = useState([]);
@@ -154,6 +155,7 @@ export default function CreateProduct(){
         shippingInfo: cleanTranslation(form.shippingInfo),
         videoUrl: form.videoUrl || "",
         additionalImages: form.additionalImages || [],
+        weight: Number(form.weight) || 0,
       };
 
       const res = await fetch(`${API}/api/products`, {
@@ -299,6 +301,18 @@ export default function CreateProduct(){
             placeholder={t('admin.createProduct.pricePlaceholder')} 
             value={form.price || ""} 
             onChange={e=>setForm({...form,price:Number(e.target.value)})}
+          />
+          <input 
+            className="input" 
+            type="number" 
+            step="0.01"
+            min="0"
+            placeholder="Weight (kg)" 
+            value={form.weight || ""} 
+            onChange={e=>{
+              const value = Number(e.target.value);
+              setForm({...form, weight: value >= 0 ? value : 0});
+            }}
           />
           <select 
             className="select" 

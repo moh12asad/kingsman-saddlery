@@ -162,11 +162,18 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
     // Use provided discount if available (already validated server-side)
     const orderDiscount = discount && typeof discount === "object" && discount.amount > 0 ? discount : null;
     const orderSubtotal = typeof subtotal === "number" && subtotal >= 0 ? subtotal : computedSubtotal;
-    const orderTax = typeof tax === "number" && tax >= 0 ? tax : 0;
+    
+    // Calculate base amount (subtotal + delivery) before tax
+    const baseAmount = orderSubtotal + deliveryCost;
+    
+    // Calculate tax on the total (subtotal + delivery) (18% VAT)
+    // SECURITY: Recalculate tax server-side based on total amount
+    const VAT_RATE = 0.18;
+    const orderTax = baseAmount * VAT_RATE;
     
     // Calculate expected total on server (trusted calculation)
-    // Total = (Subtotal - Discount) + Tax + Delivery
-    const expectedTotal = Math.max(0, orderSubtotal + orderTax + deliveryCost);
+    // Total = (Subtotal + Delivery) + Tax on Total
+    const expectedTotal = Math.max(0, baseAmount + orderTax);
     
     // Validate client-provided total if provided (with small tolerance for floating point)
     const clientTotal = typeof total === "number" ? total : null;

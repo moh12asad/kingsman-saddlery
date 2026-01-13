@@ -195,6 +195,7 @@ export default function AdminProducts(){
                 <th className="min-w-[200px]">{t('admin.products.description')}</th>
                 <th className="min-w-[100px]">{t('admin.products.brand')}</th>
                 <th className="min-w-[100px]">{t('admin.products.sku')}</th>
+                <th className="min-w-[80px]">Weight (kg)</th>
                 <th className="min-w-[100px]">{t('admin.products.status')}</th>
                 <th className="min-w-[120px]">{t('admin.products.sale')}</th>
                 <th className="min-w-[100px]">{t('admin.products.featured')}</th>
@@ -204,7 +205,7 @@ export default function AdminProducts(){
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-8 text-gray-500">
+                  <td colSpan="13" className="text-center py-8 text-gray-500">
                     {selectedCategory === "all" 
                       ? t('admin.products.noProducts')
                       : `${t('admin.products.noProductsInCategory')} "${selectedCategory}".`}
@@ -231,6 +232,7 @@ export default function AdminProducts(){
                     </td>
                     <td>{p.brand || "-"}</td>
                     <td className="text-sm text-gray-600">{p.sku || "-"}</td>
+                    <td className="text-sm text-gray-600">{(p.weight || 0).toFixed(2)}</td>
                     <td>
                       <span className={p.available ? "badge badge-success" : "badge badge-danger"}>
                         {p.available ? t('admin.products.available') : t('admin.products.unavailable')}
