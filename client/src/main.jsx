@@ -36,9 +36,17 @@ import AdminDashboard from "./pages/Admin/Dashboard.jsx";
 import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
 import AdminCategories from "./pages/Admin/Categories.jsx";
+import CreateCategory from "./pages/Admin/CreateCategory.jsx";
+import CreateSubcategory from "./pages/Admin/CreateSubcategory.jsx";
 import AdminHeroSlides from "./pages/Admin/HeroSlides.jsx";
+import CreateHeroSlide from "./pages/Admin/CreateHeroSlide.jsx";
+import EditHeroSlide from "./pages/Admin/EditHeroSlide.jsx";
 import AdminAds from "./pages/Admin/Ads.jsx";
+import CreateAd from "./pages/Admin/CreateAd.jsx";
+import EditAd from "./pages/Admin/EditAd.jsx";
 import AdminBrands from "./pages/Admin/Brands.jsx";
+import CreateBrand from "./pages/Admin/CreateBrand.jsx";
+import EditBrand from "./pages/Admin/EditBrand.jsx";
 import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
 import EditCategory from "./pages/Admin/EditCategory.jsx";
@@ -106,10 +114,18 @@ const router = createBrowserRouter([
           { path: "products/create", element: <CreateProduct /> },
           { path: "products/edit/:id", element: <EditProduct /> },
           { path: "categories", element: <AdminCategories /> },
+          { path: "categories/create", element: <CreateCategory /> },
+          { path: "categories/:categoryId/subcategory/create", element: <CreateSubcategory /> },
           { path: "categories/edit/:id", element: <EditCategory /> },
           { path: "hero-slides", element: <AdminHeroSlides /> },
+          { path: "hero-slides/create", element: <CreateHeroSlide /> },
+          { path: "hero-slides/edit/:id", element: <EditHeroSlide /> },
           { path: "ads", element: <AdminAds /> },
+          { path: "ads/create", element: <CreateAd /> },
+          { path: "ads/edit/:id", element: <EditAd /> },
           { path: "brands", element: <AdminBrands /> },
+          { path: "brands/create", element: <CreateBrand /> },
+          { path: "brands/edit/:id", element: <EditBrand /> },
           { path: "contact-submissions", element: <ContactSubmissions /> },
           { path: "bulk-email", element: <BulkEmail /> },
           { path: "settings", element: <AdminSettings /> },

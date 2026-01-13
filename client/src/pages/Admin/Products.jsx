@@ -126,10 +126,10 @@ export default function AdminProducts(){
           <h2 className="section-title">{t('admin.products.title')} ({filteredRows.length})</h2>
           <div className="flex items-center gap-3 flex-wrap">
             <button 
-              className="btn btn-primary btn-sm"
+              className="btn btn-cta btn-sm"
               onClick={() => navigate("/admin/products/create")}
             >
-              {t('admin.products.createProduct')}
+              + {t('admin.products.createProduct')}
             </button>
             {/* Search Bar */}
             <div className="relative flex-1 min-w-[200px] max-w-[300px]">

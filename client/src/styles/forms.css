@@ -98,7 +98,7 @@
 
 /* Ensure select elements have proper borders */
 select.select {
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.375rem 0.625rem;
   font-size: 0.875rem;

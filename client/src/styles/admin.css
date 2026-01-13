@@ -1,126 +1,172 @@
+/* Admin-specific styles */
+
+/* Admin container - full width, no max-width constraint */
 .admin-container {
-  max-width: 100%;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-.admin-shell {
-  display: grid;
-  grid-template-columns: 14rem 1fr;
-  gap: 1.5rem;
-  margin-top: 5rem;
-  padding-left: 0;
-  margin-left: 0;
   width: 100%;
+  max-width: 100% !important;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
 }
 
-@media (max-width: 1024px) {
-  .admin-shell {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .sidebar {
-    position: relative;
-    top: 0;
-    margin-bottom: 1rem;
-  }
+/* Fixed sidebar on the left edge */
+.admin-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 150px;
+  border-right: 1px solid var(--border);
 }
 
-.sidebar {
-  position: sticky;
-  top: 5.6rem;
-  align-self: start;
-  height: fit-content;
-  padding: 0.75rem;
+/* Sidebar navigation links */
+.admin-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
 }
 
-.sidebar a {
+.admin-sidebar nav a {
   display: block;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  text-align: left;
-  transition: all 0.2s ease;
-}
-
-.sidebar {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-.sidebar a {
-  color: var(--text);
-}
-
-.sidebar a:hover {
-  background: rgba(251, 191, 36, 0.1);
-  color: rgb(255, 198, 41);
-}
-
-.sidebar a.active {
-  background: rgba(251, 191, 36, 0.15);
-  color: rgb(255, 198, 41);
-  font-weight: 700;
-  border-left: 3px solid rgb(255, 198, 41);
-}
-
-/* Mobile menu toggle */
-@media (max-width: 1024px) {
-  .sidebar:not(.open) {
-    display: none;
-  }
-  
-  .sidebar.open {
-    display: block;
-    margin-bottom: 1rem;
-  }
-}
-
-/* Orders Filter Navigation - Horizontal Tabs */
-.orders-filter-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.orders-filter-nav a {
-  display: inline-block;
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.5rem 0.5rem 0 0;
   text-decoration: none;
   color: var(--text);
-  font-weight: 500;
-  font-size: 0.875rem;
+  border-radius: 0.375rem;
   transition: all 0.2s ease;
-  background: transparent;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  border: 1px solid transparent;
 }
 
-.orders-filter-nav a:hover {
-  background: rgba(251, 191, 36, 0.1);
+.admin-sidebar nav a:hover {
+  background-color: rgba(255, 198, 41, 0.1);
   color: rgb(255, 198, 41);
 }
 
-.orders-filter-nav a.active {
-  background: rgba(251, 191, 36, 0.15);
+.admin-sidebar nav a.active {
+  background-color: rgba(255, 198, 41, 0.15);
   color: rgb(255, 198, 41);
-  font-weight: 700;
-  border-bottom-color: rgb(255, 198, 41);
+  border-color: rgb(255, 198, 41);
+  font-weight: 600;
 }
 
-@media (max-width: 768px) {
-  .orders-filter-nav {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
+/* Main content wrapper - accounts for sidebar */
+.admin-main-wrapper {
+  margin-left: 240px;
+  margin-top: 100px;
+  width: calc(100% - 240px);
+  padding: 1rem 2rem;
+  min-height: 100vh;
+}
+
+/* Main content area */
+.admin-main-content {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0;
+}
+
+/* Mobile responsive - stack vertically on small screens */
+@media (max-width: 1024px) {
+  .admin-container {
+    flex-direction: column;
   }
-  
-  .orders-filter-nav a {
-    white-space: nowrap;
-    flex-shrink: 0;
+
+  .admin-sidebar {
+    position: fixed;
+    left: -240px;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  .admin-sidebar.open {
+    left: 0;
+  }
+
+  .admin-main-wrapper {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
   }
 }
+
+/* Thicker borders for CreateProduct page inputs */
+.create-product-page .input,
+.create-product-page .select,
+.create-product-page select {
+  border: 3px solid var(--border) !important;
+}
+
+.create-product-page .input:focus,
+.create-product-page .select:focus,
+.create-product-page select:focus {
+  border-color: rgb(255, 198, 41) !important;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+/* Ensure admin menu/sidebar keeps original styling - no thicker borders */
+.admin-container .sidebar,
+.admin-container .sidebar.card,
+.admin-container .sidebar nav,
+.admin-container .sidebar nav a,
+.admin-container .sidebar * {
+  border-width: 1px !important;
+}
+
+/* Ensure admin-shell and sidebar elements keep original border styling */
+.admin-shell,
+.admin-shell .sidebar,
+.admin-shell .sidebar.card {
+  border-width: 1px !important;
+}
+
+/* Make all admin tables full width - remove all constraints */
+.admin-container .table,
+.admin-container table.table,
+.admin-container .admin-products-table,
+.admin-container .brands-table,
+.admin-container table,
+.admin-main-content .table,
+.admin-main-content table.table,
+.admin-main-content .admin-products-table,
+.admin-main-content .brands-table,
+.admin-main-content table {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  table-layout: auto;
+}
+
+/* Remove all constraints that might limit table width */
+.admin-container .overflow-x-auto,
+.admin-main-content .overflow-x-auto {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.admin-container .table-responsive,
+.admin-main-content .table-responsive {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto;
+}
+
+/* Remove card padding constraints for tables */
+.admin-main-content .card {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure no container constraints */
+.admin-main-content > * {
+  max-width: 100% !important;
+}
+

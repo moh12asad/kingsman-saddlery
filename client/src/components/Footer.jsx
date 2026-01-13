@@ -213,9 +213,6 @@ export default function Footer() {
               </label>
             </div>
           </form>
-          <div className="join-club-members-text">
-            <span>{t("joinClub.members")}</span>
-          </div>
         </div>
       </div>
 

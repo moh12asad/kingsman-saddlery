@@ -513,7 +513,7 @@ export default function EditProduct() {
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">
               <label className="form-label">Upload Main Image</label>
-              <label className="flex-row flex-gap-sm border rounded padding-x-md padding-y-sm cursor-pointer transition">
+              <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
                 <span>Choose file</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
               </label>
@@ -524,7 +524,7 @@ export default function EditProduct() {
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">
               <label className="form-label">Upload Multiple Images</label>
-              <label className="flex-row flex-gap-sm border rounded padding-x-md padding-y-sm cursor-pointer transition">
+              <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
                 <span>Choose files</span>
                 <input type="file" accept="image/*" multiple className="hidden" onChange={handleMultipleImagesChange} />
               </label>

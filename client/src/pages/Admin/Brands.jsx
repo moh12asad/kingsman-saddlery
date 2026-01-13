@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, storage } from "../../lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { checkAdmin } from "../../utils/checkAdmin";
+import { auth } from "../../lib/firebase";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -10,16 +8,9 @@ export default function AdminBrands() {
   const navigate = useNavigate();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    logo: "",
-  });
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [editingBrand, setEditingBrand] = useState(null);
-  const [updatingId, setUpdatingId] = useState(null);
 
   async function loadBrands() {
     try {
@@ -43,157 +34,6 @@ export default function AdminBrands() {
     loadBrands();
   }, []);
 
-  async function uploadImage(file) {
-    // Ensure user is authenticated
-    if (!auth.currentUser) {
-      throw new Error("You must be signed in to upload images");
-    }
-
-    // Check if user is admin
-    const isAdmin = await checkAdmin();
-    if (!isAdmin) {
-      throw new Error("Only administrators can upload brand logos");
-    }
-    
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      throw new Error("Image size must be less than 5MB");
-    }
-
-    if (!file.type.startsWith("image/")) {
-      throw new Error("File must be an image");
-    }
-
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const storageRef = ref(storage, `brands/${Date.now()}_${safeName}`);
-    
-    try {
-      await uploadBytes(storageRef, file, {
-        contentType: file.type,
-        customMetadata: {
-          uploadedBy: auth.currentUser.uid,
-          uploadedAt: new Date().toISOString()
-        }
-      });
-      return await getDownloadURL(storageRef);
-    } catch (error) {
-      console.error("Upload error:", error);
-      if (error.code === 'storage/unauthorized') {
-        throw new Error("Storage permission denied. Please update Firebase Storage rules in Firebase Console (Storage → Rules) to include: match /brands/{allPaths=**} { allow read: if true; allow write: if request.auth != null; }");
-      } else if (error.code === 'storage/canceled') {
-        throw new Error("Upload was canceled");
-      } else if (error.code) {
-        throw new Error(`Upload failed: ${error.message}`);
-      }
-      throw error;
-    }
-  }
-
-  async function handleImageChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    setUploadingImage(true);
-    setError("");
-    try {
-      const publicUrl = await uploadImage(file);
-      setForm(prev => ({ ...prev, logo: publicUrl }));
-    } catch (err) {
-      setError(err.message || "Failed to upload image");
-    } finally {
-      setUploadingImage(false);
-    }
-  }
-
-  function startEdit(brand) {
-    setEditingBrand(brand);
-    setForm({ name: brand.name, logo: brand.logo });
-    setError("");
-  }
-
-  function cancelEdit() {
-    setEditingBrand(null);
-    setForm({ name: "", logo: "" });
-    setError("");
-  }
-
-  async function createBrand(e) {
-    e?.preventDefault();
-    try {
-      setError("");
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
-
-      if (!form.name || form.name.trim() === "") {
-        throw new Error("Brand name is required");
-      }
-
-      if (!form.logo || form.logo.trim() === "") {
-        throw new Error("Brand logo is required");
-      }
-
-      const res = await fetch(`${API}/api/brands`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to create brand");
-      }
-
-      setForm({ name: "", logo: "" });
-      await loadBrands();
-    } catch (err) {
-      setError(err.message || "Failed to create brand");
-    }
-  }
-
-  async function updateBrand(e) {
-    e?.preventDefault();
-    if (!editingBrand) return;
-    
-    try {
-      setError("");
-      setUpdatingId(editingBrand.id);
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("You must be signed in");
-
-      if (!form.name || form.name.trim() === "") {
-        throw new Error("Brand name is required");
-      }
-
-      if (!form.logo || form.logo.trim() === "") {
-        throw new Error("Brand logo is required");
-      }
-
-      const res = await fetch(`${API}/api/brands/${editingBrand.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to update brand");
-      }
-
-      setForm({ name: "", logo: "" });
-      setEditingBrand(null);
-      setUpdatingId(null);
-      await loadBrands();
-    } catch (err) {
-      setError(err.message || "Failed to update brand");
-      setUpdatingId(null);
-    }
-  }
 
   async function deleteBrand(id) {
     try {
@@ -224,95 +64,29 @@ export default function AdminBrands() {
   }
 
   return (
-    <div>
-      <div className="section-title">Manage Brands</div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Manage Brands</h1>
+        <button
+          className="btn btn-cta"
+          onClick={() => navigate("/admin/brands/create")}
+        >
+          + Add Brand
+        </button>
+      </div>
 
       {error && (
-        <div className="alert alert-error margin-bottom-md">
-          {error}
+        <div className="card bg-red-50 border-2 border-red-200 p-4">
+          <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
 
-      {/* Create/Edit Brand Form */}
-      <div className="card margin-bottom-lg">
-        <h2 className="heading-3 margin-bottom-md">
-          {editingBrand ? "Edit Brand" : "Add New Brand"}
-        </h2>
-        <form onSubmit={editingBrand ? updateBrand : createBrand}>
-          <div className="form-group">
-            <label htmlFor="brand-name">Brand Name</label>
-            <input
-              id="brand-name"
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter brand name"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="brand-logo">Brand Logo</label>
-            <input
-              key={editingBrand?.id || "new"}
-              id="brand-logo"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              disabled={uploadingImage}
-            />
-            {uploadingImage && <p className="text-small text-muted">Uploading...</p>}
-            {form.logo && (
-              <div className="margin-top-sm">
-                <img
-                  src={form.logo}
-                  alt="Brand logo preview"
-                  style={{ maxWidth: "200px", maxHeight: "100px", objectFit: "contain" }}
-                />
-                {editingBrand && (
-                  <p className="text-small text-muted margin-top-xs">
-                    Leave file input empty to keep current logo, or upload a new one to replace it.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex-row flex-gap-md">
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={uploadingImage || !form.name || !form.logo || updatingId === editingBrand?.id}
-            >
-              {updatingId === editingBrand?.id
-                ? "Updating..."
-                : uploadingImage
-                ? "Uploading..."
-                : editingBrand
-                ? "Update Brand"
-                : "Create Brand"}
-            </button>
-            {editingBrand && (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={cancelEdit}
-                disabled={updatingId === editingBrand.id}
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* Brands List */}
       <div className="card">
         <h2 className="heading-3 margin-bottom-md">All Brands</h2>
         {loading ? (
           <p className="text-muted">Loading brands...</p>
         ) : brands.length === 0 ? (
-          <p className="text-muted">No brands found. Create your first brand above.</p>
+          <p className="text-muted">No brands found. Create your first brand!</p>
         ) : (
           <div className="table-responsive">
             <table className="table brands-table">
@@ -342,8 +116,8 @@ export default function AdminBrands() {
                       <div className="flex-row flex-gap-sm">
                         <button
                           className="btn-primary btn-small"
-                          onClick={() => startEdit(brand)}
-                          disabled={deletingId === brand.id || updatingId === brand.id}
+                          onClick={() => navigate(`/admin/brands/edit/${brand.id}`)}
+                          disabled={deletingId === brand.id}
                         >
                           Edit
                         </button>
@@ -352,7 +126,7 @@ export default function AdminBrands() {
                           onClick={() => {
                             setConfirmDelete(brand);
                           }}
-                          disabled={deletingId === brand.id || updatingId === brand.id}
+                          disabled={deletingId === brand.id}
                         >
                           Delete
                         </button>
