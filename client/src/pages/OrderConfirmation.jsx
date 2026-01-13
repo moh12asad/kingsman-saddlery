@@ -52,6 +52,7 @@ export default function OrderConfirmation() {
   const [discountInfo, setDiscountInfo] = useState(null); // Store discount information
   const [calculatedTotal, setCalculatedTotal] = useState(null); // Store calculated total with discount
   const [calculatedTax, setCalculatedTax] = useState(null); // Store calculated tax from server (null = not calculated yet)
+  const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState(null); // Store calculated delivery cost from server
   const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
   const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
   
@@ -84,8 +85,9 @@ export default function OrderConfirmation() {
     const requestId = Symbol();
     currentRequestRef.current = requestId;
     
-    // Capture the deliveryType at the start of this request
+    // Capture the deliveryType and deliveryZone at the start of this request
     const requestDeliveryType = deliveryType;
+    const requestDeliveryZone = deliveryZone;
     
     try {
       setCalculatingDiscount(true);
@@ -104,8 +106,8 @@ export default function OrderConfirmation() {
       const subtotal = getTotalPrice();
       const totalWeight = getTotalWeight();
       // Calculate delivery cost based on zone and weight
-      const requestDeliveryCost = requestDeliveryType === "delivery" && deliveryZone
-        ? calculateDeliveryCost(deliveryZone, totalWeight)
+      const requestDeliveryCost = requestDeliveryType === "delivery" && requestDeliveryZone
+        ? calculateDeliveryCost(requestDeliveryZone, totalWeight)
         : 0;
 
       const res = await fetch(`${API}/api/payment/calculate-total`, {
@@ -118,7 +120,7 @@ export default function OrderConfirmation() {
           subtotal,
           tax: subtotal * 0.18, // Tax on subtotal (will be recalculated server-side)
           deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will add tax)
-          deliveryZone: requestDeliveryType === "delivery" ? deliveryZone : null,
+          deliveryZone: requestDeliveryType === "delivery" ? requestDeliveryZone : null,
           totalWeight: totalWeight
         })
       });
@@ -137,6 +139,7 @@ export default function OrderConfirmation() {
           setDiscountInfo(data.discount);
           setCalculatedTotal(data.total);
           setCalculatedTax(data.tax ?? null); // Store tax from server calculation (0 is valid, null means not set)
+          setCalculatedDeliveryCost(data.deliveryCost ?? null); // Store delivery cost from server calculation
           setDiscountCalculationError(null);
         }
       } else {
@@ -170,6 +173,12 @@ export default function OrderConfirmation() {
   // Calculate total with discount when cart items, delivery type, or delivery zone changes
   useEffect(() => {
     if (!user || !isLoaded || cartItems.length === 0) return;
+    // Reset calculated values when zone changes so they recalculate
+    if (deliveryZone) {
+      setCalculatedDeliveryCost(null);
+      setCalculatedTax(null);
+      setCalculatedTotal(null);
+    }
     calculateTotalWithDiscount();
   }, [user, cartItems, deliveryType, deliveryZone, isLoaded, calculateTotalWithDiscount]);
 
@@ -260,9 +269,6 @@ export default function OrderConfirmation() {
 
   const subtotal = getTotalPrice();
   const totalWeight = getTotalWeight();
-  const deliveryCost = deliveryType === "delivery" && deliveryZone
-    ? calculateDeliveryCost(deliveryZone, totalWeight)
-    : 0;
   
   // SECURITY: Only use calculated total if discount calculation has completed successfully
   // If calculation is in progress or failed, we cannot proceed with payment
@@ -271,11 +277,25 @@ export default function OrderConfirmation() {
   const total = isDiscountCalculationReady ? calculatedTotal : null; // null means not ready for payment
   const subtotalAfterDiscount = discountInfo ? (subtotal - discountInfo.amount) : subtotal;
   
+  // Calculate delivery cost based on current zone and weight for display
+  // This ensures the displayed value always matches the selected zone
+  const deliveryCost = deliveryType === "delivery" && deliveryZone
+    ? calculateDeliveryCost(deliveryZone, totalWeight)
+    : 0;
+  
+  // For the total calculation, we use the server-calculated value when available
+  // This ensures security and accuracy, but for display we use the current zone calculation
+  
   // Calculate base amount (subtotal + delivery) before tax
-  const baseAmount = subtotalAfterDiscount + deliveryCost;
+  // Use server-calculated delivery cost for tax calculation to ensure accuracy
+  const serverDeliveryCost = (isDiscountCalculationReady && calculatedDeliveryCost !== null && calculatedDeliveryCost !== undefined)
+    ? calculatedDeliveryCost
+    : deliveryCost;
+  const baseAmount = subtotalAfterDiscount + serverDeliveryCost;
   
   // Calculate tax on the total (subtotal + delivery) (18% VAT)
-  // SECURITY: Use tax from server calculation if available (even if 0), otherwise calculate client-side
+  // SECURITY: Always use tax from server calculation when available to ensure it matches the total
+  // Only calculate client-side as a fallback if server calculation isn't ready
   const VAT_RATE = 0.18;
   const tax = isDiscountCalculationReady && calculatedTax !== null
     ? calculatedTax 
@@ -857,12 +877,7 @@ export default function OrderConfirmation() {
                       name="deliveryType"
                       value="delivery"
                       checked={deliveryType === "delivery"}
-                      onChange={(e) => {
-                        setDeliveryType(e.target.value);
-                        if (e.target.value === "pickup") {
-                          setDeliveryZone(""); // Reset zone when switching to pickup
-                        }
-                      }}
+                      onChange={(e) => setDeliveryType(e.target.value)}
                       className="w-4 h-4"
                     />
                     <div className="flex-1">
@@ -878,12 +893,18 @@ export default function OrderConfirmation() {
                           <label className="text-xs text-muted block margin-bottom-xs">
                             {t("orderConfirmation.deliveryZone")} <span className="order-confirmation-mandatory-asterisk">*</span>
                           </label>
-                          <select
-                            className="input text-sm"
-                            value={deliveryZone}
-                            onChange={(e) => setDeliveryZone(e.target.value)}
-                            required
-                          >
+                      <select
+                        className="input text-sm"
+                        value={deliveryZone}
+                        onChange={(e) => {
+                          setDeliveryZone(e.target.value);
+                          // Reset calculated values when zone changes so they recalculate
+                          setCalculatedDeliveryCost(null);
+                          setCalculatedTax(null);
+                          setCalculatedTotal(null);
+                        }}
+                        required
+                      >
                             <option value="">{t("orderConfirmation.selectDeliveryZone")}</option>
                             <option value="telaviv_north">{t("orderConfirmation.deliveryZoneTelAvivNorth")}</option>
                             <option value="jerusalem">{t("orderConfirmation.deliveryZoneJerusalem")}</option>
@@ -900,7 +921,14 @@ export default function OrderConfirmation() {
                       name="deliveryType"
                       value="pickup"
                       checked={deliveryType === "pickup"}
-                      onChange={(e) => setDeliveryType(e.target.value)}
+                      onChange={(e) => {
+                        setDeliveryType(e.target.value);
+                        setDeliveryZone(""); // Reset zone when switching to pickup
+                        // Reset calculated values when switching to pickup
+                        setCalculatedDeliveryCost(null);
+                        setCalculatedTax(null);
+                        setCalculatedTotal(null);
+                      }}
                       className="w-4 h-4"
                     />
                     <div className="flex-1">
