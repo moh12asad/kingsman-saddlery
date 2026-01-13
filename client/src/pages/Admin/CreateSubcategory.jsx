@@ -189,7 +189,7 @@ export default function CreateSubcategory() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t('admin.categories.createSubCategory') || 'Create Subcategory'}</h1>
+          <h1 className="text-2xl font-bold">{t('admin.categories.createSubCategory')}</h1>
           <p className="text-gray-600 mt-1">For category: <span className="font-semibold">{categoryName}</span></p>
         </div>
         <button
@@ -220,7 +220,7 @@ export default function CreateSubcategory() {
               value={form.image}
               onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value }))}
             />
-            <label className="flex items-center gap-2 border-2 border-gray-300 rounded px-3 py-2 cursor-pointer hover:bg-gray-50 transition text-sm">
+            <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
               <span>Upload</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleSubCategoryImageChange} />
             </label>
@@ -235,7 +235,7 @@ export default function CreateSubcategory() {
 
         <div className="flex gap-2">
           <button className="btn btn-cta" type="submit" disabled={submitting || uploadingImage}>
-            {submitting ? (t('admin.categories.creating') || 'Creating...') : (t('admin.categories.create') || 'Create')}
+            {submitting ? t('admin.categories.creating') : t('admin.categories.createSubCategory')}
           </button>
           <button
             type="button"

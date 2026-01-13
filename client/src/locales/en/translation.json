@@ -817,6 +817,7 @@
       "image": "Image",
       "subCategories": "Sub-Categories",
       "addSubCategory": "Add Sub-Category",
+      "createSubCategory": "Create Sub-Category",
       "removeSubCategory": "Remove",
       "subCategoryPlaceholder": "Sub-category name",
       "create": "Create Category",

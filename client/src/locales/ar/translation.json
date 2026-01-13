@@ -731,6 +731,7 @@
       "image": "الصورة",
       "subCategories": "الفئات الفرعية",
       "addSubCategory": "إضافة فئة فرعية",
+      "createSubCategory": "إنشاء فئة فرعية",
       "removeSubCategory": "إزالة",
       "subCategoryPlaceholder": "اسم الفئة الفرعية",
       "create": "إنشاء فئة",

@@ -167,7 +167,7 @@ export default function CreateCategory() {
               value={form.image}
               onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value }))}
             />
-            <label className="flex items-center gap-2 border-2 border-gray-300 rounded px-3 py-2 cursor-pointer hover:bg-gray-50 transition text-sm">
+            <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
               <span>Upload</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleCategoryImageChange} />
             </label>

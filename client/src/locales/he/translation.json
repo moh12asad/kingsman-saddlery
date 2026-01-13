@@ -731,6 +731,7 @@
       "image": "תמונה",
       "subCategories": "תת-קטגוריות",
       "addSubCategory": "הוסף תת-קטגוריה",
+      "createSubCategory": "צור תת-קטגוריה",
       "removeSubCategory": "הסר",
       "subCategoryPlaceholder": "שם תת-קטגוריה",
       "create": "צור קטגוריה",

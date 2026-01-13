@@ -273,7 +273,7 @@ export default function CreateProduct(){
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 create-product-page">
       <div className="flex items-center justify-between mb-4">
         <h2 className="section-title">{t('admin.createProduct.title')}</h2>
         <button 
@@ -285,8 +285,8 @@ export default function CreateProduct(){
       </div>
       
       <div className="card">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 mb-3">
-          <div className="md:col-span-2 lg:col-span-3">
+        <div className="space-y-4 mb-3">
+          <div>
             <MultiLanguageInput
               label={t('admin.createProduct.namePlaceholder')}
               value={form.name}
@@ -295,75 +295,89 @@ export default function CreateProduct(){
               required={true}
             />
           </div>
-          <input 
-            className="input" 
-            type="number" 
-            placeholder={t('admin.createProduct.pricePlaceholder')} 
-            value={form.price || ""} 
-            onChange={e=>setForm({...form,price:Number(e.target.value)})}
-          />
-          <input 
-            className="input" 
-            type="number" 
-            step="0.01"
-            min="0"
-            placeholder="Weight (kg)" 
-            value={form.weight || ""} 
-            onChange={e=>{
-              const value = Number(e.target.value);
-              setForm({...form, weight: value >= 0 ? value : 0});
-            }}
-          />
-          <select 
-            className="select" 
-            value={form.category} 
-            onChange={e=>setForm({...form, category: e.target.value, subCategory: ""})}
-            required
-          >
-            <option value="">{t('admin.createProduct.selectCategory')}</option>
-            {categories.map(cat => {
-              const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-              return (
-                <option key={cat.id} value={catName}>{catName}</option>
-              );
-            })}
-          </select>
-          {availableSubCategories.length > 0 && (
+          <div>
+            <input 
+              className="input" 
+              type="number" 
+              placeholder={t('admin.createProduct.pricePlaceholder')} 
+              value={form.price || ""} 
+              onChange={e=>setForm({...form,price:Number(e.target.value)})}
+            />
+          </div>
+          <div>
+            <input 
+              className="input" 
+              type="number" 
+              step="0.01"
+              min="0"
+              placeholder="Weight (kg)" 
+              value={form.weight || ""} 
+              onChange={e=>{
+                const value = Number(e.target.value);
+                setForm({...form, weight: value >= 0 ? value : 0});
+              }}
+            />
+          </div>
+          <div>
             <select 
               className="select" 
-              value={form.subCategory} 
-              onChange={e=>setForm({...form, subCategory: e.target.value})}
+              value={form.category} 
+              onChange={e=>setForm({...form, category: e.target.value, subCategory: ""})}
+              required
             >
-              <option value="">{t('admin.createProduct.selectSubCategory')}</option>
-              {availableSubCategories.map((sub, idx) => {
-                const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+              <option value="">{t('admin.createProduct.selectCategory')}</option>
+              {categories.map(cat => {
+                const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
                 return (
-                  <option key={idx} value={subName}>{subName}</option>
+                  <option key={cat.id} value={catName}>{catName}</option>
                 );
               })}
             </select>
+          </div>
+          {availableSubCategories.length > 0 && (
+            <div>
+              <select 
+                className="select" 
+                value={form.subCategory} 
+                onChange={e=>setForm({...form, subCategory: e.target.value})}
+              >
+                <option value="">{t('admin.createProduct.selectSubCategory')}</option>
+                {availableSubCategories.map((sub, idx) => {
+                  const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+                  return (
+                    <option key={idx} value={subName}>{subName}</option>
+                  );
+                })}
+              </select>
+            </div>
           )}
-          <input 
-            className="input" 
-            placeholder="Image URL (optional - or use upload below)" 
-            value={form.image} 
-            onChange={e=>setForm({...form,image:e.target.value})}
-          />
-          <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition text-sm">
-            <span>{t('admin.createProduct.uploadImage')}</span>
-            <input type="file" accept="image/*" className="hidden" onChange={handleFormImageChange} />
-          </label>
-          <label className="flex items-center gap-2 border rounded px-2 py-1.5 cursor-pointer hover:bg-gray-50 transition text-sm">
-            <span>{t('admin.createProduct.uploadAdditionalImages')}</span>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={handleMultipleImagesChange} />
-          </label>
-          {uploadingImage && <span className="text-sm text-gray-500 flex items-center">Uploading main image...</span>}
+          <div>
+            <input 
+              className="input" 
+              placeholder="Image URL (optional - or use upload below)" 
+              value={form.image} 
+              onChange={e=>setForm({...form,image:e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
+              <span>{t('admin.createProduct.uploadImage')}</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFormImageChange} />
+            </label>
+          </div>
+          <div>
+            <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
+              <span>{t('admin.createProduct.uploadAdditionalImages')}</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleMultipleImagesChange} />
+            </label>
+          </div>
+          {uploadingImage && <div className="text-sm text-gray-500">Uploading main image...</div>}
           {uploadingImages.length > 0 && (
-            <span className="text-sm text-gray-500 flex items-center">
+            <div className="text-sm text-gray-500">
               Uploading {uploadingImages.length} image(s)...
-            </span>
+            </div>
           )}
-          <div className="md:col-span-2 lg:col-span-3">
+          <div>
             <MultiLanguageInput
               label={t('admin.createProduct.descriptionPlaceholder')}
               value={form.description}
@@ -373,19 +387,23 @@ export default function CreateProduct(){
               rows={3}
             />
           </div>
-          <input 
-            className="input" 
-            placeholder={t('admin.createProduct.skuPlaceholder')} 
-            value={form.sku} 
-            onChange={e=>setForm({...form,sku:e.target.value})}
-          />
-          <input 
-            className="input" 
-            placeholder={t('admin.createProduct.brandPlaceholder')} 
-            value={form.brand} 
-            onChange={e=>setForm({...form,brand:e.target.value})}
-          />
-          <div className="md:col-span-2 lg:col-span-3">
+          <div>
+            <input 
+              className="input" 
+              placeholder={t('admin.createProduct.skuPlaceholder')} 
+              value={form.sku} 
+              onChange={e=>setForm({...form,sku:e.target.value})}
+            />
+          </div>
+          <div>
+            <input 
+              className="input" 
+              placeholder={t('admin.createProduct.brandPlaceholder')} 
+              value={form.brand} 
+              onChange={e=>setForm({...form,brand:e.target.value})}
+            />
+          </div>
+          <div>
             <MultiLanguageInput
               label={t('admin.createProduct.technicalDetailsPlaceholder')}
               value={form.technicalDetails}
@@ -395,7 +413,7 @@ export default function CreateProduct(){
               rows={3}
             />
           </div>
-          <div className="md:col-span-2 lg:col-span-3">
+          <div>
             <MultiLanguageInput
               label={t('admin.createProduct.additionalDetailsPlaceholder')}
               value={form.additionalDetails}
@@ -405,7 +423,7 @@ export default function CreateProduct(){
               rows={3}
             />
           </div>
-          <div className="md:col-span-2 lg:col-span-3">
+          <div>
             <MultiLanguageInput
               label={t('admin.createProduct.warrantyPlaceholder')}
               value={form.warranty}
@@ -413,7 +431,7 @@ export default function CreateProduct(){
               placeholder="Warranty information"
             />
           </div>
-          <div className="md:col-span-2 lg:col-span-3">
+          <div>
             <MultiLanguageInput
               label={t('admin.createProduct.shippingInfoPlaceholder')}
               value={form.shippingInfo}
@@ -421,13 +439,15 @@ export default function CreateProduct(){
               placeholder="Shipping information"
             />
           </div>
-          <input 
-            className="input md:col-span-2 lg:col-span-3" 
-            placeholder={t('admin.createProduct.videoUrlPlaceholder')} 
-            value={form.videoUrl} 
-            onChange={e=>setForm({...form,videoUrl:e.target.value})}
-          />
-          <div className="md:col-span-2 lg:col-span-3">
+          <div>
+            <input 
+              className="input" 
+              placeholder={t('admin.createProduct.videoUrlPlaceholder')} 
+              value={form.videoUrl} 
+              onChange={e=>setForm({...form,videoUrl:e.target.value})}
+            />
+          </div>
+          <div>
             <label className="form-label">Product Images</label>
             {form.image && (
               <div className="mb-2">
@@ -467,40 +487,48 @@ export default function CreateProduct(){
               First uploaded image becomes the main image. Additional images will be shown in the product gallery.
             </small>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.available} 
+                onChange={e=>setForm({...form,available:e.target.checked})}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">{t('admin.createProduct.available')}</span>
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.sale} 
+                onChange={e=>setForm({...form,sale:e.target.checked})}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">{t("products.onSale")}</span>
+            </label>
+          </div>
+          <div>
             <input 
-              type="checkbox" 
-              checked={form.available} 
-              onChange={e=>setForm({...form,available:e.target.checked})}
-              className="w-4 h-4"
+              className="input" 
+              type="number" 
+              placeholder={t('admin.createProduct.salePricePlaceholder')} 
+              value={form.sale_proce || ""} 
+              onChange={e=>setForm({...form,sale_proce:Number(e.target.value)})}
             />
-            <span className="text-sm">{t('admin.createProduct.available')}</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={form.sale} 
-              onChange={e=>setForm({...form,sale:e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-sm">{t("products.onSale")}</span>
-          </label>
-          <input 
-            className="input" 
-            type="number" 
-            placeholder={t('admin.createProduct.salePricePlaceholder')} 
-            value={form.sale_proce || ""} 
-            onChange={e=>setForm({...form,sale_proce:Number(e.target.value)})}
-          />
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={form.featured} 
-              onChange={e=>setForm({...form,featured:e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-sm">Featured (for Suggested tab)</span>
-          </label>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.featured} 
+                onChange={e=>setForm({...form,featured:e.target.checked})}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">Featured (for Suggested tab)</span>
+            </label>
+          </div>
         </div>
         <div className="flex gap-3">
           <button 

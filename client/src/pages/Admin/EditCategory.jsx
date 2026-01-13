@@ -302,7 +302,7 @@ export default function EditCategory() {
                   value={category.image || ""}
                   onChange={e => setCategory({ ...category, image: e.target.value })}
                 />
-                <label className="flex-row flex-gap-sm border rounded padding-x-md padding-y-sm cursor-pointer transition">
+                <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
                   <span>Upload</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleCategoryImageChange} />
                 </label>
@@ -350,7 +350,7 @@ export default function EditCategory() {
                             value={sub.image || ""}
                             onChange={e => updateSubCategory(index, "image", e.target.value)}
                           />
-                          <label className="flex-row flex-gap-sm border rounded padding-x-sm padding-y-xs cursor-pointer transition text-sm">
+                          <label className="btn btn-cta btn-sm inline-flex items-center gap-2 cursor-pointer">
                             <span>Upload</span>
                             <input
                               type="file"
