@@ -309,7 +309,8 @@
     "deliveryTimeValue": "7 أيام، خيار الاستلام الذاتي متاح",
     "askAboutProduct": "اسألنا عن هذا المنتج",
     "askOnWhatsApp": "اسألنا على WhatsApp",
-    "whatsappNotConfigured": "رقم WhatsApp غير مُكوّن. يرجى الاتصال بالمسؤول."
+    "whatsappNotConfigured": "رقم WhatsApp غير مُكوّن. يرجى الاتصال بالمسؤول.",
+    "priceNote": "* السعر لا يشمل ضريبة القيمة المضافة (18%)"
   },
   "footer": {
     "siteMap": "خريطة الموقع",
@@ -478,6 +479,14 @@
     "qty": "الكمية:",
     "weight": "الوزن",
     "totalWeight": "الوزن الإجمالي:",
+    "price": "السعر",
+    "tax": "الضريبة",
+    "taxOnSubtotal": "الضريبة على المجموع الفرعي",
+    "taxOnDelivery": "الضريبة على التسليم",
+    "totalTax": "إجمالي الضريبة",
+    "deliveryTax": "ضريبة التسليم",
+    "deliveryTotal": "التسليم مع الضريبة",
+    "withTax": "مع الضريبة",
     "vatNote": "* الأسعار لا تشمل ضريبة القيمة المضافة (18%) والتسليم",
     "noImage": "لا توجد صورة",
     "pleaseFillMandatoryFields": "يرجى ملء جميع الحقول الإلزامية (المميزة بـ",

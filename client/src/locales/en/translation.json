@@ -278,7 +278,8 @@
     "deliveryTimeValue": "7 days, self-pickup option available",
     "askAboutProduct": "Ask us about this product",
     "askOnWhatsApp": "Ask us on WhatsApp",
-    "whatsappNotConfigured": "WhatsApp number not configured. Please contact the administrator."
+    "whatsappNotConfigured": "WhatsApp number not configured. Please contact the administrator.",
+    "priceNote": "* Price does not include VAT (18%)"
   },
   "footer": {
     "siteMap": "Site Map",
@@ -394,7 +395,8 @@
     "deliveryTimeValue": "7 days, self-pickup option available",
     "askAboutProduct": "Ask us about this product",
     "askOnWhatsApp": "Ask us on WhatsApp",
-    "whatsappNotConfigured": "WhatsApp number not configured. Please contact the administrator."
+    "whatsappNotConfigured": "WhatsApp number not configured. Please contact the administrator.",
+    "priceNote": "* Price does not include VAT (18%)"
   },
   "footer": {
     "siteMap": "Site Map",
@@ -563,6 +565,14 @@
     "qty": "Qty:",
     "weight": "Weight",
     "totalWeight": "Total Weight:",
+    "price": "Price",
+    "tax": "Tax",
+    "taxOnSubtotal": "Tax on Subtotal",
+    "taxOnDelivery": "Tax on Delivery",
+    "totalTax": "Total Tax",
+    "deliveryTax": "Delivery Tax",
+    "deliveryTotal": "Delivery Total",
+    "withTax": "with tax",
     "vatNote": "* Prices do not include VAT (18%) and delivery",
     "noImage": "No image",
     "pleaseFillMandatoryFields": "Please fill in all mandatory fields (marked with",

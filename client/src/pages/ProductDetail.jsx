@@ -312,6 +312,13 @@ export default function ProductDetail() {
                 </span>
               )}
             </div>
+            
+            {/* Price Note */}
+            <div className="product-sku margin-top-sm">
+              <p className="text-xs text-muted">
+                {t("productDetail.priceNote")}
+              </p>
+            </div>
 
             {/* Quantity Selector */}
             <div className="product-quantity-selector margin-top-lg">
