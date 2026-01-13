@@ -222,9 +222,45 @@ router.post("/create", async (req, res) => {
     // Apply discount to subtotal (discount applies to product prices, before tax and delivery)
     const orderSubtotal = Math.max(0, orderSubtotalBeforeDiscount - discountAmount);
     
-    // Delivery cost constant (must match client-side)
-    const DELIVERY_COST = 50;
-    const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+    // Delivery zone fees (in ILS)
+    const DELIVERY_ZONE_FEES = {
+      telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+      jerusalem: 85,      // Jerusalem
+      south: 85,          // South
+      westbank: 85       // West Bank
+    };
+    
+    // Calculate delivery cost server-side based on zone and weight
+    const calculateDeliveryCost = (zone, weight) => {
+      if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      const baseFee = DELIVERY_ZONE_FEES[zone];
+      // If weight > 20kg, add another delivery fee
+      const additionalFee = weight > 20 ? baseFee : 0;
+      
+      return baseFee + additionalFee;
+    };
+    
+    // Calculate total weight from items
+    const totalWeight = normalizedItems.reduce((sum, item) => {
+      // Try to get weight from product data if available
+      const productId = item.productId;
+      if (productId && productPriceMap.has(productId)) {
+        // We don't have weight in productPriceMap, so we'll need to calculate from items
+        // For now, assume weight is 0 if not provided in items
+        return sum;
+      }
+      return sum;
+    }, 0);
+    
+    // Get delivery zone from metadata
+    const deliveryZone = metadata?.deliveryZone || null;
+    const itemTotalWeight = metadata?.totalWeight || 0; // Use weight from metadata if provided
+    
+    // Calculate delivery cost based on zone and weight
+    const deliveryCost = deliveryType === "delivery" && deliveryZone
+      ? calculateDeliveryCost(deliveryZone, itemTotalWeight)
+      : 0;
     
     // Calculate base amount (subtotal + delivery) before tax
     const baseAmount = orderSubtotal + deliveryCost;

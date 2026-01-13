@@ -48,14 +48,31 @@ export default function OrderConfirmation() {
   const [error, setError] = useState("");
   const [emailSuccess, setEmailSuccess] = useState("");
   const [deliveryType, setDeliveryType] = useState("delivery"); // "delivery" or "pickup"
+  const [deliveryZone, setDeliveryZone] = useState(""); // "telaviv_north", "jerusalem", "south", "westbank"
   const [discountInfo, setDiscountInfo] = useState(null); // Store discount information
   const [calculatedTotal, setCalculatedTotal] = useState(null); // Store calculated total with discount
   const [calculatedTax, setCalculatedTax] = useState(null); // Store calculated tax from server (null = not calculated yet)
   const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
   const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
   
-  // Delivery cost constant (50 ILS)
-  const DELIVERY_COST = 50;
+  // Delivery zone fees (in ILS)
+  const DELIVERY_ZONE_FEES = {
+    telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+    jerusalem: 85,      // Jerusalem
+    south: 85,          // South
+    westbank: 85       // West Bank
+  };
+  
+  // Calculate delivery cost based on zone and weight
+  const calculateDeliveryCost = (zone, weight) => {
+    if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+    
+    const baseFee = DELIVERY_ZONE_FEES[zone];
+    // If weight > 20kg, add another delivery fee
+    const additionalFee = weight > 20 ? baseFee : 0;
+    
+    return baseFee + additionalFee;
+  };
 
   // SECURITY: Use ref to track the current request's deliveryType to prevent race conditions
   // If deliveryType changes while a request is in flight, we'll ignore the stale response
@@ -85,7 +102,11 @@ export default function OrderConfirmation() {
       }
 
       const subtotal = getTotalPrice();
-      const requestDeliveryCost = requestDeliveryType === "delivery" ? DELIVERY_COST : 0;
+      const totalWeight = getTotalWeight();
+      // Calculate delivery cost based on zone and weight
+      const requestDeliveryCost = requestDeliveryType === "delivery" && deliveryZone
+        ? calculateDeliveryCost(deliveryZone, totalWeight)
+        : 0;
 
       const res = await fetch(`${API}/api/payment/calculate-total`, {
         method: "POST",
@@ -96,7 +117,9 @@ export default function OrderConfirmation() {
         body: JSON.stringify({
           subtotal,
           tax: subtotal * 0.18, // Tax on subtotal (will be recalculated server-side)
-          deliveryCost: requestDeliveryCost // Base delivery cost (server will add tax)
+          deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will add tax)
+          deliveryZone: requestDeliveryType === "delivery" ? deliveryZone : null,
+          totalWeight: totalWeight
         })
       });
 
@@ -137,18 +160,18 @@ export default function OrderConfirmation() {
         setCalculatingDiscount(false);
       }
     }
-  }, [deliveryType, getTotalPrice]);
+  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight]);
 
   useEffect(() => {
     if (!user) return;
     loadUserProfile();
   }, [user]);
 
-  // Calculate total with discount when cart items or delivery type changes
+  // Calculate total with discount when cart items, delivery type, or delivery zone changes
   useEffect(() => {
     if (!user || !isLoaded || cartItems.length === 0) return;
     calculateTotalWithDiscount();
-  }, [user, cartItems, deliveryType, isLoaded, calculateTotalWithDiscount]);
+  }, [user, cartItems, deliveryType, deliveryZone, isLoaded, calculateTotalWithDiscount]);
 
   useEffect(() => {
     // Redirect to cart if cart is empty
@@ -236,7 +259,10 @@ export default function OrderConfirmation() {
   }
 
   const subtotal = getTotalPrice();
-  const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+  const totalWeight = getTotalWeight();
+  const deliveryCost = deliveryType === "delivery" && deliveryZone
+    ? calculateDeliveryCost(deliveryZone, totalWeight)
+    : 0;
   
   // SECURITY: Only use calculated total if discount calculation has completed successfully
   // If calculation is in progress or failed, we cannot proceed with payment
@@ -272,10 +298,11 @@ export default function OrderConfirmation() {
   // Use order address if it's been changed, otherwise use profile address
   // When editing, always show orderAddress in the form
   const currentAddress = isAddressChanged ? orderAddress : profileData.address;
-  // Delivery address is only required for delivery
+  // Delivery address and zone are only required for delivery
   const hasCompleteAddress = deliveryType === "pickup" || (currentAddress.street && 
                              currentAddress.city && 
                              currentAddress.zipCode);
+  const hasDeliveryZone = deliveryType === "pickup" || deliveryZone;
   
   function handleAddressChange(field, value) {
     setOrderAddress(prev => ({
@@ -525,6 +552,8 @@ export default function OrderConfirmation() {
           subtotal: subtotal,
           tax: tax,
           deliveryCost: deliveryCost,
+          deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+          totalWeight: totalWeight,
           // Add other payment method details as needed
         })
       });
@@ -550,6 +579,8 @@ export default function OrderConfirmation() {
           metadata: {
             paymentMethod: "credit_card", // Credit card payment
             deliveryType: deliveryType, // "delivery" or "pickup"
+            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+            totalWeight: totalWeight,
             transactionId: paymentResult.transactionId
           }
         })
@@ -582,6 +613,8 @@ export default function OrderConfirmation() {
           metadata: {
             paymentMethod: "credit_card",
             deliveryType: deliveryType,
+            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+            totalWeight: totalWeight,
             transactionId: paymentResult.transactionId
           }
         })
@@ -751,11 +784,19 @@ export default function OrderConfirmation() {
                           <span className="text-sm font-semibold">{formatPrice(subtotalAfterDiscount)}</span>
                         </div>
                       )}
-                      {deliveryType === "delivery" && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted">{t("orderConfirmation.delivery")}:</span>
-                          <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
-                        </div>
+                      {deliveryType === "delivery" && deliveryZone && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted">{t("orderConfirmation.delivery")}:</span>
+                            <span className="text-sm font-semibold">{formatPrice(deliveryCost)}</span>
+                          </div>
+                          {totalWeight > 20 && (
+                            <div className="flex justify-between items-center text-xs text-muted">
+                              <span>{t("orderConfirmation.additionalDeliveryFee")} ({t("orderConfirmation.weightOver20kg")}):</span>
+                              <span>{formatPrice(DELIVERY_ZONE_FEES[deliveryZone])}</span>
+                            </div>
+                          )}
+                        </>
                       )}
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted">{t("orderConfirmation.tax")} (18%):</span>
@@ -787,7 +828,7 @@ export default function OrderConfirmation() {
                   </Link>
                   <button
                     className="btn btn-cta"
-                    disabled={!hasCompleteAddress || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
+                    disabled={!hasCompleteAddress || !hasDeliveryZone || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
                     onClick={handleProceedToPayment}
                   >
                     {sendingEmail 
@@ -796,7 +837,7 @@ export default function OrderConfirmation() {
                       ? t("orderConfirmation.calculatingDiscount")
                       : !canProceedToPayment
                       ? t("orderConfirmation.loadingOrderTotal")
-                      : !hasCompleteAddress || !profileData.phone
+                      : !hasCompleteAddress || !hasDeliveryZone || !profileData.phone
                       ? t("orderConfirmation.completeInformationToContinue")
                       : `${t("orderConfirmation.proceedToPayment")} (${formatPrice(total)})`}
                   </button>
@@ -816,13 +857,41 @@ export default function OrderConfirmation() {
                       name="deliveryType"
                       value="delivery"
                       checked={deliveryType === "delivery"}
-                      onChange={(e) => setDeliveryType(e.target.value)}
+                      onChange={(e) => {
+                        setDeliveryType(e.target.value);
+                        if (e.target.value === "pickup") {
+                          setDeliveryZone(""); // Reset zone when switching to pickup
+                        }
+                      }}
                       className="w-4 h-4"
                     />
                     <div className="flex-1">
                       <span className="font-semibold">{t("orderConfirmation.delivery")}</span>
-                      <span className="text-sm text-muted ml-2">({formatPrice(DELIVERY_COST)})</span>
+                      {deliveryZone && (
+                        <span className="text-sm text-muted ml-2">
+                          ({formatPrice(calculateDeliveryCost(deliveryZone, getTotalWeight()))})
+                        </span>
+                      )}
                       <p className="text-xs text-muted mt-1">{t("orderConfirmation.deliveryDescription")}</p>
+                      {deliveryType === "delivery" && (
+                        <div className="margin-top-sm">
+                          <label className="text-xs text-muted block margin-bottom-xs">
+                            {t("orderConfirmation.deliveryZone")} <span className="order-confirmation-mandatory-asterisk">*</span>
+                          </label>
+                          <select
+                            className="input text-sm"
+                            value={deliveryZone}
+                            onChange={(e) => setDeliveryZone(e.target.value)}
+                            required
+                          >
+                            <option value="">{t("orderConfirmation.selectDeliveryZone")}</option>
+                            <option value="telaviv_north">{t("orderConfirmation.deliveryZoneTelAvivNorth")}</option>
+                            <option value="jerusalem">{t("orderConfirmation.deliveryZoneJerusalem")}</option>
+                            <option value="south">{t("orderConfirmation.deliveryZoneSouth")}</option>
+                            <option value="westbank">{t("orderConfirmation.deliveryZoneWestBank")}</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
@@ -1085,7 +1154,7 @@ export default function OrderConfirmation() {
             </div>
           </div>
 
-          {(!hasCompleteAddress || !profileData.phone) && (
+          {(!hasCompleteAddress || !hasDeliveryZone || !profileData.phone) && (
             <div className="card padding-md margin-top-md order-confirmation-warning">
               <p className="text-sm order-confirmation-warning-text">
                 <strong>{t("orderConfirmation.pleaseFillMandatoryFields")} <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
@@ -1095,6 +1164,9 @@ export default function OrderConfirmation() {
                       ? t("orderConfirmation.completeMandatoryAddress")
                       : t("orderConfirmation.addCompleteDeliveryAddress")}
                   </>
+                )}
+                {deliveryType === "delivery" && !hasDeliveryZone && (
+                  <> {t("orderConfirmation.selectDeliveryZoneMandatory")}</>
                 )}
                 {!profileData.phone && t("orderConfirmation.addPhoneNumberMandatory")}
                 {deliveryType === "delivery" && !hasCompleteAddress && !isEditingAddress && (

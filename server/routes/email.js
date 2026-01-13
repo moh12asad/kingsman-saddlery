@@ -155,9 +155,33 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       ? subtotalBeforeDiscount
       : computedSubtotal;
     
-    // Delivery cost constant (must match client-side)
-    const DELIVERY_COST = 50;
-    const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+    // Delivery zone fees (in ILS)
+    const DELIVERY_ZONE_FEES = {
+      telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+      jerusalem: 85,      // Jerusalem
+      south: 85,          // South
+      westbank: 85       // West Bank
+    };
+    
+    // Calculate delivery cost server-side based on zone and weight
+    const calculateDeliveryCost = (zone, weight) => {
+      if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      const baseFee = DELIVERY_ZONE_FEES[zone];
+      // If weight > 20kg, add another delivery fee
+      const additionalFee = weight > 20 ? baseFee : 0;
+      
+      return baseFee + additionalFee;
+    };
+    
+    // Get delivery zone and weight from metadata
+    const deliveryZone = metadata?.deliveryZone || null;
+    const totalWeight = metadata?.totalWeight || 0;
+    
+    // Calculate delivery cost based on zone and weight
+    const deliveryCost = deliveryType === "delivery" && deliveryZone
+      ? calculateDeliveryCost(deliveryZone, totalWeight)
+      : 0;
     
     // Use provided discount if available (already validated server-side)
     const orderDiscount = discount && typeof discount === "object" && discount.amount > 0 ? discount : null;

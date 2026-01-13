@@ -28,12 +28,16 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
       subtotal,
       tax = 0,
       deliveryCost = 0,
+      deliveryZone = null,
+      totalWeight = 0,
     } = req.body;
 
     console.log(`[PAYMENT] [${requestId}] Input Data:`, {
       subtotal: subtotal,
       tax: tax,
       deliveryCost: deliveryCost,
+      deliveryZone: deliveryZone,
+      totalWeight: totalWeight,
       currency: "ILS"
     });
 
@@ -46,18 +50,44 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     }
 
     const validatedTax = typeof tax === "number" && tax >= 0 && isFinite(tax) ? tax : 0;
-    // Delivery cost from client (base cost, server will add tax)
-    // SECURITY: Validate delivery cost - should be 0 (pickup) or DELIVERY_COST (delivery)
-    const DELIVERY_COST = 50;
+    
+    // Delivery zone fees (in ILS)
+    const DELIVERY_ZONE_FEES = {
+      telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+      jerusalem: 85,      // Jerusalem
+      south: 85,          // South
+      westbank: 85       // West Bank
+    };
+    
+    // Calculate delivery cost server-side based on zone and weight
+    const calculateDeliveryCost = (zone, weight) => {
+      if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      const baseFee = DELIVERY_ZONE_FEES[zone];
+      // If weight > 20kg, add another delivery fee
+      const additionalFee = weight > 20 ? baseFee : 0;
+      
+      return baseFee + additionalFee;
+    };
+    
+    // SECURITY: Calculate expected delivery cost server-side
+    const validatedWeight = typeof totalWeight === "number" && totalWeight >= 0 && isFinite(totalWeight) ? totalWeight : 0;
+    const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
+      ? calculateDeliveryCost(deliveryZone, validatedWeight)
+      : 0;
+    
+    // SECURITY: Validate client-provided delivery cost matches server calculation
     let validatedDeliveryCost = 0;
     if (typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)) {
-      // Allow 0 (pickup) or DELIVERY_COST (delivery) with small tolerance for floating point
-      if (deliveryCost === 0 || Math.abs(deliveryCost - DELIVERY_COST) < 0.01) {
-        validatedDeliveryCost = deliveryCost === 0 ? 0 : DELIVERY_COST;
+      const difference = Math.abs(deliveryCost - expectedDeliveryCost);
+      if (deliveryCost === 0 && expectedDeliveryCost === 0) {
+        validatedDeliveryCost = 0; // Pickup
+      } else if (difference < 0.01) {
+        validatedDeliveryCost = expectedDeliveryCost; // Matches expected
       } else {
         // Log security warning for unexpected delivery cost
-        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Unexpected delivery cost: ${deliveryCost}, expected 0 or ${DELIVERY_COST}`);
-        validatedDeliveryCost = DELIVERY_COST; // Default to delivery cost for security
+        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Delivery cost mismatch: client=${deliveryCost}, expected=${expectedDeliveryCost}, zone=${deliveryZone}, weight=${validatedWeight}`);
+        validatedDeliveryCost = expectedDeliveryCost; // Use server-calculated value for security
       }
     }
 
@@ -230,7 +260,38 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       const finalSubtotal = Math.max(0, subtotal - discountAmount);
       
       // SECURITY: Validate delivery cost (should be 0 or 50, but allow any non-negative value)
-      const validatedDeliveryCost = typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost) ? deliveryCost : 0;
+      // Delivery zone fees (in ILS)
+      const DELIVERY_ZONE_FEES = {
+        telaviv_north: 65,  // Tel Aviv until the north of Israel
+        jerusalem: 85,      // Jerusalem
+        south: 85,          // South Region
+        westbank: 85       // West Bank
+      };
+      
+      // Calculate delivery cost server-side based on zone and weight
+      const calculateDeliveryCost = (zone, weight) => {
+        if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+        
+        const baseFee = DELIVERY_ZONE_FEES[zone];
+        // If weight > 20kg, add another delivery fee
+        const additionalFee = weight > 20 ? baseFee : 0;
+        
+        return baseFee + additionalFee;
+      };
+      
+      const deliveryZone = req.body.deliveryZone || null;
+      const totalWeight = typeof req.body.totalWeight === "number" && req.body.totalWeight >= 0 && isFinite(req.body.totalWeight)
+        ? req.body.totalWeight
+        : 0;
+      
+      const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
+        ? calculateDeliveryCost(deliveryZone, totalWeight)
+        : 0;
+      
+      // SECURITY: Validate client-provided delivery cost matches server calculation
+      const validatedDeliveryCost = typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)
+        ? (Math.abs(deliveryCost - expectedDeliveryCost) < 0.01 ? expectedDeliveryCost : expectedDeliveryCost)
+        : expectedDeliveryCost;
       
       // Calculate base amount (subtotal + delivery) before tax
       const baseAmount = finalSubtotal + validatedDeliveryCost;
