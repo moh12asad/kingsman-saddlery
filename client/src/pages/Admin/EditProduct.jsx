@@ -59,6 +59,7 @@ export default function EditProduct() {
           additionalDetails: ensureTranslationObject(found.additionalDetails),
           warranty: ensureTranslationObject(found.warranty),
           shippingInfo: ensureTranslationObject(found.shippingInfo),
+          weight: found.weight || 0,
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -255,6 +256,7 @@ export default function EditProduct() {
         shippingInfo: cleanTranslation(product.shippingInfo),
         videoUrl: product.videoUrl || "",
         additionalImages: product.additionalImages || [],
+        weight: Number(product.weight) || 0,
       };
 
       const res = await fetch(`${API}/api/products/${id}`, {
@@ -331,6 +333,27 @@ export default function EditProduct() {
                   placeholder="Price"
                   value={product.price || ""}
                   onChange={e => setProduct({ ...product, price: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="form-group">
+              <label className="form-label">Weight (kg)</label>
+              <div className="input-group">
+                <span className="input-group-text">kg</span>
+                <input
+                  className="input"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Weight"
+                  value={product.weight || ""}
+                  onChange={e => {
+                    const value = Number(e.target.value);
+                    setProduct({ ...product, weight: value >= 0 ? value : 0 });
+                  }}
                 />
               </div>
             </div>

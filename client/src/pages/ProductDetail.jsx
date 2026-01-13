@@ -288,6 +288,13 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Weight */}
+            {product.weight && product.weight > 0 && (
+              <div className="product-sku margin-top-sm">
+                <span className="text-muted">Weight:</span> {product.weight.toFixed(2)} kg
+              </div>
+            )}
+
             {/* Pricing */}
             <div className="product-detail-pricing margin-top-lg">
               {product.sale && product.sale_proce > 0 ? (

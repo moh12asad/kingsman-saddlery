@@ -13,7 +13,7 @@ import "../styles/order-confirmation.css";
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function OrderConfirmation() {
-  const { cartItems, getTotalPrice, isLoaded, clearCart } = useCart();
+  const { cartItems, getTotalPrice, getTotalWeight, isLoaded, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
@@ -688,6 +688,11 @@ export default function OrderConfirmation() {
                         )}
                         <div className="flex items-center gap-2 margin-top-xs">
                           <span className="text-sm text-muted">{t("orderConfirmation.qty")} {item.quantity}</span>
+                          {item.weight && item.weight > 0 && (
+                            <span className="text-sm text-muted">
+                              {t("orderConfirmation.weight")}: {((item.weight || 0) * item.quantity).toFixed(2)} kg
+                            </span>
+                          )}
                           <span className="text-sm font-semibold">
                             {formatPrice(item.price * item.quantity)}
                           </span>
@@ -738,9 +743,18 @@ export default function OrderConfirmation() {
                           <span className="text-sm font-semibold">{formatPrice(DELIVERY_COST)}</span>
                         </div>
                       )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted">{t("orderConfirmation.totalWeight")}</span>
+                        <span className="text-sm font-semibold">{getTotalWeight().toFixed(2)} kg</span>
+                      </div>
                       <div className="flex justify-between items-center padding-top-sm border-top">
                         <span className="font-semibold">{t("orderConfirmation.total")}</span>
                         <span className="text-lg font-bold">{formatPrice(total)}</span>
+                      </div>
+                      <div className="margin-top-sm padding-top-sm border-top">
+                        <p className="text-xs text-muted text-center">
+                          {t("orderConfirmation.vatNote")}
+                        </p>
                       </div>
                     </>
                   )}

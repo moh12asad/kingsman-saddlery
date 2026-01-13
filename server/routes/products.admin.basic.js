@@ -77,6 +77,7 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       specifications = {},
       videoUrl = "",
       additionalImages = [],
+      weight = 0,
       // Translation fields (can be objects or strings for backward compatibility)
       name,
       description,
@@ -107,6 +108,7 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       shippingInfo: shippingInfo || "",
       videoUrl: videoUrl || "",
       additionalImages: Array.isArray(additionalImages) ? additionalImages : [],
+      weight: Math.max(0, Number(weight) || 0),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -172,6 +174,11 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
         }
       }
       updates.specifications = mergedSpecs;
+    }
+    
+    // Validate weight if provided (must be >= 0)
+    if (updates.weight !== undefined) {
+      updates.weight = Math.max(0, Number(updates.weight) || 0);
     }
     
     // Add updated timestamp
