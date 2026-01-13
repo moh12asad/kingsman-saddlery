@@ -57,15 +57,7 @@ function buildConfig() {
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
       }
       
-      console.log(`✓ Loaded Firebase service account for project: ${serviceAccount.project_id}`);
-      console.log(`  Service account email: ${serviceAccount.client_email}`);
-      console.log(`  Key ID: ${serviceAccount.private_key_id}`);
-      console.log(`\n⚠️  If you get authentication errors:`);
-      console.log(`   1. "Invalid JWT Signature" → Generate a new service account key:`);
-      console.log(`      https://console.firebase.google.com/project/${serviceAccount.project_id}/settings/serviceaccounts/adminsdk`);
-      console.log(`   2. "UNAUTHENTICATED" → Grant IAM permissions:`);
-      console.log(`      Google Cloud Console → IAM & Admin → IAM → Find: ${serviceAccount.client_email}`);
-      console.log(`      Add role: "Firebase Admin SDK Administrator Service Agent"`);
+      console.log(`✓ Loaded Firebase service account`);
       
       return { credential: cert(serviceAccount) };
     } catch (err) {
