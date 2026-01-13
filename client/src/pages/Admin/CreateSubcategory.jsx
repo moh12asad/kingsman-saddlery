@@ -62,6 +62,11 @@ export default function CreateSubcategory() {
     if (!file.type.startsWith("image/")) {
       throw new Error("File must be an image");
     }
+
+    // Validate category exists before uploading
+    if (!categoryId) {
+      throw new Error("Category ID is missing. Please go back and select a valid category.");
+    }
     
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
     const path = `categories/sub-${categoryId}-${Date.now()}-${safeName}`;
@@ -112,6 +117,12 @@ export default function CreateSubcategory() {
     try {
       setSubmitting(true);
       setError("");
+      
+      // Validate category exists before proceeding
+      if (!category || !categoryId) {
+        throw new Error("Category not found. Please go back and select a valid category.");
+      }
+
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error(t('admin.categories.errors.mustSignIn'));
 
@@ -127,10 +138,16 @@ export default function CreateSubcategory() {
         return "";
       };
 
+      // Validate that subcategory name is provided
+      const cleanedName = cleanTranslation(form.name);
+      if (!cleanedName || (typeof cleanedName === 'object' && Object.keys(cleanedName).length === 0)) {
+        throw new Error("Subcategory name is required");
+      }
+
       // Add the new subcategory to the existing subcategories
       const existingSubCategories = category.subCategories || [];
       const newSubCategory = {
-        name: cleanTranslation(form.name),
+        name: cleanedName,
         image: form.image || ""
       };
 
@@ -234,7 +251,11 @@ export default function CreateSubcategory() {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2">
-          <button className="btn btn-cta" type="submit" disabled={submitting || uploadingImage}>
+          <button 
+            className="btn btn-cta" 
+            type="submit" 
+            disabled={submitting || uploadingImage || !category || !categoryId || loading}
+          >
             {submitting ? t('admin.categories.creating') : t('admin.categories.createSubCategory')}
           </button>
           <button
