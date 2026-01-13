@@ -504,7 +504,7 @@ export default function CreateProduct(){
         </div>
         <div className="flex gap-3">
           <button 
-            className="btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed" 
+            className="btn btn-cta btn-sm disabled:opacity-50 disabled:cursor-not-allowed" 
             disabled={!canSubmit} 
             onClick={create}
           >

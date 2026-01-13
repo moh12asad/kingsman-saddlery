@@ -723,6 +723,7 @@
     "categories": {
       "title": "الفئات",
       "createCategory": "إنشاء فئة",
+      "addCategory": "إضافة فئة",
       "loading": "جاري تحميل الفئات...",
       "noCategories": "لا توجد فئات بعد. أنشئ فئتك الأولى!",
       "name": "الاسم",
@@ -734,6 +735,7 @@
       "subCategoryPlaceholder": "اسم الفئة الفرعية",
       "create": "إنشاء فئة",
       "creating": "جاري الإنشاء...",
+      "cancel": "إلغاء",
       "edit": "تعديل",
       "update": "تحديث الفئة",
       "updating": "جاري التحديث...",

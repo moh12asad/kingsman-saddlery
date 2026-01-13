@@ -723,6 +723,7 @@
     "categories": {
       "title": "קטגוריות",
       "createCategory": "צור קטגוריה",
+      "addCategory": "הוסף קטגוריה",
       "loading": "טוען קטגוריות...",
       "noCategories": "אין קטגוריות עדיין. צור את הקטגוריה הראשונה שלך!",
       "name": "שם",
@@ -734,6 +735,7 @@
       "subCategoryPlaceholder": "שם תת-קטגוריה",
       "create": "צור קטגוריה",
       "creating": "יוצר...",
+      "cancel": "ביטול",
       "edit": "ערוך",
       "update": "עדכן קטגוריה",
       "updating": "מעדכן...",

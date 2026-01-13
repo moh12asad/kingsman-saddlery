@@ -809,6 +809,7 @@
     "categories": {
       "title": "Categories",
       "createCategory": "Create Category",
+      "addCategory": "Add Category",
       "loading": "Loading categories...",
       "noCategories": "No categories yet. Create your first category!",
       "name": "Name",
@@ -820,6 +821,7 @@
       "subCategoryPlaceholder": "Sub-category name",
       "create": "Create Category",
       "creating": "Creating...",
+      "cancel": "Cancel",
       "edit": "Edit",
       "update": "Update Category",
       "updating": "Updating...",

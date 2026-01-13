@@ -36,6 +36,8 @@ import AdminDashboard from "./pages/Admin/Dashboard.jsx";
 import AdminOrders from "./pages/Admin/Orders.jsx";
 import AdminSettings from "./pages/Admin/Settings.jsx";
 import AdminCategories from "./pages/Admin/Categories.jsx";
+import CreateCategory from "./pages/Admin/CreateCategory.jsx";
+import CreateSubcategory from "./pages/Admin/CreateSubcategory.jsx";
 import AdminHeroSlides from "./pages/Admin/HeroSlides.jsx";
 import AdminAds from "./pages/Admin/Ads.jsx";
 import AdminBrands from "./pages/Admin/Brands.jsx";
@@ -106,6 +108,8 @@ const router = createBrowserRouter([
           { path: "products/create", element: <CreateProduct /> },
           { path: "products/edit/:id", element: <EditProduct /> },
           { path: "categories", element: <AdminCategories /> },
+          { path: "categories/create", element: <CreateCategory /> },
+          { path: "categories/:categoryId/subcategory/create", element: <CreateSubcategory /> },
           { path: "categories/edit/:id", element: <EditCategory /> },
           { path: "hero-slides", element: <AdminHeroSlides /> },
           { path: "ads", element: <AdminAds /> },
