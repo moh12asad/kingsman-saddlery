@@ -7,6 +7,11 @@ import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../uti
 const db = admin.firestore();
 const router = Router();
 
+// Helper function to round to 2 decimal places (fix floating point precision)
+const roundTo2Decimals = (num) => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
+
 // Public endpoint to get best sellers (limited data)
 router.get("/best-sellers", async (_req, res) => {
   try {
@@ -152,9 +157,12 @@ router.post("/create", async (req, res) => {
     for (const item of items) {
       const productId = item.productId || item.id || "";
       const clientPrice = Number(item.price) || 0;
-      const quantity = Number(item.quantity) || 1;
+      // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+      const quantityNum = Number(item.quantity);
+      // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+      const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
       
-      // Validate quantity
+      // Validate quantity (0 is invalid and should be rejected, not defaulted)
       if (quantity <= 0 || !isFinite(quantity)) {
         return res.status(400).json({ 
           error: "Invalid item quantity", 
@@ -232,14 +240,14 @@ router.post("/create", async (req, res) => {
     }
 
     // Calculate subtotal from items using validated database prices
-    const computedSubtotal = normalizedItems.reduce(
+    const computedSubtotal = roundTo2Decimals(normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
-    );
+    ));
     
     // Use provided subtotal if it matches computed, otherwise use computed (more secure)
     const orderSubtotalBeforeDiscount = (typeof subtotal === "number" && Math.abs(subtotal - computedSubtotal) < 0.01) 
-      ? subtotal 
+      ? roundTo2Decimals(subtotal)
       : computedSubtotal;
     
     // SECURITY: Check discount eligibility server-side (never trust client)
@@ -249,12 +257,12 @@ router.post("/create", async (req, res) => {
     
     if (discountCheck.eligible) {
       discountPercentage = discountCheck.discountPercentage;
-      discountAmount = calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage);
+      discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
       console.log(`Applied ${discountPercentage}% new user discount for user ${uid}: ${discountAmount} ILS off`);
     }
     
     // Apply discount to subtotal (discount applies to product prices, before tax and delivery)
-    const orderSubtotal = Math.max(0, orderSubtotalBeforeDiscount - discountAmount);
+    const orderSubtotal = roundTo2Decimals(Math.max(0, orderSubtotalBeforeDiscount - discountAmount));
     
     // Delivery zone fees (in ILS)
     const DELIVERY_ZONE_FEES = {
@@ -304,21 +312,21 @@ router.post("/create", async (req, res) => {
     const itemTotalWeight = totalWeight > 0 ? totalWeight : (metadata?.totalWeight || 0);
     
     // Calculate delivery cost based on zone and weight
-    const deliveryCost = deliveryType === "delivery" && deliveryZone
+    const deliveryCost = roundTo2Decimals(deliveryType === "delivery" && deliveryZone
       ? calculateDeliveryCost(deliveryZone, itemTotalWeight)
-      : 0;
+      : 0);
     
     // Calculate base amount (subtotal + delivery) before tax
-    const baseAmount = orderSubtotal + deliveryCost;
+    const baseAmount = roundTo2Decimals(orderSubtotal + deliveryCost);
     
     // Calculate tax on the total (subtotal + delivery) (18% VAT)
     // SECURITY: Recalculate tax server-side based on total amount
     const VAT_RATE = 0.18;
-    const orderTax = baseAmount * VAT_RATE;
+    const orderTax = roundTo2Decimals(baseAmount * VAT_RATE);
     
     // Calculate expected total on server (trusted calculation)
     // Total = (Subtotal + Delivery) + Tax on Total
-    const expectedTotal = Math.max(0, baseAmount + orderTax);
+    const expectedTotal = roundTo2Decimals(Math.max(0, baseAmount + orderTax));
     
     // SECURITY: Ensure total is a valid finite number
     if (!isFinite(expectedTotal)) {
@@ -546,6 +554,27 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       return res.status(400).json({ error: "Order items are required" });
     }
 
+    // SECURITY: Validate delivery zone for delivery orders (same validation as regular user endpoint)
+    const deliveryType = metadata?.deliveryType || "delivery";
+    if (deliveryType === "delivery") {
+      // SECURITY: Validate that a delivery zone is provided for delivery orders
+      // This prevents orders from being created with 0 delivery cost
+      const deliveryZone = metadata?.deliveryZone || null;
+      const DELIVERY_ZONE_FEES = {
+        telaviv_north: 65,
+        jerusalem: 85,
+        south: 85,
+        westbank: 85
+      };
+      if (!deliveryZone || !DELIVERY_ZONE_FEES[deliveryZone]) {
+        return res.status(400).json({ 
+          error: "Valid delivery zone is required for delivery orders",
+          details: "Please select a delivery zone (telaviv_north, jerusalem, south, or westbank)"
+        });
+      }
+    }
+    // For pickup orders, delivery zone is not required
+
     // SECURITY: Validate product prices against database (never trust client-provided prices)
     const productIds = items.map(item => item.productId).filter(id => id);
     const productPriceMap = new Map();
@@ -595,9 +624,12 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     for (const item of items) {
       const productId = item.productId || "";
       const clientPrice = Number(item.price) || 0;
-      const quantity = Number(item.quantity) || 1;
+      // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+      const quantityNum = Number(item.quantity);
+      // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+      const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
       
-      // Validate quantity
+      // Validate quantity (0 is invalid and should be rejected, not defaulted)
       if (quantity <= 0 || !isFinite(quantity)) {
         return res.status(400).json({ 
           error: "Invalid item quantity", 

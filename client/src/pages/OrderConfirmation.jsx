@@ -114,6 +114,16 @@ export default function OrderConfirmation() {
         ? calculateDeliveryCost(requestDeliveryZone, totalWeight)
         : 0;
 
+      // SECURITY: Send items array so server can recalculate subtotal from database prices
+      const items = cartItems.map(item => ({
+        productId: item.id || item.productId || "",
+        id: item.id || item.productId || "",
+        name: item.name || "",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        weight: item.weight || 0
+      }));
+
       const res = await fetch(`${API}/api/payment/calculate-total`, {
         method: "POST",
         headers: {
@@ -121,9 +131,10 @@ export default function OrderConfirmation() {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          subtotal,
+          items, // Send items for server-side price validation
+          subtotal, // Keep for backward compatibility, but server will recalculate
           tax: subtotal * 0.18, // Tax on subtotal (will be recalculated server-side)
-          deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will add tax)
+          deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will recalculate)
           deliveryZone: requestDeliveryType === "delivery" ? requestDeliveryZone : null,
           totalWeight: totalWeight
         })
@@ -167,7 +178,7 @@ export default function OrderConfirmation() {
         setCalculatingDiscount(false);
       }
     }
-  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight]);
+  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight, cartItems]);
 
   useEffect(() => {
     if (!user) return;
