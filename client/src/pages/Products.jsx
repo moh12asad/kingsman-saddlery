@@ -147,7 +147,14 @@ export default function Products() {
       if (matchedCategory) {
         const categoryNameEn = getTranslated(matchedCategory.name, 'en');
         filtered = filtered.filter(p => {
-          // Support both old format (single category string) and new format (categories array)
+          // Support new format: categoryPairs (array of {category, subCategory} objects)
+          if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+            return p.categoryPairs.some(pair => {
+              const pairCategory = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, 'en');
+              return pairCategory === categoryNameEn;
+            });
+          }
+          // Support old format (single category string) and old format (categories array)
           if (Array.isArray(p.categories)) {
             return p.categories.includes(categoryNameEn);
           } else if (p.category) {
@@ -174,7 +181,15 @@ export default function Products() {
           if (matchedSubCategory) {
             const subCategoryNameEn = getTranslated(matchedSubCategory.name, 'en');
             filtered = filtered.filter(p => {
-              // Support both old format (single subCategory string) and new format (subCategories array)
+              // Support new format: categoryPairs
+              if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+                return p.categoryPairs.some(pair => {
+                  const pairCategory = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, 'en');
+                  const pairSubCategory = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, 'en');
+                  return pairCategory === categoryNameEn && pairSubCategory === subCategoryNameEn;
+                });
+              }
+              // Support old format (single subCategory string) and old format (subCategories array)
               if (Array.isArray(p.subCategories)) {
                 return p.subCategories.includes(subCategoryNameEn);
               } else if (p.subCategory) {
@@ -190,7 +205,14 @@ export default function Products() {
         // Fallback: if category not found in categories list, use direct comparison
         const currentLang = i18n.language || 'en';
         filtered = filtered.filter(p => {
-          // Support both old format (single category string) and new format (categories array)
+          // Support new format: categoryPairs
+          if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+            return p.categoryPairs.some(pair => {
+              const pCategory = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, currentLang);
+              return pCategory === decodedCategory;
+            });
+          }
+          // Support old format (single category string) and old format (categories array)
           if (Array.isArray(p.categories)) {
             return p.categories.some(cat => {
               const pCategory = typeof cat === 'string' ? cat : getTranslated(cat, currentLang);
@@ -206,7 +228,14 @@ export default function Products() {
         if (subcategoryParam) {
           const decodedSubCategory = decodeURIComponent(subcategoryParam);
           filtered = filtered.filter(p => {
-            // Support both old format (single subCategory string) and new format (subCategories array)
+            // Support new format: categoryPairs
+            if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+              return p.categoryPairs.some(pair => {
+                const pSubCategory = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, currentLang);
+                return pSubCategory === decodedSubCategory;
+              });
+            }
+            // Support old format (single subCategory string) and old format (subCategories array)
             if (Array.isArray(p.subCategories)) {
               return p.subCategories.some(subCat => {
                 const pSubCategory = typeof subCat === 'string' ? subCat : getTranslated(subCat, currentLang);
@@ -230,9 +259,14 @@ export default function Products() {
         const name = getTranslated(p.name, currentLang).toLowerCase();
         const brand = (p.brand || '').toLowerCase();
         
-        // Check categories (support both old and new format)
+        // Check categories (support new format: categoryPairs, and old formats)
         let categoryMatches = false;
-        if (Array.isArray(p.categories)) {
+        if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+          categoryMatches = p.categoryPairs.some(pair => {
+            const catStr = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, currentLang);
+            return catStr.toLowerCase().includes(query);
+          });
+        } else if (Array.isArray(p.categories)) {
           categoryMatches = p.categories.some(cat => {
             const catStr = typeof cat === 'string' ? cat : getTranslated(cat, currentLang);
             return catStr.toLowerCase().includes(query);
@@ -242,9 +276,14 @@ export default function Products() {
           categoryMatches = category.includes(query);
         }
         
-        // Check subCategories (support both old and new format)
+        // Check subCategories (support new format: categoryPairs, and old formats)
         let subCategoryMatches = false;
-        if (Array.isArray(p.subCategories)) {
+        if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+          subCategoryMatches = p.categoryPairs.some(pair => {
+            const subCatStr = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, currentLang);
+            return subCatStr && subCatStr.toLowerCase().includes(query);
+          });
+        } else if (Array.isArray(p.subCategories)) {
           subCategoryMatches = p.subCategories.some(subCat => {
             const subCatStr = typeof subCat === 'string' ? subCat : getTranslated(subCat, currentLang);
             return subCatStr.toLowerCase().includes(query);
@@ -265,16 +304,56 @@ export default function Products() {
     const saleProducts = filtered.filter(p => p.sale);
     
     // Group regular products by category and sub-category
-    // Products can appear in multiple categories now
     const productsByCategory = {};
     const currentLang = i18n.language || 'en';
+    
+    // Track which products we've already shown (to prevent duplicates when viewing all products)
+    const shownProductIds = new Set();
+    
+    // BEST PRACTICE: 
+    // - If viewing a SPECIFIC category (categoryParam exists): Show products ONLY in that category section
+    // - If viewing ALL products (no categoryParam): Show each product only once (in its first category)
+    // - If searching: Show each product only once
+    const isViewingSpecificCategory = !!categoryParam;
+    const isSearching = !!searchQuery.trim();
+    const shouldDeduplicate = !isViewingSpecificCategory || isSearching;
+    
+    // If viewing a specific category, determine the category name to use for grouping
+    let targetCategoryName = null;
+    if (isViewingSpecificCategory) {
+      const decodedCategory = decodeURIComponent(categoryParam);
+      // Find the category object to get the English name
+      const matchedCategory = categories.find(cat => {
+        const catNameEn = getTranslated(cat.name, 'en');
+        const catNameAr = getTranslated(cat.name, 'ar');
+        const catNameHe = getTranslated(cat.name, 'he');
+        return catNameEn === decodedCategory || 
+               catNameAr === decodedCategory || 
+               catNameHe === decodedCategory;
+      });
+      if (matchedCategory) {
+        targetCategoryName = getTranslated(matchedCategory.name, currentLang);
+      } else {
+        targetCategoryName = decodedCategory;
+      }
+    }
     
     filtered
       .filter(p => !p.sale)
       .forEach(product => {
-        // Support both old format (single category string) and new format (categories array)
+        // If we're deduplicating and this product was already shown, skip it
+        if (shouldDeduplicate && shownProductIds.has(product.id)) {
+          return;
+        }
+        
+        // Support new format: categoryPairs (array of {category, subCategory} objects)
+        // Also support old formats for backward compatibility
         let productCategories = [];
-        if (Array.isArray(product.categories)) {
+        if (Array.isArray(product.categoryPairs) && product.categoryPairs.length > 0) {
+          productCategories = product.categoryPairs.map(pair => 
+            typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, currentLang)
+          );
+        } else if (Array.isArray(product.categories)) {
           productCategories = product.categories.map(cat => 
             typeof cat === 'string' ? cat : getTranslated(cat, currentLang)
           );
@@ -287,14 +366,37 @@ export default function Products() {
           productCategories = ["Uncategorized"];
         }
         
-        // Add product to each category it belongs to
-        productCategories.forEach(category => {
+        // Determine which categories to add this product to
+        let categoriesToAdd = [];
+        if (isViewingSpecificCategory && targetCategoryName) {
+          // When viewing a specific category, only add to that category (even if product belongs to multiple)
+          if (productCategories.includes(targetCategoryName)) {
+            categoriesToAdd = [targetCategoryName];
+          } else {
+            // Product doesn't belong to the target category, skip it
+            return;
+          }
+        } else if (shouldDeduplicate) {
+          // When viewing all products or searching, only add to first category to avoid duplicates
+          categoriesToAdd = [productCategories[0]];
+        } else {
+          // Add to all categories (shouldn't happen with current logic, but keep for safety)
+          categoriesToAdd = productCategories;
+        }
+        
+        categoriesToAdd.forEach(category => {
           const categoryName = category || "Uncategorized";
           if (!productsByCategory[categoryName]) {
             productsByCategory[categoryName] = [];
           }
+          
           productsByCategory[categoryName].push(product);
         });
+        
+        // Mark this product as shown
+        if (shouldDeduplicate) {
+          shownProductIds.add(product.id);
+        }
       });
 
     return { 

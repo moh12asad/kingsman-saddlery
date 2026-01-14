@@ -141,33 +141,42 @@ export function getTranslatedProduct(product, lang = DEFAULT_LANGUAGE) {
   translated.warranty = getTranslatedField(product.warranty, lang);
   translated.shippingInfo = getTranslatedField(product.shippingInfo, lang);
   
-  // Handle categories: support both old format (single string) and new format (array)
-  // For backward compatibility, check both category and categories
-  if (Array.isArray(product.categories)) {
+  // Handle categoryPairs: new format (array of {category, subCategory} objects)
+  // Also support backward compatibility with old formats
+  if (Array.isArray(product.categoryPairs) && product.categoryPairs.length > 0) {
+    translated.categoryPairs = product.categoryPairs;
+    // Extract categories and subCategories arrays for backward compatibility
+    translated.categories = product.categoryPairs.map(p => p.category).filter(Boolean);
+    translated.subCategories = product.categoryPairs.map(p => p.subCategory).filter(Boolean);
+    translated.category = translated.categories[0] || '';
+    translated.subCategory = translated.subCategories[0] || '';
+  } else if (Array.isArray(product.categories)) {
+    // Old format: separate arrays
     translated.categories = product.categories;
-    // Also set category for backward compatibility (use first category)
+    translated.subCategories = Array.isArray(product.subCategories) ? product.subCategories : [];
     translated.category = product.categories[0] || '';
+    translated.subCategory = translated.subCategories[0] || '';
+    // Convert to categoryPairs for consistency
+    translated.categoryPairs = product.categories.map((cat, idx) => ({
+      category: cat,
+      subCategory: translated.subCategories[idx] || ""
+    }));
   } else if (product.category) {
-    // Old format: single category string
+    // Oldest format: single category string
     translated.category = product.category;
     translated.categories = [product.category];
+    translated.subCategory = product.subCategory || '';
+    translated.subCategories = product.subCategory ? [product.subCategory] : [];
+    translated.categoryPairs = [{
+      category: product.category,
+      subCategory: product.subCategory || ""
+    }];
   } else {
     translated.category = '';
     translated.categories = [];
-  }
-  
-  // Handle subCategories: support both old format (single string) and new format (array)
-  if (Array.isArray(product.subCategories)) {
-    translated.subCategories = product.subCategories;
-    // Also set subCategory for backward compatibility (use first subCategory)
-    translated.subCategory = product.subCategories[0] || '';
-  } else if (product.subCategory) {
-    // Old format: single subCategory string
-    translated.subCategory = product.subCategory;
-    translated.subCategories = [product.subCategory];
-  } else {
     translated.subCategory = '';
     translated.subCategories = [];
+    translated.categoryPairs = [];
   }
   
   // Translate specifications object

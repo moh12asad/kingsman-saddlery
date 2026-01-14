@@ -15,8 +15,7 @@ export default function CreateProduct(){
   const [form, setForm] = useState({
     name: { en: "", ar: "", he: "" },
     price: 0,
-    categories: [],
-    subCategories: [],
+    categoryPairs: [],
     image: "",
     description: { en: "", ar: "", he: "" },
     available: true,
@@ -32,6 +31,12 @@ export default function CreateProduct(){
     videoUrl: "",
     additionalImages: [],
     weight: 0,
+  });
+  
+  // State for adding new category pair
+  const [newCategoryPair, setNewCategoryPair] = useState({
+    category: "",
+    subCategory: ""
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingImages, setUploadingImages] = useState([]);
@@ -58,33 +63,47 @@ export default function CreateProduct(){
 
   const canSubmit = useMemo(() => {
     const name = typeof form.name === 'string' ? form.name : (form.name?.en || "");
-    return name && form.price > 0 && form.categories.length > 0;
+    return name && form.price > 0 && form.categoryPairs.length > 0;
   }, [form]);
 
-  // Get all sub-categories from selected categories
-  const availableSubCategories = useMemo(() => {
-    const allSubCategories = [];
-    const seen = new Set();
+  // Get sub-categories for the selected category in newCategoryPair
+  const availableSubCategoriesForNewPair = useMemo(() => {
+    if (!newCategoryPair.category) return [];
     
-    form.categories.forEach(catName => {
-      const categoryObj = categories.find(cat => {
-        const catNameFromObj = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-        return catNameFromObj === catName;
-      });
-      
-      if (categoryObj?.subCategories) {
-        categoryObj.subCategories.forEach(sub => {
-          const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
-          if (subName && !seen.has(subName)) {
-            seen.add(subName);
-            allSubCategories.push(sub);
-          }
-        });
-      }
+    const categoryObj = categories.find(cat => {
+      const catNameFromObj = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+      return catNameFromObj === newCategoryPair.category;
     });
     
-    return allSubCategories;
-  }, [categories, form.categories]);
+    return categoryObj?.subCategories || [];
+  }, [categories, newCategoryPair.category]);
+
+  // Function to add a new category pair
+  const handleAddCategoryPair = () => {
+    if (!newCategoryPair.category) return;
+    
+    // Check if this category is already added
+    const exists = form.categoryPairs.some(pair => pair.category === newCategoryPair.category);
+    if (exists) {
+      setError("This category is already added. Please remove it first or choose a different category.");
+      return;
+    }
+    
+    setForm({
+      ...form,
+      categoryPairs: [...form.categoryPairs, { ...newCategoryPair }]
+    });
+    setNewCategoryPair({ category: "", subCategory: "" });
+    setError("");
+  };
+
+  // Function to remove a category pair
+  const handleRemoveCategoryPair = (index) => {
+    setForm({
+      ...form,
+      categoryPairs: form.categoryPairs.filter((_, i) => i !== index)
+    });
+  };
 
   async function uploadImage(file, key = "") {
     // Ensure user is authenticated
@@ -152,8 +171,7 @@ export default function CreateProduct(){
       const payload = {
         name: cleanTranslation(form.name),
         price: Number(form.price) || 0,
-        categories: Array.isArray(form.categories) ? form.categories : [],
-        subCategories: Array.isArray(form.subCategories) ? form.subCategories : [],
+        categoryPairs: Array.isArray(form.categoryPairs) ? form.categoryPairs : [],
         image: form.image,
         description: cleanTranslation(form.description),
         available: form.available,
@@ -332,62 +350,93 @@ export default function CreateProduct(){
             />
           </div>
           <div>
-            <label className="form-label form-label-required">Categories</label>
-            <select 
-              className="select" 
-              multiple
-              size={Math.min(categories.length + 1, 8)}
-              value={form.categories}
-              onChange={e => {
-                const selected = Array.from(e.target.selectedOptions, option => option.value);
-                setForm({...form, categories: selected, subCategories: []});
-              }}
-              required
-            >
-              {categories.map(cat => {
-                const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-                return (
-                  <option key={cat.id} value={catName}>{catName}</option>
-                );
-              })}
-            </select>
-            <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories</small>
-            {form.categories.length > 0 && (
-              <div className="mt-2">
-                <span className="text-sm font-medium">Selected: </span>
-                <span className="text-sm">{form.categories.join(", ")}</span>
-              </div>
-            )}
-          </div>
-          {availableSubCategories.length > 0 && (
-            <div>
-              <label className="form-label">Sub-Categories (optional)</label>
-              <select 
-                className="select" 
-                multiple
-                size={Math.min(availableSubCategories.length + 1, 8)}
-                value={form.subCategories}
-                onChange={e => {
-                  const selected = Array.from(e.target.selectedOptions, option => option.value);
-                  setForm({...form, subCategories: selected});
-                }}
-              >
-                {availableSubCategories.map((sub, idx) => {
-                  const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
-                  return (
-                    <option key={idx} value={subName}>{subName}</option>
-                  );
-                })}
-              </select>
-              <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sub-categories</small>
-              {form.subCategories.length > 0 && (
-                <div className="mt-2">
-                  <span className="text-sm font-medium">Selected: </span>
-                  <span className="text-sm">{form.subCategories.join(", ")}</span>
+            <label className="form-label form-label-required">Categories & Sub-Categories</label>
+            <div className="space-y-4">
+              {/* Display existing category pairs */}
+              {form.categoryPairs.length > 0 && (
+                <div className="space-y-2">
+                  {form.categoryPairs.map((pair, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-700">Category:</div>
+                        <div className="text-base">{pair.category}</div>
+                        {pair.subCategory && (
+                          <>
+                            <div className="text-sm font-medium text-gray-700 mt-2">Sub-Category:</div>
+                            <div className="text-base">{pair.subCategory}</div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCategoryPair(idx)}
+                        className="btn btn-sm btn-danger"
+                        aria-label="Remove category pair"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
+              
+              {/* Add new category pair */}
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="form-label">Category</label>
+                    <select
+                      className="select"
+                      value={newCategoryPair.category}
+                      onChange={e => setNewCategoryPair({ category: e.target.value, subCategory: "" })}
+                    >
+                      <option value="">Select category...</option>
+                      {categories.map(cat => {
+                        const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+                        // Don't show already added categories
+                        if (form.categoryPairs.some(pair => pair.category === catName)) return null;
+                        return (
+                          <option key={cat.id} value={catName}>{catName}</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="form-label">Sub-Category (optional)</label>
+                    <select
+                      className="select"
+                      value={newCategoryPair.subCategory}
+                      onChange={e => setNewCategoryPair({ ...newCategoryPair, subCategory: e.target.value })}
+                      disabled={!newCategoryPair.category}
+                    >
+                      <option value="">Select sub-category...</option>
+                      {availableSubCategoriesForNewPair.map((sub, idx) => {
+                        const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+                        return (
+                          <option key={idx} value={subName}>{subName}</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={handleAddCategoryPair}
+                      disabled={!newCategoryPair.category}
+                      className="btn btn-cta btn-sm w-full"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+                {form.categoryPairs.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">No categories added. Select a category and optionally a sub-category, then click "Add".</p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
           <div>
             <input 
               className="input" 

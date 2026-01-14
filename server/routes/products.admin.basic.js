@@ -69,6 +69,7 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       subCategory = "",
       categories = [],
       subCategories = [],
+      categoryPairs = [],
       image = "",
       available = true,
       sale = false,
@@ -89,29 +90,36 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       shippingInfo,
     } = req.body;
 
-    // Handle backward compatibility: if category/subCategory are strings, convert to arrays
-    // Also support new format with categories/subCategories arrays
-    let finalCategories = [];
-    let finalSubCategories = [];
+    // Handle new format: categoryPairs (array of {category, subCategory} objects)
+    // Also support backward compatibility with old formats
+    let finalCategoryPairs = [];
     
-    if (Array.isArray(categories) && categories.length > 0) {
-      finalCategories = categories;
+    if (Array.isArray(categoryPairs) && categoryPairs.length > 0) {
+      // New format: categoryPairs
+      finalCategoryPairs = categoryPairs.filter(pair => pair && pair.category);
+    } else if (Array.isArray(categories) && categories.length > 0) {
+      // Old format: separate arrays - convert to pairs
+      finalCategoryPairs = categories.map((cat, idx) => ({
+        category: cat,
+        subCategory: subCategories[idx] || ""
+      }));
     } else if (category) {
-      // Backward compatibility: single category string
-      finalCategories = [category];
+      // Oldest format: single category/subCategory - convert to pair
+      finalCategoryPairs = [{
+        category: category,
+        subCategory: subCategory || ""
+      }];
     }
-    
-    if (Array.isArray(subCategories) && subCategories.length > 0) {
-      finalSubCategories = subCategories;
-    } else if (subCategory) {
-      // Backward compatibility: single subCategory string
-      finalSubCategories = [subCategory];
-    }
+
+    // Extract categories and subCategories arrays for backward compatibility
+    const finalCategories = finalCategoryPairs.map(p => p.category).filter(Boolean);
+    const finalSubCategories = finalCategoryPairs.map(p => p.subCategory).filter(Boolean);
 
     // Prepare product data with translation support
     const productData = prepareProductForStorage({
       name: name || "",
       price,
+      categoryPairs: finalCategoryPairs,
       categories: finalCategories,
       subCategories: finalSubCategories,
       image,
@@ -156,22 +164,60 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
     const existingData = existingDoc.data();
     const updates = { ...req.body };
     
-    // Handle categories: support both old format (single string) and new format (array)
-    if (updates.categories !== undefined) {
-      // New format: array
-      updates.categories = Array.isArray(updates.categories) ? updates.categories : [];
-    } else if (updates.category !== undefined) {
-      // Old format: single string - convert to array for consistency
-      updates.categories = updates.category ? [updates.category] : [];
-    }
-    
-    // Handle subCategories: support both old format (single string) and new format (array)
-    if (updates.subCategories !== undefined) {
-      // New format: array
-      updates.subCategories = Array.isArray(updates.subCategories) ? updates.subCategories : [];
-    } else if (updates.subCategory !== undefined) {
-      // Old format: single string - convert to array for consistency
-      updates.subCategories = updates.subCategory ? [updates.subCategory] : [];
+    // Handle categoryPairs: new format (array of {category, subCategory} objects)
+    if (updates.categoryPairs !== undefined && Array.isArray(updates.categoryPairs)) {
+      // New format: categoryPairs
+      updates.categoryPairs = updates.categoryPairs.filter(pair => pair && pair.category);
+      // Also update categories and subCategories arrays for backward compatibility
+      updates.categories = updates.categoryPairs.map(p => p.category).filter(Boolean);
+      updates.subCategories = updates.categoryPairs.map(p => p.subCategory).filter(Boolean);
+      
+      // BUG FIX: Explicitly clear old single-value fields to prevent fallback to stale data
+      // If categoryPairs is empty, clear all category-related fields
+      if (updates.categoryPairs.length === 0) {
+        updates.category = '';
+        updates.subCategory = '';
+        updates.categories = [];
+        updates.subCategories = [];
+      } else {
+        // Set first category/subCategory for backward compatibility, but clear if empty
+        updates.category = updates.categories[0] || '';
+        updates.subCategory = updates.subCategories[0] || '';
+      }
+    } else {
+      // Handle old formats for backward compatibility
+      // Handle categories: support both old format (single string) and new format (array)
+      if (updates.categories !== undefined) {
+        // New format: array
+        updates.categories = Array.isArray(updates.categories) ? updates.categories : [];
+      } else if (updates.category !== undefined) {
+        // Old format: single string - convert to array for consistency
+        updates.categories = updates.category ? [updates.category] : [];
+      }
+      
+      // Handle subCategories: support both old format (single string) and new format (array)
+      if (updates.subCategories !== undefined) {
+        // New format: array
+        updates.subCategories = Array.isArray(updates.subCategories) ? updates.subCategories : [];
+      } else if (updates.subCategory !== undefined) {
+        // Old format: single string - convert to array for consistency
+        updates.subCategories = updates.subCategory ? [updates.subCategory] : [];
+      }
+      
+      // Convert old format to categoryPairs if we have categories
+      if (updates.categories && updates.categories.length > 0) {
+        updates.categoryPairs = updates.categories.map((cat, idx) => ({
+          category: cat,
+          subCategory: (updates.subCategories && updates.subCategories[idx]) || ""
+        }));
+      } else {
+        // BUG FIX: If no categories, ensure all category fields are cleared
+        updates.categoryPairs = [];
+        updates.category = '';
+        updates.subCategory = '';
+        updates.categories = [];
+        updates.subCategories = [];
+      }
     }
     
     // Handle translation merges for translatable fields

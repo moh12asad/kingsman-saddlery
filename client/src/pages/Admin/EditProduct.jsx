@@ -19,6 +19,11 @@ export default function EditProduct() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingImages, setUploadingImages] = useState([]);
   const [error, setError] = useState("");
+  // State for adding new category pair
+  const [newCategoryPair, setNewCategoryPair] = useState({
+    category: "",
+    subCategory: ""
+  });
 
   useEffect(() => {
     loadProduct();
@@ -51,20 +56,23 @@ export default function EditProduct() {
           return { en: "", ar: "", he: "" };
         };
         
-        // Handle categories: support both old format (single string) and new format (array)
-        let categories = [];
-        if (Array.isArray(found.categories)) {
-          categories = found.categories;
+        // Handle categoryPairs: new format (array of {category, subCategory} objects)
+        // Also support backward compatibility
+        let categoryPairs = [];
+        if (Array.isArray(found.categoryPairs) && found.categoryPairs.length > 0) {
+          categoryPairs = found.categoryPairs;
+        } else if (Array.isArray(found.categories) && found.categories.length > 0) {
+          // Convert old format to pairs
+          categoryPairs = found.categories.map((cat, idx) => ({
+            category: cat,
+            subCategory: (Array.isArray(found.subCategories) && found.subCategories[idx]) || ""
+          }));
         } else if (found.category) {
-          categories = [found.category];
-        }
-        
-        // Handle subCategories: support both old format (single string) and new format (array)
-        let subCategories = [];
-        if (Array.isArray(found.subCategories)) {
-          subCategories = found.subCategories;
-        } else if (found.subCategory) {
-          subCategories = [found.subCategory];
+          // Oldest format: single category
+          categoryPairs = [{
+            category: found.category,
+            subCategory: found.subCategory || ""
+          }];
         }
         
         const formattedProduct = {
@@ -76,8 +84,7 @@ export default function EditProduct() {
           warranty: ensureTranslationObject(found.warranty),
           shippingInfo: ensureTranslationObject(found.shippingInfo),
           weight: found.weight || 0,
-          categories: categories,
-          subCategories: subCategories,
+          categoryPairs: categoryPairs,
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -258,8 +265,7 @@ export default function EditProduct() {
       const payload = {
         name: cleanTranslation(product.name),
         price: Number(product.price) || 0,
-        categories: Array.isArray(product.categories) ? product.categories : [],
-        subCategories: Array.isArray(product.subCategories) ? product.subCategories : [],
+        categoryPairs: Array.isArray(product.categoryPairs) ? product.categoryPairs : [],
         image: product.image || "",
         description: cleanTranslation(product.description),
         available: product.available,
@@ -379,91 +385,122 @@ export default function EditProduct() {
 
           <div>
             <div className="form-group">
-              <label className="form-label form-label-required">Categories</label>
-              <select
-                className="select"
-                multiple
-                size={Math.min(categories.length + 1, 8)}
-                value={Array.isArray(product.categories) ? product.categories : []}
-                onChange={e => {
-                  const selected = Array.from(e.target.selectedOptions, option => option.value);
-                  setProduct({ ...product, categories: selected, subCategories: [] });
-                }}
-              >
-                {categories.map(cat => {
-                  const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-                  return (
-                    <option key={cat.id} value={catName}>{catName}</option>
-                  );
-                })}
-              </select>
-              <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories</small>
-              {Array.isArray(product.categories) && product.categories.length > 0 && (
-                <div className="mt-2">
-                  <span className="text-sm font-medium">Selected: </span>
-                  <span className="text-sm">{product.categories.join(", ")}</span>
+              <label className="form-label form-label-required">Categories & Sub-Categories</label>
+              <div className="space-y-4">
+                {/* Display existing category pairs */}
+                {Array.isArray(product.categoryPairs) && product.categoryPairs.length > 0 && (
+                  <div className="space-y-2">
+                    {product.categoryPairs.map((pair, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-700">Category:</div>
+                          <div className="text-base">{pair.category}</div>
+                          {pair.subCategory && (
+                            <>
+                              <div className="text-sm font-medium text-gray-700 mt-2">Sub-Category:</div>
+                              <div className="text-base">{pair.subCategory}</div>
+                            </>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = product.categoryPairs.filter((_, i) => i !== idx);
+                            setProduct({ ...product, categoryPairs: updated });
+                          }}
+                          className="btn btn-sm btn-danger"
+                          aria-label="Remove category pair"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add new category pair */}
+                <div className="border-t pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="form-label">Category</label>
+                      <select
+                        className="select"
+                        value={newCategoryPair.category}
+                        onChange={e => setNewCategoryPair({ category: e.target.value, subCategory: "" })}
+                      >
+                        <option value="">Select category...</option>
+                        {categories.map(cat => {
+                          const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+                          // Don't show already added categories
+                          const currentPairs = Array.isArray(product.categoryPairs) ? product.categoryPairs : [];
+                          if (currentPairs.some(pair => pair.category === catName)) return null;
+                          return (
+                            <option key={cat.id} value={catName}>{catName}</option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="form-label">Sub-Category (optional)</label>
+                      <select
+                        className="select"
+                        value={newCategoryPair.subCategory}
+                        onChange={e => setNewCategoryPair({ ...newCategoryPair, subCategory: e.target.value })}
+                        disabled={!newCategoryPair.category}
+                      >
+                        <option value="">Select sub-category...</option>
+                        {(() => {
+                          if (!newCategoryPair.category) return [];
+                          const categoryObj = categories.find(cat => {
+                            const catNameFromObj = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+                            return catNameFromObj === newCategoryPair.category;
+                          });
+                          return categoryObj?.subCategories || [];
+                        })().map((sub, idx) => {
+                          const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+                          return (
+                            <option key={idx} value={subName}>{subName}</option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newCategoryPair.category) return;
+                          
+                          // Check if this category is already added
+                          const currentPairs = Array.isArray(product.categoryPairs) ? product.categoryPairs : [];
+                          const exists = currentPairs.some(pair => pair.category === newCategoryPair.category);
+                          if (exists) {
+                            setError("This category is already added. Please remove it first or choose a different category.");
+                            return;
+                          }
+                          
+                          setProduct({
+                            ...product,
+                            categoryPairs: [...currentPairs, { ...newCategoryPair }]
+                          });
+                          setNewCategoryPair({ category: "", subCategory: "" });
+                          setError("");
+                        }}
+                        disabled={!newCategoryPair.category}
+                        className="btn btn-cta btn-sm w-full"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                  {(!Array.isArray(product.categoryPairs) || product.categoryPairs.length === 0) && (
+                    <p className="text-sm text-gray-500 mt-2">No categories added. Select a category and optionally a sub-category, then click "Add".</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
-
-          {(() => {
-            // Get all sub-categories from selected categories
-            const availableSubCategories = [];
-            const seen = new Set();
-            
-            (Array.isArray(product.categories) ? product.categories : []).forEach(catName => {
-              const categoryObj = categories.find(cat => {
-                const catNameFromObj = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-                return catNameFromObj === catName;
-              });
-              
-              if (categoryObj?.subCategories) {
-                categoryObj.subCategories.forEach(sub => {
-                  const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
-                  if (subName && !seen.has(subName)) {
-                    seen.add(subName);
-                    availableSubCategories.push(sub);
-                  }
-                });
-              }
-            });
-            
-            if (availableSubCategories.length > 0) {
-              return (
-                <div>
-                  <div className="form-group">
-                    <label className="form-label">Sub-Categories (optional)</label>
-                    <select
-                      className="select"
-                      multiple
-                      size={Math.min(availableSubCategories.length + 1, 8)}
-                      value={Array.isArray(product.subCategories) ? product.subCategories : []}
-                      onChange={e => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value);
-                        setProduct({ ...product, subCategories: selected });
-                      }}
-                    >
-                      {availableSubCategories.map((sub, idx) => {
-                        const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
-                        return (
-                          <option key={idx} value={subName}>{subName}</option>
-                        );
-                      })}
-                    </select>
-                    <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sub-categories</small>
-                    {Array.isArray(product.subCategories) && product.subCategories.length > 0 && (
-                      <div className="mt-2">
-                        <span className="text-sm font-medium">Selected: </span>
-                        <span className="text-sm">{product.subCategories.join(", ")}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })()}
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <MultiLanguageInput
@@ -690,7 +727,13 @@ export default function EditProduct() {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saving || !(typeof product.name === 'string' ? product.name : (product.name?.en || "")) || !product.price}
+            disabled={
+              saving || 
+              !(typeof product.name === 'string' ? product.name : (product.name?.en || "")) || 
+              !product.price ||
+              !Array.isArray(product.categoryPairs) || 
+              product.categoryPairs.length === 0
+            }
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
