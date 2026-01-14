@@ -867,11 +867,6 @@ export default function OrderConfirmation() {
                         <span className="font-semibold">{t("orderConfirmation.total")}</span>
                         <span className="text-lg font-bold">{formatPrice(total)}</span>
                       </div>
-                      <div className="margin-top-sm padding-top-sm border-top">
-                        <p className="text-xs text-muted text-center">
-                          {t("orderConfirmation.vatNote")}
-                        </p>
-                      </div>
                     </>
                   )}
                 </div>
