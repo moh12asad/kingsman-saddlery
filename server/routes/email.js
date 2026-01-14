@@ -4,6 +4,11 @@ import { sendOrderConfirmationEmail, getTransporter, isResendConfigured, getRese
 
 const router = Router();
 
+// Helper function to round to 2 decimal places (fix floating point precision)
+const roundTo2Decimals = (num) => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
+
 // Test email service connection (Resend or SMTP)
 router.get("/test-smtp", async (req, res) => {
   try {
@@ -138,42 +143,92 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
     const finalOrderNumber = orderNumber || `ORD-${Date.now()}`;
 
     // Calculate total on server for security (don't trust client-provided total)
-    const normalizedItems = items.map(item => ({
-      name: item.name,
-      image: item.image || "",
-      quantity: Number(item.quantity) || 1,
-      price: Number(item.price) || 0,
-    }));
+    const normalizedItems = items.map(item => {
+      // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+      const quantityNum = Number(item.quantity);
+      // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+      const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
+      
+      // Validate quantity (0 is invalid and should be rejected, not defaulted)
+      if (quantity <= 0 || !isFinite(quantity)) {
+        throw new Error(`Invalid item quantity: ${item.quantity} for item ${item.name || "Unknown"}`);
+      }
+      
+      return {
+        name: item.name,
+        image: item.image || "",
+        quantity: quantity,
+        price: Number(item.price) || 0,
+      };
+    });
     
-    const computedSubtotal = normalizedItems.reduce(
+    const computedSubtotal = roundTo2Decimals(normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
-    );
+    ));
     
     // Use provided subtotalBeforeDiscount if available, otherwise use computed
     const orderSubtotalBeforeDiscount = typeof subtotalBeforeDiscount === "number" && subtotalBeforeDiscount >= 0
-      ? subtotalBeforeDiscount
+      ? roundTo2Decimals(subtotalBeforeDiscount)
       : computedSubtotal;
     
-    // Delivery cost constant (must match client-side)
-    const DELIVERY_COST = 50;
-    const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+    // Delivery zone fees (in ILS)
+    const DELIVERY_ZONE_FEES = {
+      telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+      jerusalem: 85,      // Jerusalem
+      south: 85,          // South
+      westbank: 85       // West Bank
+    };
+    
+    // Calculate delivery cost server-side based on zone and weight
+    // Each 30kg increment adds another delivery fee (max 2 fees total)
+    // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+    const calculateDeliveryCost = (zone, weight, subtotal) => {
+      if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      // Free delivery thresholds
+      const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+      
+      // Check if order qualifies for free delivery
+      if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+        return 0;
+      }
+      
+      const baseFee = DELIVERY_ZONE_FEES[zone];
+      // Calculate number of 30kg increments (each increment adds another base fee)
+      // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+      // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+      // Cap at maximum 2 fees
+      const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
+      
+      return baseFee * increments;
+    };
+    
+    // Get delivery zone and weight from metadata
+    const deliveryZone = metadata?.deliveryZone || null;
+    const totalWeight = metadata?.totalWeight || 0;
+    
+    // Calculate delivery cost based on zone and weight
+    // Pass subtotal (after discount) to check for free delivery threshold
+    const deliveryCost = roundTo2Decimals(deliveryType === "delivery" && deliveryZone
+      ? calculateDeliveryCost(deliveryZone, totalWeight, orderSubtotal)
+      : 0);
     
     // Use provided discount if available (already validated server-side)
     const orderDiscount = discount && typeof discount === "object" && discount.amount > 0 ? discount : null;
-    const orderSubtotal = typeof subtotal === "number" && subtotal >= 0 ? subtotal : computedSubtotal;
+    const orderSubtotal = roundTo2Decimals(typeof subtotal === "number" && subtotal >= 0 ? subtotal : computedSubtotal);
     
     // Calculate base amount (subtotal + delivery) before tax
-    const baseAmount = orderSubtotal + deliveryCost;
+    const baseAmount = roundTo2Decimals(orderSubtotal + deliveryCost);
     
     // Calculate tax on the total (subtotal + delivery) (18% VAT)
     // SECURITY: Recalculate tax server-side based on total amount
     const VAT_RATE = 0.18;
-    const orderTax = baseAmount * VAT_RATE;
+    const orderTax = roundTo2Decimals(baseAmount * VAT_RATE);
     
     // Calculate expected total on server (trusted calculation)
     // Total = (Subtotal + Delivery) + Tax on Total
-    const expectedTotal = Math.max(0, baseAmount + orderTax);
+    const expectedTotal = roundTo2Decimals(Math.max(0, baseAmount + orderTax));
     
     // Validate client-provided total if provided (with small tolerance for floating point)
     const clientTotal = typeof total === "number" ? total : null;

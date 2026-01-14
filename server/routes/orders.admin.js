@@ -7,6 +7,11 @@ import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../uti
 const db = admin.firestore();
 const router = Router();
 
+// Helper function to round to 2 decimal places (fix floating point precision)
+const roundTo2Decimals = (num) => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
+
 // Public endpoint to get best sellers (limited data)
 router.get("/best-sellers", async (_req, res) => {
   try {
@@ -85,12 +90,28 @@ router.post("/create", async (req, res) => {
       if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
         return res.status(400).json({ error: "Complete delivery address is required for delivery orders" });
       }
+      // SECURITY: Validate that a delivery zone is provided for delivery orders
+      // This prevents orders from being created with 0 delivery cost
+      const deliveryZone = metadata?.deliveryZone || null;
+      const DELIVERY_ZONE_FEES = {
+        telaviv_north: 65,
+        jerusalem: 85,
+        south: 85,
+        westbank: 85
+      };
+      if (!deliveryZone || !DELIVERY_ZONE_FEES[deliveryZone]) {
+        return res.status(400).json({ 
+          error: "Valid delivery zone is required for delivery orders",
+          details: "Please select a delivery zone (telaviv_north, jerusalem, south, or westbank)"
+        });
+      }
     }
     // For pickup orders, shippingAddress can be null - no validation needed
 
     // SECURITY: Validate product prices against database (never trust client-provided prices)
     const productIds = items.map(item => item.productId || item.id).filter(id => id);
     const productPriceMap = new Map();
+    const productWeightMap = new Map();
     
     if (productIds.length > 0) {
       try {
@@ -112,6 +133,12 @@ router.post("/create", async (req, res) => {
             if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
               productPriceMap.set(productId, actualPrice);
             }
+            
+            // Store product weight for delivery cost calculation
+            const productWeight = typeof productData.weight === "number" && productData.weight >= 0 
+              ? Number(productData.weight) 
+              : 0;
+            productWeightMap.set(productId, productWeight);
           }
         });
       } catch (error) {
@@ -130,9 +157,12 @@ router.post("/create", async (req, res) => {
     for (const item of items) {
       const productId = item.productId || item.id || "";
       const clientPrice = Number(item.price) || 0;
-      const quantity = Number(item.quantity) || 1;
+      // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+      const quantityNum = Number(item.quantity);
+      // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+      const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
       
-      // Validate quantity
+      // Validate quantity (0 is invalid and should be rejected, not defaulted)
       if (quantity <= 0 || !isFinite(quantity)) {
         return res.status(400).json({ 
           error: "Invalid item quantity", 
@@ -158,6 +188,11 @@ router.post("/create", async (req, res) => {
           console.warn(`Price mismatch for product ${productId}: client sent ${clientPrice}, database has ${databasePrice}. Using database price.`);
         }
         
+        // Get weight from item or database
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : (productWeightMap.has(productId) ? productWeightMap.get(productId) : 0);
+        
         // Always use database price (source of truth)
         normalizedItems.push({
           productId,
@@ -165,6 +200,7 @@ router.post("/create", async (req, res) => {
           image: item.image || "",
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
+          weight: itemWeight, // Store weight for order record
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -182,12 +218,18 @@ router.post("/create", async (req, res) => {
           });
         }
         
+        // Get weight from item if provided
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : 0;
+        
         normalizedItems.push({
           productId: "",
           name: item.name || `Item ${normalizedItems.length + 1}`,
           image: item.image || "",
           quantity,
           price: clientPrice,
+          weight: itemWeight, // Store weight for order record
         });
       }
     }
@@ -198,14 +240,14 @@ router.post("/create", async (req, res) => {
     }
 
     // Calculate subtotal from items using validated database prices
-    const computedSubtotal = normalizedItems.reduce(
+    const computedSubtotal = roundTo2Decimals(normalizedItems.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
-    );
+    ));
     
     // Use provided subtotal if it matches computed, otherwise use computed (more secure)
     const orderSubtotalBeforeDiscount = (typeof subtotal === "number" && Math.abs(subtotal - computedSubtotal) < 0.01) 
-      ? subtotal 
+      ? roundTo2Decimals(subtotal)
       : computedSubtotal;
     
     // SECURITY: Check discount eligibility server-side (never trust client)
@@ -215,28 +257,86 @@ router.post("/create", async (req, res) => {
     
     if (discountCheck.eligible) {
       discountPercentage = discountCheck.discountPercentage;
-      discountAmount = calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage);
+      discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
       console.log(`Applied ${discountPercentage}% new user discount for user ${uid}: ${discountAmount} ILS off`);
     }
     
     // Apply discount to subtotal (discount applies to product prices, before tax and delivery)
-    const orderSubtotal = Math.max(0, orderSubtotalBeforeDiscount - discountAmount);
+    const orderSubtotal = roundTo2Decimals(Math.max(0, orderSubtotalBeforeDiscount - discountAmount));
     
-    // Delivery cost constant (must match client-side)
-    const DELIVERY_COST = 50;
-    const deliveryCost = deliveryType === "delivery" ? DELIVERY_COST : 0;
+    // Delivery zone fees (in ILS)
+    const DELIVERY_ZONE_FEES = {
+      telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+      jerusalem: 85,      // Jerusalem
+      south: 85,          // South
+      westbank: 85       // West Bank
+    };
+    
+    // Calculate delivery cost server-side based on zone and weight
+    // Each 30kg increment adds another delivery fee (max 2 fees total)
+    // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+    const calculateDeliveryCost = (zone, weight, subtotal) => {
+      if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      // Free delivery thresholds
+      const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+      
+      // Check if order qualifies for free delivery
+      if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+        return 0;
+      }
+      
+      const baseFee = DELIVERY_ZONE_FEES[zone];
+      // Calculate number of 30kg increments (each increment adds another base fee)
+      // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+      // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+      // Cap at maximum 2 fees
+      const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
+      
+      return baseFee * increments;
+    };
+    
+    // Calculate total weight from items
+    // First try to get weight from items, then from product database, then from metadata
+    let totalWeight = normalizedItems.reduce((sum, item) => {
+      const productId = item.productId;
+      let itemWeight = 0;
+      
+      // Try to get weight from item first (if provided in request)
+      if (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0) {
+        itemWeight = item.weight;
+      } 
+      // Otherwise, get weight from product database
+      else if (productId && productWeightMap.has(productId)) {
+        itemWeight = productWeightMap.get(productId);
+      }
+      
+      // Multiply by quantity to get total weight for this item
+      return sum + (itemWeight * item.quantity);
+    }, 0);
+    
+    // Get delivery zone from metadata
+    const deliveryZone = metadata?.deliveryZone || null;
+    // Use weight from metadata if provided and totalWeight is 0 (fallback)
+    const itemTotalWeight = totalWeight > 0 ? totalWeight : (metadata?.totalWeight || 0);
+    
+    // Calculate delivery cost based on zone and weight
+    // Pass subtotal (after discount) to check for free delivery threshold
+    const deliveryCost = roundTo2Decimals(deliveryType === "delivery" && deliveryZone
+      ? calculateDeliveryCost(deliveryZone, itemTotalWeight, orderSubtotal)
+      : 0);
     
     // Calculate base amount (subtotal + delivery) before tax
-    const baseAmount = orderSubtotal + deliveryCost;
+    const baseAmount = roundTo2Decimals(orderSubtotal + deliveryCost);
     
     // Calculate tax on the total (subtotal + delivery) (18% VAT)
     // SECURITY: Recalculate tax server-side based on total amount
     const VAT_RATE = 0.18;
-    const orderTax = baseAmount * VAT_RATE;
+    const orderTax = roundTo2Decimals(baseAmount * VAT_RATE);
     
     // Calculate expected total on server (trusted calculation)
     // Total = (Subtotal + Delivery) + Tax on Total
-    const expectedTotal = Math.max(0, baseAmount + orderTax);
+    const expectedTotal = roundTo2Decimals(Math.max(0, baseAmount + orderTax));
     
     // SECURITY: Ensure total is a valid finite number
     if (!isFinite(expectedTotal)) {
@@ -464,9 +564,31 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       return res.status(400).json({ error: "Order items are required" });
     }
 
+    // SECURITY: Validate delivery zone for delivery orders (same validation as regular user endpoint)
+    const deliveryType = metadata?.deliveryType || "delivery";
+    if (deliveryType === "delivery") {
+      // SECURITY: Validate that a delivery zone is provided for delivery orders
+      // This prevents orders from being created with 0 delivery cost
+      const deliveryZone = metadata?.deliveryZone || null;
+      const DELIVERY_ZONE_FEES = {
+        telaviv_north: 65,
+        jerusalem: 85,
+        south: 85,
+        westbank: 85
+      };
+      if (!deliveryZone || !DELIVERY_ZONE_FEES[deliveryZone]) {
+        return res.status(400).json({ 
+          error: "Valid delivery zone is required for delivery orders",
+          details: "Please select a delivery zone (telaviv_north, jerusalem, south, or westbank)"
+        });
+      }
+    }
+    // For pickup orders, delivery zone is not required
+
     // SECURITY: Validate product prices against database (never trust client-provided prices)
     const productIds = items.map(item => item.productId).filter(id => id);
     const productPriceMap = new Map();
+    const productWeightMap = new Map();
     
     if (productIds.length > 0) {
       try {
@@ -488,6 +610,12 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
             if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
               productPriceMap.set(productId, actualPrice);
             }
+            
+            // Store product weight for order record
+            const productWeight = typeof productData.weight === "number" && productData.weight >= 0 
+              ? Number(productData.weight) 
+              : 0;
+            productWeightMap.set(productId, productWeight);
           }
         });
       } catch (error) {
@@ -506,9 +634,12 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     for (const item of items) {
       const productId = item.productId || "";
       const clientPrice = Number(item.price) || 0;
-      const quantity = Number(item.quantity) || 1;
+      // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+      const quantityNum = Number(item.quantity);
+      // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+      const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
       
-      // Validate quantity
+      // Validate quantity (0 is invalid and should be rejected, not defaulted)
       if (quantity <= 0 || !isFinite(quantity)) {
         return res.status(400).json({ 
           error: "Invalid item quantity", 
@@ -534,12 +665,18 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           console.warn(`[ADMIN ORDER] Price mismatch for product ${productId}: client sent ${clientPrice}, database has ${databasePrice}. Using database price.`);
         }
         
+        // Get weight from item or database
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : (productWeightMap.has(productId) ? productWeightMap.get(productId) : 0);
+        
         // Always use database price (source of truth)
         normalizedItems.push({
           productId,
           name: item.name || `Item ${normalizedItems.length + 1}`,
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
+          weight: itemWeight, // Store weight for order record
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -557,11 +694,17 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           });
         }
         
+        // Get weight from item if provided
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : 0;
+        
         normalizedItems.push({
           productId: "",
           name: item.name || `Item ${normalizedItems.length + 1}`,
           quantity,
           price: clientPrice,
+          weight: itemWeight, // Store weight for order record
         });
       }
     }

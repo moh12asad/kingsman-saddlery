@@ -1,8 +1,15 @@
 import { Router } from "express";
+import admin from "firebase-admin";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
 import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../utils/discount.js";
 
+const db = admin.firestore();
 const router = Router();
+
+// Helper function to round to 2 decimal places (fix floating point precision)
+const roundTo2Decimals = (num) => {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+};
 
 // Calculate order total with discount (before payment)
 // This endpoint allows the client to get the correct total including any applicable discounts
@@ -25,46 +32,162 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     }
 
     const {
-      subtotal,
+      items = [],
+      subtotal, // Optional: for backward compatibility, but will be recalculated
       tax = 0,
       deliveryCost = 0,
+      deliveryZone = null,
+      totalWeight = 0,
     } = req.body;
 
     console.log(`[PAYMENT] [${requestId}] Input Data:`, {
+      itemsCount: items.length,
       subtotal: subtotal,
       tax: tax,
       deliveryCost: deliveryCost,
+      deliveryZone: deliveryZone,
+      totalWeight: totalWeight,
       currency: "ILS"
     });
 
-    // SECURITY: Validate all inputs are numbers and non-negative
-    if (typeof subtotal !== "number" || subtotal < 0 || !isFinite(subtotal)) {
-      console.error(`[PAYMENT] [${requestId}] Validation failed: Invalid subtotal (${subtotal})`);
+    // SECURITY: Recalculate subtotal from database prices (never trust client)
+    let computedSubtotal = 0;
+    
+    if (Array.isArray(items) && items.length > 0) {
+      // Fetch product prices from database
+      const productIds = items.map(item => item.productId || item.id).filter(id => id);
+      const productPriceMap = new Map();
+      
+      if (productIds.length > 0) {
+        try {
+          // Fetch all products in parallel for efficiency
+          const productPromises = productIds.map(productId => 
+            db.collection("products").doc(productId).get()
+          );
+          const productDocs = await Promise.all(productPromises);
+          
+          productDocs.forEach((doc, index) => {
+            if (doc.exists) {
+              const productData = doc.data();
+              const productId = productIds[index];
+              // Use sale price if on sale, otherwise use regular price
+              const actualPrice = productData.sale && productData.sale_proce > 0 
+                ? Number(productData.sale_proce) 
+                : Number(productData.price);
+              
+              if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
+                productPriceMap.set(productId, actualPrice);
+              }
+            }
+          });
+        } catch (error) {
+          console.error(`[PAYMENT] [${requestId}] Error fetching product prices:`, error);
+          return res.status(500).json({ 
+            error: "Failed to validate product prices",
+            details: "Could not fetch product information from database" 
+          });
+        }
+      }
+      
+      // Calculate subtotal from database prices
+      for (const item of items) {
+        const productId = item.productId || item.id || "";
+        // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+        const quantityNum = Number(item.quantity);
+        // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+        const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
+        
+        // Validate quantity (0 is invalid and should be rejected, not defaulted)
+        if (quantity <= 0 || !isFinite(quantity)) {
+          return res.status(400).json({ 
+            error: "Invalid item quantity", 
+            details: `Item ${item.name || productId} has invalid quantity: ${item.quantity}` 
+          });
+        }
+        
+        // SECURITY: Use database price if available, otherwise use client price (for custom items)
+        let itemPrice = 0;
+        if (productId && productPriceMap.has(productId)) {
+          itemPrice = productPriceMap.get(productId);
+        } else if (productId) {
+          // Product ID provided but not found in database
+          return res.status(400).json({ 
+            error: "Invalid product", 
+            details: `Product ${productId} not found in database` 
+          });
+        } else {
+          // No productId - allow custom items, but validate price
+          const clientPrice = Number(item.price) || 0;
+          if (clientPrice < 0 || !isFinite(clientPrice)) {
+            return res.status(400).json({ 
+              error: "Invalid item price", 
+              details: `Item ${item.name || "Unknown"} has invalid price: ${item.price}` 
+            });
+          }
+          itemPrice = clientPrice;
+        }
+        
+        computedSubtotal += itemPrice * quantity;
+      }
+      
+      // Round subtotal to 2 decimal places
+      computedSubtotal = roundTo2Decimals(computedSubtotal);
+    } else if (typeof subtotal === "number" && subtotal >= 0 && isFinite(subtotal)) {
+      // Fallback: use provided subtotal if items not provided (backward compatibility)
+      computedSubtotal = roundTo2Decimals(subtotal);
+      console.warn(`[PAYMENT] [${requestId}] [SECURITY] No items provided, using client subtotal. This is less secure.`);
+    } else {
       return res.status(400).json({ 
-        error: "Invalid subtotal: must be a non-negative number" 
+        error: "Invalid input: must provide either items array or valid subtotal" 
       });
     }
+    
+    // Use computed subtotal (from database prices)
+    const validatedSubtotal = computedSubtotal;
 
     const validatedTax = typeof tax === "number" && tax >= 0 && isFinite(tax) ? tax : 0;
-    // Delivery cost from client (base cost, server will add tax)
-    // SECURITY: Validate delivery cost - should be 0 (pickup) or DELIVERY_COST (delivery)
-    const DELIVERY_COST = 50;
-    let validatedDeliveryCost = 0;
-    if (typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)) {
-      // Allow 0 (pickup) or DELIVERY_COST (delivery) with small tolerance for floating point
-      if (deliveryCost === 0 || Math.abs(deliveryCost - DELIVERY_COST) < 0.01) {
-        validatedDeliveryCost = deliveryCost === 0 ? 0 : DELIVERY_COST;
-      } else {
-        // Log security warning for unexpected delivery cost
-        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Unexpected delivery cost: ${deliveryCost}, expected 0 or ${DELIVERY_COST}`);
-        validatedDeliveryCost = DELIVERY_COST; // Default to delivery cost for security
+    
+    // Delivery zone fees (in ILS)
+    const DELIVERY_ZONE_FEES = {
+      telaviv_north: 65,  // North (Tel Aviv to North of Israel)
+      jerusalem: 85,      // Jerusalem
+      south: 85,          // South
+      westbank: 85       // West Bank
+    };
+    
+    // Calculate delivery cost server-side based on zone and weight
+    // Each 30kg increment adds another delivery fee (max 2 fees total)
+    // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+    const calculateDeliveryCost = (zone, weight, subtotal) => {
+      if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      // Free delivery thresholds
+      const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+      
+      // Check if order qualifies for free delivery
+      if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+        return 0;
       }
-    }
+      
+      const baseFee = DELIVERY_ZONE_FEES[zone];
+      // Calculate number of 30kg increments (each increment adds another base fee)
+      // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+      // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+      // Cap at maximum 2 fees
+      const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
+      
+      return baseFee * increments;
+    };
+    
+    // Note: Delivery cost will be calculated after discount is applied (to check free delivery threshold)
+    const validatedWeight = typeof totalWeight === "number" && totalWeight >= 0 && isFinite(totalWeight) ? totalWeight : 0;
 
     console.log(`[PAYMENT] [${requestId}] Validated Inputs:`, {
       subtotal: subtotal,
       tax: validatedTax,
-      deliveryCost: validatedDeliveryCost
+      deliveryCost: deliveryCost, // Client-provided, will be validated later
+      deliveryZone: deliveryZone,
+      totalWeight: validatedWeight
     });
 
     // SECURITY: Check discount eligibility server-side (never trust client)
@@ -82,13 +205,15 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     let discountAmount = 0;
     
     if (discountCheck.eligible && discountCheck.discountPercentage > 0) {
-      discountAmount = calculateDiscountAmount(subtotal, discountCheck.discountPercentage);
+      discountAmount = calculateDiscountAmount(validatedSubtotal, discountCheck.discountPercentage);
       // Ensure discount doesn't exceed subtotal (safety check)
-      discountAmount = Math.min(discountAmount, subtotal);
+      discountAmount = Math.min(discountAmount, validatedSubtotal);
+      // Round discount to 2 decimal places
+      discountAmount = roundTo2Decimals(discountAmount);
       console.log(`[PAYMENT] [${requestId}] Discount Applied:`, {
         percentage: discountCheck.discountPercentage,
         amount: discountAmount,
-        subtotalBeforeDiscount: subtotal
+        subtotalBeforeDiscount: validatedSubtotal
       });
     } else {
       console.log(`[PAYMENT] [${requestId}] No discount applied: ${discountCheck.reason || "Not eligible"}`);
@@ -96,24 +221,49 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
 
     // Calculate final total: (Subtotal - Discount) + Delivery, then apply tax on total
     // SECURITY: Ensure values are never negative
-    const finalSubtotal = Math.max(0, subtotal - discountAmount);
+    const finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));
+    
+    // SECURITY: Recalculate delivery cost with final subtotal (after discount) for free delivery check
+    const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
+      ? calculateDeliveryCost(deliveryZone, validatedWeight, finalSubtotal)
+      : 0;
+    
+    // SECURITY: Validate client-provided delivery cost matches server calculation
+    let validatedDeliveryCost = 0;
+    if (typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)) {
+      const difference = Math.abs(deliveryCost - expectedDeliveryCost);
+      if (deliveryCost === 0 && expectedDeliveryCost === 0) {
+        validatedDeliveryCost = 0; // Pickup
+      } else if (difference < 0.01) {
+        validatedDeliveryCost = expectedDeliveryCost; // Matches expected
+      } else {
+        // Log security warning for unexpected delivery cost
+        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Delivery cost mismatch: client=${deliveryCost}, expected=${expectedDeliveryCost}, zone=${deliveryZone}, weight=${validatedWeight}, subtotal=${finalSubtotal}`);
+        validatedDeliveryCost = expectedDeliveryCost; // Use server-calculated value for security
+      }
+    } else {
+      validatedDeliveryCost = expectedDeliveryCost;
+    }
+    
+    // Round delivery cost to 2 decimal places
+    const roundedDeliveryCost = roundTo2Decimals(validatedDeliveryCost);
     
     // Calculate base amount (subtotal + delivery) before tax
-    const baseAmount = finalSubtotal + validatedDeliveryCost;
+    const baseAmount = roundTo2Decimals(finalSubtotal + roundedDeliveryCost);
     
     // Calculate tax on the total (subtotal + delivery) (18% VAT)
     // SECURITY: Recalculate tax server-side based on total amount
     const VAT_RATE = 0.18;
-    const calculatedTax = baseAmount * VAT_RATE;
+    const calculatedTax = roundTo2Decimals(baseAmount * VAT_RATE);
     
     // Final total = base amount + tax
-    const finalTotal = Math.max(0, baseAmount + calculatedTax);
+    const finalTotal = roundTo2Decimals(Math.max(0, baseAmount + calculatedTax));
 
     console.log(`[PAYMENT] [${requestId}] Calculation Breakdown:`, {
-      subtotalBeforeDiscount: subtotal,
+      subtotalBeforeDiscount: validatedSubtotal,
       discountAmount: discountAmount,
       subtotalAfterDiscount: finalSubtotal,
-      deliveryCost: validatedDeliveryCost,
+      deliveryCost: roundedDeliveryCost,
       baseAmount: baseAmount,
       tax: calculatedTax,
       total: finalTotal
@@ -129,14 +279,14 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
 
     const responseData = {
       subtotal: finalSubtotal,
-      subtotalBeforeDiscount: subtotal,
+      subtotalBeforeDiscount: validatedSubtotal,
       discount: discountCheck.eligible && discountAmount > 0 ? {
         amount: discountAmount,
         percentage: discountCheck.discountPercentage,
         type: "new_user"
       } : null,
       tax: calculatedTax,
-      deliveryCost: validatedDeliveryCost,
+      deliveryCost: roundedDeliveryCost,
       total: finalTotal
     };
 
@@ -180,9 +330,12 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       amount,
       currency = "ILS",
       paymentMethod,
-      subtotal, // Optional: for validation
+      items = [],
+      subtotal, // Optional: for validation (will be recalculated from items if provided)
       tax = 0,
       deliveryCost = 0,
+      deliveryZone = null,
+      totalWeight = 0,
       // Add other payment-related fields as needed
       // NOTE: Card details are NOT logged for security
     } = req.body;
@@ -208,8 +361,101 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
 
     console.log(`[PAYMENT] [${requestId}] Validating payment amount against server calculation...`);
 
-    // SECURITY: If subtotal is provided, validate the payment amount matches server calculation
-    if (typeof subtotal === "number" && subtotal >= 0) {
+    // SECURITY: Recalculate subtotal from database prices (never trust client-provided subtotal)
+    // This prevents discount manipulation attacks where client sends lower subtotal
+    let validatedSubtotal = 0;
+    
+    if (Array.isArray(items) && items.length > 0) {
+      // Fetch product prices from database
+      const productIds = items.map(item => item.productId || item.id).filter(id => id);
+      const productPriceMap = new Map();
+      
+      if (productIds.length > 0) {
+        try {
+          // Fetch all products in parallel for efficiency
+          const productPromises = productIds.map(productId => 
+            db.collection("products").doc(productId).get()
+          );
+          const productDocs = await Promise.all(productPromises);
+          
+          productDocs.forEach((doc, index) => {
+            if (doc.exists) {
+              const productData = doc.data();
+              const productId = productIds[index];
+              // Use sale price if on sale, otherwise use regular price
+              const actualPrice = productData.sale && productData.sale_proce > 0 
+                ? Number(productData.sale_proce) 
+                : Number(productData.price);
+              
+              if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
+                productPriceMap.set(productId, actualPrice);
+              }
+            }
+          });
+        } catch (error) {
+          console.error(`[PAYMENT] [${requestId}] Error fetching product prices:`, error);
+          return res.status(500).json({ 
+            error: "Failed to validate product prices",
+            details: "Could not fetch product information from database" 
+          });
+        }
+      }
+      
+      // Calculate subtotal from database prices
+      for (const item of items) {
+        const productId = item.productId || item.id || "";
+        // SECURITY: Convert to number first, then validate (don't default 0 to 1)
+        const quantityNum = Number(item.quantity);
+        // Only default to 1 if quantity is missing/undefined/null/NaN, but preserve 0 for validation
+        const quantity = (item.quantity == null || isNaN(quantityNum)) ? 1 : quantityNum;
+        
+        // Validate quantity (0 is invalid and should be rejected, not defaulted)
+        if (quantity <= 0 || !isFinite(quantity)) {
+          return res.status(400).json({ 
+            error: "Invalid item quantity", 
+            details: `Item ${item.name || productId} has invalid quantity: ${item.quantity}` 
+          });
+        }
+        
+        // SECURITY: Use database price if available, otherwise use client price (for custom items)
+        let itemPrice = 0;
+        if (productId && productPriceMap.has(productId)) {
+          itemPrice = productPriceMap.get(productId);
+        } else if (productId) {
+          // Product ID provided but not found in database
+          return res.status(400).json({ 
+            error: "Invalid product", 
+            details: `Product ${productId} not found in database` 
+          });
+        } else {
+          // No productId - allow custom items, but validate price
+          const clientPrice = Number(item.price) || 0;
+          if (clientPrice < 0 || !isFinite(clientPrice)) {
+            return res.status(400).json({ 
+              error: "Invalid item price", 
+              details: `Item ${item.name || "Unknown"} has invalid price: ${item.price}` 
+            });
+          }
+          itemPrice = clientPrice;
+        }
+        
+        validatedSubtotal += itemPrice * quantity;
+      }
+      
+      // Round subtotal to 2 decimal places
+      validatedSubtotal = roundTo2Decimals(validatedSubtotal);
+    } else if (typeof subtotal === "number" && subtotal >= 0 && isFinite(subtotal)) {
+      // Fallback: use provided subtotal if items not provided (backward compatibility)
+      validatedSubtotal = roundTo2Decimals(subtotal);
+      console.warn(`[PAYMENT] [${requestId}] [SECURITY] No items provided, using client subtotal. This is less secure.`);
+    } else {
+      return res.status(400).json({ 
+        error: "Invalid input: must provide either items array or valid subtotal" 
+      });
+    }
+
+    // SECURITY: Recalculate expected total with discount using server-calculated subtotal
+    if (validatedSubtotal > 0) {
       console.log(`[PAYMENT] [${requestId}] Recalculating expected total with discount...`);
       
       const discountCheck = await checkNewUserDiscountEligibility(uid);
@@ -223,27 +469,73 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       let discountAmount = 0;
       
       if (discountCheck.eligible) {
-        discountAmount = calculateDiscountAmount(subtotal, discountCheck.discountPercentage);
-        console.log(`[PAYMENT] [${requestId}] Discount calculated: ${discountAmount} ILS (${discountCheck.discountPercentage}% of ${subtotal})`);
+        // SECURITY: Use server-calculated subtotal, not client-provided subtotal
+        discountAmount = calculateDiscountAmount(validatedSubtotal, discountCheck.discountPercentage);
+        // Round discount to 2 decimal places
+        discountAmount = roundTo2Decimals(discountAmount);
+        console.log(`[PAYMENT] [${requestId}] Discount calculated: ${discountAmount} ILS (${discountCheck.discountPercentage}% of ${validatedSubtotal})`);
       }
 
-      const finalSubtotal = Math.max(0, subtotal - discountAmount);
+      const finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));
       
       // SECURITY: Validate delivery cost (should be 0 or 50, but allow any non-negative value)
-      const validatedDeliveryCost = typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost) ? deliveryCost : 0;
+      // Delivery zone fees (in ILS)
+      const DELIVERY_ZONE_FEES = {
+        telaviv_north: 65,  // Tel Aviv until the north of Israel
+        jerusalem: 85,      // Jerusalem
+        south: 85,          // South Region
+        westbank: 85       // West Bank
+      };
+      
+      // Calculate delivery cost server-side based on zone and weight
+      // Each 30kg increment adds another delivery fee (max 2 fees total)
+      // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+      const calculateDeliveryCost = (zone, weight, subtotal) => {
+        if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+        
+        // Free delivery thresholds
+        const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+        
+        // Check if order qualifies for free delivery
+        if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+          return 0;
+        }
+        
+        const baseFee = DELIVERY_ZONE_FEES[zone];
+        // Calculate number of 30kg increments (each increment adds another base fee)
+        // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+        // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+        // Cap at maximum 2 fees
+        const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
+        
+        return baseFee * increments;
+      };
+      
+      const deliveryZone = req.body.deliveryZone || null;
+      const totalWeight = typeof req.body.totalWeight === "number" && req.body.totalWeight >= 0 && isFinite(req.body.totalWeight)
+        ? req.body.totalWeight
+        : 0;
+      
+      const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
+        ? calculateDeliveryCost(deliveryZone, totalWeight, finalSubtotal)
+        : 0;
+      
+      // SECURITY: Validate client-provided delivery cost matches server calculation
+      // Always use server-calculated value for security (never trust client-provided delivery cost)
+      const validatedDeliveryCost = roundTo2Decimals(expectedDeliveryCost);
       
       // Calculate base amount (subtotal + delivery) before tax
-      const baseAmount = finalSubtotal + validatedDeliveryCost;
+      const baseAmount = roundTo2Decimals(finalSubtotal + validatedDeliveryCost);
       
       // SECURITY: Recalculate tax server-side (never trust client-provided tax)
       const VAT_RATE = 0.18;
-      const calculatedTax = baseAmount * VAT_RATE;
+      const calculatedTax = roundTo2Decimals(baseAmount * VAT_RATE);
       
       // Calculate expected total
-      const expectedTotal = Math.max(0, baseAmount + calculatedTax);
+      const expectedTotal = roundTo2Decimals(Math.max(0, baseAmount + calculatedTax));
       
       console.log(`[PAYMENT] [${requestId}] Expected Total Calculation:`, {
-        subtotalBeforeDiscount: subtotal,
+        subtotalBeforeDiscount: validatedSubtotal,
         discountAmount: discountAmount,
         subtotalAfterDiscount: finalSubtotal,
         deliveryCost: validatedDeliveryCost,
