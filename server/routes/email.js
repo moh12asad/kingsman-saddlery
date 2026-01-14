@@ -164,14 +164,18 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
     };
     
     // Calculate delivery cost server-side based on zone and weight
+    // Each 30kg increment adds another delivery fee (max 2 fees total)
     const calculateDeliveryCost = (zone, weight) => {
       if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
       
       const baseFee = DELIVERY_ZONE_FEES[zone];
-      // If weight > 20kg, add another delivery fee
-      const additionalFee = weight > 20 ? baseFee : 0;
+      // Calculate number of 30kg increments (each increment adds another base fee)
+      // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+      // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+      // Cap at maximum 2 fees
+      const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
       
-      return baseFee + additionalFee;
+      return baseFee * increments;
     };
     
     // Get delivery zone and weight from metadata

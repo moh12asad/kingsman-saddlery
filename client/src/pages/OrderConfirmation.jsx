@@ -65,14 +65,18 @@ export default function OrderConfirmation() {
   };
   
   // Calculate delivery cost based on zone and weight
+  // Each 30kg increment adds another delivery fee (max 2 fees total)
   const calculateDeliveryCost = (zone, weight) => {
     if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
     
     const baseFee = DELIVERY_ZONE_FEES[zone];
-    // If weight > 20kg, add another delivery fee
-    const additionalFee = weight > 20 ? baseFee : 0;
+    // Calculate number of 30kg increments (each increment adds another base fee)
+    // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+    // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+    // Cap at maximum 2 fees
+    const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
     
-    return baseFee + additionalFee;
+    return baseFee * increments;
   };
 
   // SECURITY: Use ref to track the current request's deliveryType to prevent race conditions
@@ -173,12 +177,25 @@ export default function OrderConfirmation() {
   // Calculate total with discount when cart items, delivery type, or delivery zone changes
   useEffect(() => {
     if (!user || !isLoaded || cartItems.length === 0) return;
-    // Reset calculated values when zone changes so they recalculate
-    if (deliveryZone) {
+    
+    // Skip calculation if delivery is selected but no zone has been chosen yet
+    // This prevents incorrect totals (with 0 delivery cost) from being calculated and displayed
+    if (deliveryType === "delivery" && !deliveryZone) {
+      // Reset calculated values so UI shows that calculation is pending
       setCalculatedDeliveryCost(null);
       setCalculatedTax(null);
       setCalculatedTotal(null);
+      setCalculatingDiscount(false); // Ensure loading state is cleared
+      setDiscountCalculationError(null); // Clear any previous errors
+      return;
     }
+    
+    // For pickup or delivery with zone selected, proceed with calculation
+    // Reset calculated values to trigger recalculation when dependencies change
+    setCalculatedDeliveryCost(null);
+    setCalculatedTax(null);
+    setCalculatedTotal(null);
+    setDiscountCalculationError(null); // Clear any previous errors
     calculateTotalWithDiscount();
   }, [user, cartItems, deliveryType, deliveryZone, isLoaded, calculateTotalWithDiscount]);
 
@@ -277,21 +294,25 @@ export default function OrderConfirmation() {
   const total = isDiscountCalculationReady ? calculatedTotal : null; // null means not ready for payment
   const subtotalAfterDiscount = discountInfo ? (subtotal - discountInfo.amount) : subtotal;
   
-  // Calculate delivery cost based on current zone and weight for display
-  // This ensures the displayed value always matches the selected zone
-  const deliveryCost = deliveryType === "delivery" && deliveryZone
+  // Calculate delivery cost based on current zone and weight for display (fallback only)
+  // SECURITY: Always prefer server-calculated delivery cost when available to ensure
+  // the displayed value matches what the user will actually be charged
+  // The server uses authoritative weight data from the database, which may differ
+  // from client-side calculations if cart items lack weight information
+  const clientDeliveryCost = deliveryType === "delivery" && deliveryZone
     ? calculateDeliveryCost(deliveryZone, totalWeight)
     : 0;
   
-  // For the total calculation, we use the server-calculated value when available
-  // This ensures security and accuracy, but for display we use the current zone calculation
+  // Use server-calculated delivery cost when available (authoritative source)
+  // This ensures display matches the actual charge, especially when server uses
+  // database weights that differ from client-side weight calculations
+  const deliveryCost = (isDiscountCalculationReady && calculatedDeliveryCost !== null && calculatedDeliveryCost !== undefined)
+    ? calculatedDeliveryCost
+    : clientDeliveryCost;
   
   // Calculate base amount (subtotal + delivery) before tax
-  // Use server-calculated delivery cost for tax calculation to ensure accuracy
-  const serverDeliveryCost = (isDiscountCalculationReady && calculatedDeliveryCost !== null && calculatedDeliveryCost !== undefined)
-    ? calculatedDeliveryCost
-    : deliveryCost;
-  const baseAmount = subtotalAfterDiscount + serverDeliveryCost;
+  // Use the delivery cost (which already prefers server-calculated value when available)
+  const baseAmount = subtotalAfterDiscount + deliveryCost;
   
   // Calculate tax on the total (subtotal + delivery) (18% VAT)
   // SECURITY: Always use tax from server calculation when available to ensure it matches the total
@@ -550,6 +571,7 @@ export default function OrderConfirmation() {
           image: item.image || "",
           quantity: item.quantity,
           price: item.price,
+          weight: item.weight || 0, // Include weight for server-side calculation
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
         total: total, // This is guaranteed to be the correct total with discount
@@ -768,6 +790,12 @@ export default function OrderConfirmation() {
                     </div>
                   ))}
                 </div>
+                <div className="margin-top-md padding-top-md border-top">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted">{t("orderConfirmation.totalWeight")}</span>
+                    <span className="text-sm font-semibold">{getTotalWeight().toFixed(2)} kg</span>
+                  </div>
+                </div>
                 <div className="margin-top-md padding-top-md border-top space-y-2">
                   {calculatingDiscount ? (
                     <div className="flex justify-center items-center padding-y-md">
@@ -780,7 +808,11 @@ export default function OrderConfirmation() {
                     </div>
                   ) : total === null ? (
                     <div className="flex justify-center items-center padding-y-md">
-                      <p className="text-sm text-muted">{t("orderConfirmation.loadingOrderTotal")}</p>
+                      <p className="text-sm text-muted">
+                        {deliveryType === "delivery" && !deliveryZone
+                          ? t("orderConfirmation.selectDeliveryZoneToCalculate")
+                          : t("orderConfirmation.loadingOrderTotal")}
+                      </p>
                     </div>
                   ) : (
                     <>
@@ -810,21 +842,26 @@ export default function OrderConfirmation() {
                             <span className="text-sm text-muted">{t("orderConfirmation.delivery")}:</span>
                             <span className="text-sm font-semibold">{formatPrice(deliveryCost)}</span>
                           </div>
-                          {totalWeight > 20 && (
-                            <div className="flex justify-between items-center text-xs text-muted">
-                              <span>{t("orderConfirmation.additionalDeliveryFee")} ({t("orderConfirmation.weightOver20kg")}):</span>
-                              <span>{formatPrice(DELIVERY_ZONE_FEES[deliveryZone])}</span>
-                            </div>
-                          )}
+                          {(() => {
+                            // Calculate actual additional fee: total delivery cost minus base fee
+                            // For example: 45kg with 65 ILS base = 130 ILS total, additional = 65 ILS (2 increments)
+                            // Use the displayed deliveryCost (which is server-calculated when available)
+                            const baseFee = DELIVERY_ZONE_FEES[deliveryZone];
+                            const additionalFee = deliveryCost - baseFee;
+                            // Only show additional fee if it's greater than 0 (weight > 30kg)
+                            if (additionalFee <= 0) return null;
+                            return (
+                              <div className="flex justify-between items-center text-xs text-muted">
+                                <span>{t("orderConfirmation.additionalDeliveryFee")} ({t("orderConfirmation.weightOver20kg")}):</span>
+                                <span>{formatPrice(additionalFee)}</span>
+                              </div>
+                            );
+                          })()}
                         </>
                       )}
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted">{t("orderConfirmation.tax")} (18%):</span>
                         <span className="text-sm font-semibold">{formatPrice(tax)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted">{t("orderConfirmation.totalWeight")}</span>
-                        <span className="text-sm font-semibold">{getTotalWeight().toFixed(2)} kg</span>
                       </div>
                       <div className="flex justify-between items-center padding-top-sm border-top">
                         <span className="font-semibold">{t("orderConfirmation.total")}</span>

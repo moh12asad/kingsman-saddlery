@@ -85,12 +85,28 @@ router.post("/create", async (req, res) => {
       if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
         return res.status(400).json({ error: "Complete delivery address is required for delivery orders" });
       }
+      // SECURITY: Validate that a delivery zone is provided for delivery orders
+      // This prevents orders from being created with 0 delivery cost
+      const deliveryZone = metadata?.deliveryZone || null;
+      const DELIVERY_ZONE_FEES = {
+        telaviv_north: 65,
+        jerusalem: 85,
+        south: 85,
+        westbank: 85
+      };
+      if (!deliveryZone || !DELIVERY_ZONE_FEES[deliveryZone]) {
+        return res.status(400).json({ 
+          error: "Valid delivery zone is required for delivery orders",
+          details: "Please select a delivery zone (telaviv_north, jerusalem, south, or westbank)"
+        });
+      }
     }
     // For pickup orders, shippingAddress can be null - no validation needed
 
     // SECURITY: Validate product prices against database (never trust client-provided prices)
     const productIds = items.map(item => item.productId || item.id).filter(id => id);
     const productPriceMap = new Map();
+    const productWeightMap = new Map();
     
     if (productIds.length > 0) {
       try {
@@ -112,6 +128,12 @@ router.post("/create", async (req, res) => {
             if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
               productPriceMap.set(productId, actualPrice);
             }
+            
+            // Store product weight for delivery cost calculation
+            const productWeight = typeof productData.weight === "number" && productData.weight >= 0 
+              ? Number(productData.weight) 
+              : 0;
+            productWeightMap.set(productId, productWeight);
           }
         });
       } catch (error) {
@@ -158,6 +180,11 @@ router.post("/create", async (req, res) => {
           console.warn(`Price mismatch for product ${productId}: client sent ${clientPrice}, database has ${databasePrice}. Using database price.`);
         }
         
+        // Get weight from item or database
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : (productWeightMap.has(productId) ? productWeightMap.get(productId) : 0);
+        
         // Always use database price (source of truth)
         normalizedItems.push({
           productId,
@@ -165,6 +192,7 @@ router.post("/create", async (req, res) => {
           image: item.image || "",
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
+          weight: itemWeight, // Store weight for order record
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -182,12 +210,18 @@ router.post("/create", async (req, res) => {
           });
         }
         
+        // Get weight from item if provided
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : 0;
+        
         normalizedItems.push({
           productId: "",
           name: item.name || `Item ${normalizedItems.length + 1}`,
           image: item.image || "",
           quantity,
           price: clientPrice,
+          weight: itemWeight, // Store weight for order record
         });
       }
     }
@@ -231,31 +265,43 @@ router.post("/create", async (req, res) => {
     };
     
     // Calculate delivery cost server-side based on zone and weight
+    // Each 30kg increment adds another delivery fee (max 2 fees total)
     const calculateDeliveryCost = (zone, weight) => {
       if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
       
       const baseFee = DELIVERY_ZONE_FEES[zone];
-      // If weight > 20kg, add another delivery fee
-      const additionalFee = weight > 20 ? baseFee : 0;
+      // Calculate number of 30kg increments (each increment adds another base fee)
+      // 0-30kg: 1 fee, 31-60kg: 2 fees, 61kg+: 2 fees (capped at 2)
+      // Use Math.max(1, Math.ceil(weight / 30)) to correctly handle 0kg case and boundaries
+      // Cap at maximum 2 fees
+      const increments = Math.min(2, Math.max(1, Math.ceil(weight / 30)));
       
-      return baseFee + additionalFee;
+      return baseFee * increments;
     };
     
     // Calculate total weight from items
-    const totalWeight = normalizedItems.reduce((sum, item) => {
-      // Try to get weight from product data if available
+    // First try to get weight from items, then from product database, then from metadata
+    let totalWeight = normalizedItems.reduce((sum, item) => {
       const productId = item.productId;
-      if (productId && productPriceMap.has(productId)) {
-        // We don't have weight in productPriceMap, so we'll need to calculate from items
-        // For now, assume weight is 0 if not provided in items
-        return sum;
+      let itemWeight = 0;
+      
+      // Try to get weight from item first (if provided in request)
+      if (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0) {
+        itemWeight = item.weight;
+      } 
+      // Otherwise, get weight from product database
+      else if (productId && productWeightMap.has(productId)) {
+        itemWeight = productWeightMap.get(productId);
       }
-      return sum;
+      
+      // Multiply by quantity to get total weight for this item
+      return sum + (itemWeight * item.quantity);
     }, 0);
     
     // Get delivery zone from metadata
     const deliveryZone = metadata?.deliveryZone || null;
-    const itemTotalWeight = metadata?.totalWeight || 0; // Use weight from metadata if provided
+    // Use weight from metadata if provided and totalWeight is 0 (fallback)
+    const itemTotalWeight = totalWeight > 0 ? totalWeight : (metadata?.totalWeight || 0);
     
     // Calculate delivery cost based on zone and weight
     const deliveryCost = deliveryType === "delivery" && deliveryZone
@@ -503,6 +549,7 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     // SECURITY: Validate product prices against database (never trust client-provided prices)
     const productIds = items.map(item => item.productId).filter(id => id);
     const productPriceMap = new Map();
+    const productWeightMap = new Map();
     
     if (productIds.length > 0) {
       try {
@@ -524,6 +571,12 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
             if (typeof actualPrice === "number" && actualPrice >= 0 && isFinite(actualPrice)) {
               productPriceMap.set(productId, actualPrice);
             }
+            
+            // Store product weight for order record
+            const productWeight = typeof productData.weight === "number" && productData.weight >= 0 
+              ? Number(productData.weight) 
+              : 0;
+            productWeightMap.set(productId, productWeight);
           }
         });
       } catch (error) {
@@ -570,12 +623,18 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           console.warn(`[ADMIN ORDER] Price mismatch for product ${productId}: client sent ${clientPrice}, database has ${databasePrice}. Using database price.`);
         }
         
+        // Get weight from item or database
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : (productWeightMap.has(productId) ? productWeightMap.get(productId) : 0);
+        
         // Always use database price (source of truth)
         normalizedItems.push({
           productId,
           name: item.name || `Item ${normalizedItems.length + 1}`,
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
+          weight: itemWeight, // Store weight for order record
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -593,11 +652,17 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           });
         }
         
+        // Get weight from item if provided
+        const itemWeight = (item.weight !== undefined && typeof item.weight === "number" && item.weight >= 0)
+          ? item.weight
+          : 0;
+        
         normalizedItems.push({
           productId: "",
           name: item.name || `Item ${normalizedItems.length + 1}`,
           quantity,
           price: clientPrice,
+          weight: itemWeight, // Store weight for order record
         });
       }
     }
