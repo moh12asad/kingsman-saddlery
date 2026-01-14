@@ -67,6 +67,9 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       price = 0,
       category = "",
       subCategory = "",
+      categories = [],
+      subCategories = [],
+      categoryPairs = [],
       image = "",
       available = true,
       sale = false,
@@ -87,12 +90,38 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       shippingInfo,
     } = req.body;
 
+    // Handle new format: categoryPairs (array of {category, subCategory} objects)
+    // Also support backward compatibility with old formats
+    let finalCategoryPairs = [];
+    
+    if (Array.isArray(categoryPairs) && categoryPairs.length > 0) {
+      // New format: categoryPairs
+      finalCategoryPairs = categoryPairs.filter(pair => pair && pair.category);
+    } else if (Array.isArray(categories) && categories.length > 0) {
+      // Old format: separate arrays - convert to pairs
+      finalCategoryPairs = categories.map((cat, idx) => ({
+        category: cat,
+        subCategory: subCategories[idx] || ""
+      }));
+    } else if (category) {
+      // Oldest format: single category/subCategory - convert to pair
+      finalCategoryPairs = [{
+        category: category,
+        subCategory: subCategory || ""
+      }];
+    }
+
+    // Extract categories and subCategories arrays for backward compatibility
+    const finalCategories = finalCategoryPairs.map(p => p.category).filter(Boolean);
+    const finalSubCategories = finalCategoryPairs.map(p => p.subCategory).filter(Boolean);
+
     // Prepare product data with translation support
     const productData = prepareProductForStorage({
       name: name || "",
       price,
-      category,
-      subCategory: subCategory || "",
+      categoryPairs: finalCategoryPairs,
+      categories: finalCategories,
+      subCategories: finalSubCategories,
       image,
       description: description || "",
       available,
@@ -134,6 +163,101 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
     
     const existingData = existingDoc.data();
     const updates = { ...req.body };
+    
+    // Check if any category-related fields were provided in the request
+    const hasCategoryFields = 
+      updates.categoryPairs !== undefined ||
+      updates.categories !== undefined ||
+      updates.category !== undefined ||
+      updates.subCategories !== undefined ||
+      updates.subCategory !== undefined;
+    
+    // Only process category fields if they were explicitly provided in the request
+    // This prevents unintended data loss when updating other product fields
+    if (hasCategoryFields) {
+      // Handle categoryPairs: new format (array of {category, subCategory} objects)
+      if (updates.categoryPairs !== undefined && Array.isArray(updates.categoryPairs)) {
+        // New format: categoryPairs
+        updates.categoryPairs = updates.categoryPairs.filter(pair => pair && pair.category);
+        // Also update categories and subCategories arrays for backward compatibility
+        updates.categories = updates.categoryPairs.map(p => p.category).filter(Boolean);
+        updates.subCategories = updates.categoryPairs.map(p => p.subCategory).filter(Boolean);
+        
+        // BUG FIX: Explicitly clear old single-value fields to prevent fallback to stale data
+        // If categoryPairs is empty, clear all category-related fields
+        if (updates.categoryPairs.length === 0) {
+          updates.category = '';
+          updates.subCategory = '';
+          updates.categories = [];
+          updates.subCategories = [];
+        } else {
+          // Set first category/subCategory for backward compatibility, but clear if empty
+          updates.category = updates.categories[0] || '';
+          updates.subCategory = updates.subCategories[0] || '';
+        }
+      } else {
+        // Handle old formats for backward compatibility
+        let categoriesProvided = false;
+        let subCategoriesProvided = false;
+        
+        // Handle categories: support both old format (single string) and new format (array)
+        if (updates.categories !== undefined) {
+          // New format: array
+          updates.categories = Array.isArray(updates.categories) ? updates.categories : [];
+          categoriesProvided = true;
+        } else if (updates.category !== undefined) {
+          // Old format: single string - convert to array for consistency
+          updates.categories = updates.category ? [updates.category] : [];
+          categoriesProvided = true;
+        } else {
+          // No category field provided - preserve existing data
+          updates.categories = existingData.categories || [];
+        }
+        
+        // Handle subCategories: support both old format (single string) and new format (array)
+        if (updates.subCategories !== undefined) {
+          // New format: array
+          updates.subCategories = Array.isArray(updates.subCategories) ? updates.subCategories : [];
+          subCategoriesProvided = true;
+        } else if (updates.subCategory !== undefined) {
+          // Old format: single string - convert to array for consistency
+          updates.subCategories = updates.subCategory ? [updates.subCategory] : [];
+          subCategoriesProvided = true;
+        } else {
+          // No subCategory field provided - preserve existing data
+          updates.subCategories = existingData.subCategories || [];
+        }
+        
+        // Convert old format to categoryPairs
+        // If categories were explicitly provided (even if empty), use them
+        // Otherwise, preserve existing categoryPairs
+        if (categoriesProvided || subCategoriesProvided) {
+          if (updates.categories && updates.categories.length > 0) {
+            updates.categoryPairs = updates.categories.map((cat, idx) => ({
+              category: cat,
+              subCategory: (updates.subCategories && updates.subCategories[idx]) || ""
+            }));
+          } else {
+            // Category fields were explicitly provided but are empty - clear all
+            updates.categoryPairs = [];
+            updates.category = '';
+            updates.subCategory = '';
+            updates.categories = [];
+            updates.subCategories = [];
+          }
+        } else {
+          // No category fields were provided - preserve existing categoryPairs
+          // Don't include category fields in updates to preserve existing data
+          delete updates.categories;
+          delete updates.subCategories;
+          delete updates.categoryPairs;
+          delete updates.category;
+          delete updates.subCategory;
+        }
+      }
+    }
+    // If no category fields were provided, don't include them in updates
+    // This preserves existing category data when updating other product fields
     
     // Handle translation merges for translatable fields
     const translatableFields = [

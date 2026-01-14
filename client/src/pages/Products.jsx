@@ -147,9 +147,22 @@ export default function Products() {
       if (matchedCategory) {
         const categoryNameEn = getTranslated(matchedCategory.name, 'en');
         filtered = filtered.filter(p => {
-          // Products have category stored as string (usually English)
-          const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
-          return pCategory === categoryNameEn;
+          // Support new format: categoryPairs (array of {category, subCategory} objects)
+          if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+            return p.categoryPairs.some(pair => {
+              const pairCategory = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, 'en');
+              return pairCategory === categoryNameEn;
+            });
+          }
+          // Support old format (single category string) and old format (categories array)
+          if (Array.isArray(p.categories)) {
+            return p.categories.includes(categoryNameEn);
+          } else if (p.category) {
+            // Backward compatibility: single category string
+            const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+            return pCategory === categoryNameEn;
+          }
+          return false;
         });
         
         // Filter by sub-category if selected
@@ -168,8 +181,23 @@ export default function Products() {
           if (matchedSubCategory) {
             const subCategoryNameEn = getTranslated(matchedSubCategory.name, 'en');
             filtered = filtered.filter(p => {
-              const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
-              return pSubCategory === subCategoryNameEn;
+              // Support new format: categoryPairs
+              if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+                return p.categoryPairs.some(pair => {
+                  const pairCategory = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, 'en');
+                  const pairSubCategory = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, 'en');
+                  return pairCategory === categoryNameEn && pairSubCategory === subCategoryNameEn;
+                });
+              }
+              // Support old format (single subCategory string) and old format (subCategories array)
+              if (Array.isArray(p.subCategories)) {
+                return p.subCategories.includes(subCategoryNameEn);
+              } else if (p.subCategory) {
+                // Backward compatibility: single subCategory string
+                const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
+                return pSubCategory === subCategoryNameEn;
+              }
+              return false;
             });
           }
         }
@@ -177,15 +205,47 @@ export default function Products() {
         // Fallback: if category not found in categories list, use direct comparison
         const currentLang = i18n.language || 'en';
         filtered = filtered.filter(p => {
-          const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, currentLang);
-          return pCategory === decodedCategory;
+          // Support new format: categoryPairs
+          if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+            return p.categoryPairs.some(pair => {
+              const pCategory = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, currentLang);
+              return pCategory === decodedCategory;
+            });
+          }
+          // Support old format (single category string) and old format (categories array)
+          if (Array.isArray(p.categories)) {
+            return p.categories.some(cat => {
+              const pCategory = typeof cat === 'string' ? cat : getTranslated(cat, currentLang);
+              return pCategory === decodedCategory;
+            });
+          } else if (p.category) {
+            const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, currentLang);
+            return pCategory === decodedCategory;
+          }
+          return false;
         });
         
         if (subcategoryParam) {
           const decodedSubCategory = decodeURIComponent(subcategoryParam);
           filtered = filtered.filter(p => {
-            const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, currentLang);
-            return pSubCategory === decodedSubCategory;
+            // Support new format: categoryPairs
+            if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+              return p.categoryPairs.some(pair => {
+                const pSubCategory = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, currentLang);
+                return pSubCategory === decodedSubCategory;
+              });
+            }
+            // Support old format (single subCategory string) and old format (subCategories array)
+            if (Array.isArray(p.subCategories)) {
+              return p.subCategories.some(subCat => {
+                const pSubCategory = typeof subCat === 'string' ? subCat : getTranslated(subCat, currentLang);
+                return pSubCategory === decodedSubCategory;
+              });
+            } else if (p.subCategory) {
+              const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, currentLang);
+              return pSubCategory === decodedSubCategory;
+            }
+            return false;
           });
         }
       }
@@ -197,12 +257,45 @@ export default function Products() {
       const currentLang = i18n.language || 'en';
       filtered = filtered.filter(p => {
         const name = getTranslated(p.name, currentLang).toLowerCase();
-        const category = getTranslated(p.category, currentLang).toLowerCase();
-        const subCategory = getTranslated(p.subCategory, currentLang).toLowerCase();
         const brand = (p.brand || '').toLowerCase();
+        
+        // Check categories (support new format: categoryPairs, and old formats)
+        let categoryMatches = false;
+        if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+          categoryMatches = p.categoryPairs.some(pair => {
+            const catStr = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, currentLang);
+            return catStr.toLowerCase().includes(query);
+          });
+        } else if (Array.isArray(p.categories)) {
+          categoryMatches = p.categories.some(cat => {
+            const catStr = typeof cat === 'string' ? cat : getTranslated(cat, currentLang);
+            return catStr.toLowerCase().includes(query);
+          });
+        } else if (p.category) {
+          const category = getTranslated(p.category, currentLang).toLowerCase();
+          categoryMatches = category.includes(query);
+        }
+        
+        // Check subCategories (support new format: categoryPairs, and old formats)
+        let subCategoryMatches = false;
+        if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+          subCategoryMatches = p.categoryPairs.some(pair => {
+            const subCatStr = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, currentLang);
+            return subCatStr && subCatStr.toLowerCase().includes(query);
+          });
+        } else if (Array.isArray(p.subCategories)) {
+          subCategoryMatches = p.subCategories.some(subCat => {
+            const subCatStr = typeof subCat === 'string' ? subCat : getTranslated(subCat, currentLang);
+            return subCatStr.toLowerCase().includes(query);
+          });
+        } else if (p.subCategory) {
+          const subCategory = getTranslated(p.subCategory, currentLang).toLowerCase();
+          subCategoryMatches = subCategory.includes(query);
+        }
+        
         return name.includes(query) ||
-          category.includes(query) ||
-          subCategory.includes(query) ||
+          categoryMatches ||
+          subCategoryMatches ||
           brand.includes(query);
       });
     }
@@ -214,14 +307,96 @@ export default function Products() {
     const productsByCategory = {};
     const currentLang = i18n.language || 'en';
     
+    // Track which products we've already shown (to prevent duplicates when viewing all products)
+    const shownProductIds = new Set();
+    
+    // BEST PRACTICE: 
+    // - If viewing a SPECIFIC category (categoryParam exists): Show products ONLY in that category section
+    // - If viewing ALL products (no categoryParam): Show each product only once (in its first category)
+    // - If searching: Show each product only once
+    const isViewingSpecificCategory = !!categoryParam;
+    const isSearching = !!searchQuery.trim();
+    const shouldDeduplicate = !isViewingSpecificCategory || isSearching;
+    
+    // If viewing a specific category, determine the category name to use for grouping
+    let targetCategoryName = null;
+    if (isViewingSpecificCategory) {
+      const decodedCategory = decodeURIComponent(categoryParam);
+      // Find the category object to get the English name
+      const matchedCategory = categories.find(cat => {
+        const catNameEn = getTranslated(cat.name, 'en');
+        const catNameAr = getTranslated(cat.name, 'ar');
+        const catNameHe = getTranslated(cat.name, 'he');
+        return catNameEn === decodedCategory || 
+               catNameAr === decodedCategory || 
+               catNameHe === decodedCategory;
+      });
+      if (matchedCategory) {
+        targetCategoryName = getTranslated(matchedCategory.name, currentLang);
+      } else {
+        targetCategoryName = decodedCategory;
+      }
+    }
+    
     filtered
       .filter(p => !p.sale)
       .forEach(product => {
-        const category = getTranslated(product.category, currentLang) || "Uncategorized";
-        if (!productsByCategory[category]) {
-          productsByCategory[category] = [];
+        // If we're deduplicating and this product was already shown, skip it
+        if (shouldDeduplicate && shownProductIds.has(product.id)) {
+          return;
         }
-        productsByCategory[category].push(product);
+        
+        // Support new format: categoryPairs (array of {category, subCategory} objects)
+        // Also support old formats for backward compatibility
+        let productCategories = [];
+        if (Array.isArray(product.categoryPairs) && product.categoryPairs.length > 0) {
+          productCategories = product.categoryPairs.map(pair => 
+            typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, currentLang)
+          );
+        } else if (Array.isArray(product.categories)) {
+          productCategories = product.categories.map(cat => 
+            typeof cat === 'string' ? cat : getTranslated(cat, currentLang)
+          );
+        } else if (product.category) {
+          productCategories = [getTranslated(product.category, currentLang)];
+        }
+        
+        // If no categories, add to "Uncategorized"
+        if (productCategories.length === 0) {
+          productCategories = ["Uncategorized"];
+        }
+        
+        // Determine which categories to add this product to
+        let categoriesToAdd = [];
+        if (isViewingSpecificCategory && targetCategoryName) {
+          // When viewing a specific category, only add to that category (even if product belongs to multiple)
+          if (productCategories.includes(targetCategoryName)) {
+            categoriesToAdd = [targetCategoryName];
+          } else {
+            // Product doesn't belong to the target category, skip it
+            return;
+          }
+        } else if (shouldDeduplicate) {
+          // When viewing all products or searching, only add to first category to avoid duplicates
+          categoriesToAdd = [productCategories[0]];
+        } else {
+          // Add to all categories (shouldn't happen with current logic, but keep for safety)
+          categoriesToAdd = productCategories;
+        }
+        
+        categoriesToAdd.forEach(category => {
+          const categoryName = category || "Uncategorized";
+          if (!productsByCategory[categoryName]) {
+            productsByCategory[categoryName] = [];
+          }
+          
+          productsByCategory[categoryName].push(product);
+        });
+        
+        // Mark this product as shown
+        if (shouldDeduplicate) {
+          shownProductIds.add(product.id);
+        }
       });
 
     return { 

@@ -44,9 +44,16 @@ export default function AdminProducts(){
   const filteredRows = useMemo(() => {
     let filtered = allRows;
 
-    // Filter by category
+    // Filter by category (support both old format and new format with arrays)
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(p => getEnglishName(p.category) === selectedCategory);
+      filtered = filtered.filter(p => {
+        // Support new format: categories array
+        if (Array.isArray(p.categories)) {
+          return p.categories.some(cat => getEnglishName(cat) === selectedCategory);
+        }
+        // Backward compatibility: single category string
+        return getEnglishName(p.category) === selectedCategory;
+      });
     }
 
     // Filter by search query
@@ -65,15 +72,35 @@ export default function AdminProducts(){
         };
         
         const nameText = getSearchableText(p.name);
-        const categoryText = getSearchableText(p.category);
-        const subCategoryText = getSearchableText(p.subCategory);
         const descriptionText = getSearchableText(p.description);
         const brandText = (p.brand || "").toLowerCase();
         const skuText = (p.sku || "").toLowerCase();
         
+        // Handle categories (support both old and new format)
+        let categoryMatches = false;
+        if (Array.isArray(p.categories)) {
+          categoryMatches = p.categories.some(cat => {
+            const catText = getSearchableText(cat);
+            return catText.includes(query);
+          });
+        } else {
+          categoryMatches = getSearchableText(p.category).includes(query);
+        }
+        
+        // Handle subCategories (support both old and new format)
+        let subCategoryMatches = false;
+        if (Array.isArray(p.subCategories)) {
+          subCategoryMatches = p.subCategories.some(subCat => {
+            const subCatText = getSearchableText(subCat);
+            return subCatText.includes(query);
+          });
+        } else {
+          subCategoryMatches = getSearchableText(p.subCategory).includes(query);
+        }
+        
         return nameText.includes(query) ||
-               categoryText.includes(query) ||
-               subCategoryText.includes(query) ||
+               categoryMatches ||
+               subCategoryMatches ||
                descriptionText.includes(query) ||
                brandText.includes(query) ||
                skuText.includes(query);
@@ -84,12 +111,24 @@ export default function AdminProducts(){
   }, [allRows, selectedCategory, searchQuery]);
 
   // Get unique categories from products for filter dropdown
+  // Support both old format (single category) and new format (categories array)
   const productCategories = useMemo(() => {
-    const cats = new Set(
-      allRows
-        .map(p => getEnglishName(p.category))
-        .filter(Boolean)
-    );
+    const cats = new Set();
+    
+    allRows.forEach(p => {
+      // Support new format: categories array
+      if (Array.isArray(p.categories)) {
+        p.categories.forEach(cat => {
+          const catName = getEnglishName(cat);
+          if (catName) cats.add(catName);
+        });
+      } else if (p.category) {
+        // Backward compatibility: single category string
+        const catName = getEnglishName(p.category);
+        if (catName) cats.add(catName);
+      }
+    });
+    
     return Array.from(cats).sort();
   }, [allRows]);
 
@@ -223,8 +262,32 @@ export default function AdminProducts(){
                     </td>
                     <td className="font-medium">{typeof p.name === 'string' ? p.name : (p.name?.en || p.name?.ar || p.name?.he || "-")}</td>
                     <td>₪{(p.price || 0).toFixed(2)}</td>
-                    <td>{typeof p.category === 'string' ? p.category : (p.category?.en || p.category?.ar || p.category?.he || "-")}</td>
-                    <td>{typeof p.subCategory === 'string' ? p.subCategory : (p.subCategory?.en || p.subCategory?.ar || p.subCategory?.he || "-")}</td>
+                    <td>
+                      {Array.isArray(p.categories) && p.categories.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {p.categories.map((cat, idx) => (
+                            <span key={idx} className="badge badge-sm">
+                              {typeof cat === 'string' ? cat : (cat?.en || cat?.ar || cat?.he || "-")}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        typeof p.category === 'string' ? p.category : (p.category?.en || p.category?.ar || p.category?.he || "-")
+                      )}
+                    </td>
+                    <td>
+                      {Array.isArray(p.subCategories) && p.subCategories.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {p.subCategories.map((subCat, idx) => (
+                            <span key={idx} className="badge badge-sm">
+                              {typeof subCat === 'string' ? subCat : (subCat?.en || subCat?.ar || subCat?.he || "-")}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        typeof p.subCategory === 'string' ? p.subCategory : (p.subCategory?.en || p.subCategory?.ar || p.subCategory?.he || "-")
+                      )}
+                    </td>
                     <td className="max-w-xs">
                       <p className="text-sm text-gray-600 truncate" title={typeof p.description === 'string' ? p.description : (p.description?.en || p.description?.ar || p.description?.he || "")}>
                         {typeof p.description === 'string' ? p.description : (p.description?.en || p.description?.ar || p.description?.he || "-")}
