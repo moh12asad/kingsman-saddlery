@@ -67,6 +67,8 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       price = 0,
       category = "",
       subCategory = "",
+      categories = [],
+      subCategories = [],
       image = "",
       available = true,
       sale = false,
@@ -87,12 +89,31 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       shippingInfo,
     } = req.body;
 
+    // Handle backward compatibility: if category/subCategory are strings, convert to arrays
+    // Also support new format with categories/subCategories arrays
+    let finalCategories = [];
+    let finalSubCategories = [];
+    
+    if (Array.isArray(categories) && categories.length > 0) {
+      finalCategories = categories;
+    } else if (category) {
+      // Backward compatibility: single category string
+      finalCategories = [category];
+    }
+    
+    if (Array.isArray(subCategories) && subCategories.length > 0) {
+      finalSubCategories = subCategories;
+    } else if (subCategory) {
+      // Backward compatibility: single subCategory string
+      finalSubCategories = [subCategory];
+    }
+
     // Prepare product data with translation support
     const productData = prepareProductForStorage({
       name: name || "",
       price,
-      category,
-      subCategory: subCategory || "",
+      categories: finalCategories,
+      subCategories: finalSubCategories,
       image,
       description: description || "",
       available,
@@ -134,6 +155,24 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
     
     const existingData = existingDoc.data();
     const updates = { ...req.body };
+    
+    // Handle categories: support both old format (single string) and new format (array)
+    if (updates.categories !== undefined) {
+      // New format: array
+      updates.categories = Array.isArray(updates.categories) ? updates.categories : [];
+    } else if (updates.category !== undefined) {
+      // Old format: single string - convert to array for consistency
+      updates.categories = updates.category ? [updates.category] : [];
+    }
+    
+    // Handle subCategories: support both old format (single string) and new format (array)
+    if (updates.subCategories !== undefined) {
+      // New format: array
+      updates.subCategories = Array.isArray(updates.subCategories) ? updates.subCategories : [];
+    } else if (updates.subCategory !== undefined) {
+      // Old format: single string - convert to array for consistency
+      updates.subCategories = updates.subCategory ? [updates.subCategory] : [];
+    }
     
     // Handle translation merges for translatable fields
     const translatableFields = [

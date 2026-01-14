@@ -141,6 +141,35 @@ export function getTranslatedProduct(product, lang = DEFAULT_LANGUAGE) {
   translated.warranty = getTranslatedField(product.warranty, lang);
   translated.shippingInfo = getTranslatedField(product.shippingInfo, lang);
   
+  // Handle categories: support both old format (single string) and new format (array)
+  // For backward compatibility, check both category and categories
+  if (Array.isArray(product.categories)) {
+    translated.categories = product.categories;
+    // Also set category for backward compatibility (use first category)
+    translated.category = product.categories[0] || '';
+  } else if (product.category) {
+    // Old format: single category string
+    translated.category = product.category;
+    translated.categories = [product.category];
+  } else {
+    translated.category = '';
+    translated.categories = [];
+  }
+  
+  // Handle subCategories: support both old format (single string) and new format (array)
+  if (Array.isArray(product.subCategories)) {
+    translated.subCategories = product.subCategories;
+    // Also set subCategory for backward compatibility (use first subCategory)
+    translated.subCategory = product.subCategories[0] || '';
+  } else if (product.subCategory) {
+    // Old format: single subCategory string
+    translated.subCategory = product.subCategory;
+    translated.subCategories = [product.subCategory];
+  } else {
+    translated.subCategory = '';
+    translated.subCategories = [];
+  }
+  
   // Translate specifications object
   if (product.specifications && typeof product.specifications === 'object') {
     translated.specifications = {};

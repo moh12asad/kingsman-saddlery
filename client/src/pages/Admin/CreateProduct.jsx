@@ -15,8 +15,8 @@ export default function CreateProduct(){
   const [form, setForm] = useState({
     name: { en: "", ar: "", he: "" },
     price: 0,
-    category: "",
-    subCategory: "",
+    categories: [],
+    subCategories: [],
     image: "",
     description: { en: "", ar: "", he: "" },
     available: true,
@@ -58,20 +58,33 @@ export default function CreateProduct(){
 
   const canSubmit = useMemo(() => {
     const name = typeof form.name === 'string' ? form.name : (form.name?.en || "");
-    return name && form.price > 0 && form.category;
+    return name && form.price > 0 && form.categories.length > 0;
   }, [form]);
 
-  // Get selected category object and its sub-categories
-  const selectedCategoryObj = useMemo(() => {
-    return categories.find(cat => {
-      const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-      return catName === form.category;
-    });
-  }, [categories, form.category]);
-
+  // Get all sub-categories from selected categories
   const availableSubCategories = useMemo(() => {
-    return selectedCategoryObj?.subCategories || [];
-  }, [selectedCategoryObj]);
+    const allSubCategories = [];
+    const seen = new Set();
+    
+    form.categories.forEach(catName => {
+      const categoryObj = categories.find(cat => {
+        const catNameFromObj = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+        return catNameFromObj === catName;
+      });
+      
+      if (categoryObj?.subCategories) {
+        categoryObj.subCategories.forEach(sub => {
+          const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+          if (subName && !seen.has(subName)) {
+            seen.add(subName);
+            allSubCategories.push(sub);
+          }
+        });
+      }
+    });
+    
+    return allSubCategories;
+  }, [categories, form.categories]);
 
   async function uploadImage(file, key = "") {
     // Ensure user is authenticated
@@ -139,8 +152,8 @@ export default function CreateProduct(){
       const payload = {
         name: cleanTranslation(form.name),
         price: Number(form.price) || 0,
-        category: form.category,
-        subCategory: form.subCategory || "",
+        categories: Array.isArray(form.categories) ? form.categories : [],
+        subCategories: Array.isArray(form.subCategories) ? form.subCategories : [],
         image: form.image,
         description: cleanTranslation(form.description),
         available: form.available,
@@ -319,13 +332,18 @@ export default function CreateProduct(){
             />
           </div>
           <div>
+            <label className="form-label form-label-required">Categories</label>
             <select 
               className="select" 
-              value={form.category} 
-              onChange={e=>setForm({...form, category: e.target.value, subCategory: ""})}
+              multiple
+              size={Math.min(categories.length + 1, 8)}
+              value={form.categories}
+              onChange={e => {
+                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                setForm({...form, categories: selected, subCategories: []});
+              }}
               required
             >
-              <option value="">{t('admin.createProduct.selectCategory')}</option>
               {categories.map(cat => {
                 const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
                 return (
@@ -333,15 +351,27 @@ export default function CreateProduct(){
                 );
               })}
             </select>
+            <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories</small>
+            {form.categories.length > 0 && (
+              <div className="mt-2">
+                <span className="text-sm font-medium">Selected: </span>
+                <span className="text-sm">{form.categories.join(", ")}</span>
+              </div>
+            )}
           </div>
           {availableSubCategories.length > 0 && (
             <div>
+              <label className="form-label">Sub-Categories (optional)</label>
               <select 
                 className="select" 
-                value={form.subCategory} 
-                onChange={e=>setForm({...form, subCategory: e.target.value})}
+                multiple
+                size={Math.min(availableSubCategories.length + 1, 8)}
+                value={form.subCategories}
+                onChange={e => {
+                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                  setForm({...form, subCategories: selected});
+                }}
               >
-                <option value="">{t('admin.createProduct.selectSubCategory')}</option>
                 {availableSubCategories.map((sub, idx) => {
                   const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
                   return (
@@ -349,6 +379,13 @@ export default function CreateProduct(){
                   );
                 })}
               </select>
+              <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sub-categories</small>
+              {form.subCategories.length > 0 && (
+                <div className="mt-2">
+                  <span className="text-sm font-medium">Selected: </span>
+                  <span className="text-sm">{form.subCategories.join(", ")}</span>
+                </div>
+              )}
             </div>
           )}
           <div>

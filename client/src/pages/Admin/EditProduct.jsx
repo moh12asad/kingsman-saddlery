@@ -51,6 +51,22 @@ export default function EditProduct() {
           return { en: "", ar: "", he: "" };
         };
         
+        // Handle categories: support both old format (single string) and new format (array)
+        let categories = [];
+        if (Array.isArray(found.categories)) {
+          categories = found.categories;
+        } else if (found.category) {
+          categories = [found.category];
+        }
+        
+        // Handle subCategories: support both old format (single string) and new format (array)
+        let subCategories = [];
+        if (Array.isArray(found.subCategories)) {
+          subCategories = found.subCategories;
+        } else if (found.subCategory) {
+          subCategories = [found.subCategory];
+        }
+        
         const formattedProduct = {
           ...found,
           name: ensureTranslationObject(found.name),
@@ -60,6 +76,8 @@ export default function EditProduct() {
           warranty: ensureTranslationObject(found.warranty),
           shippingInfo: ensureTranslationObject(found.shippingInfo),
           weight: found.weight || 0,
+          categories: categories,
+          subCategories: subCategories,
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -240,8 +258,8 @@ export default function EditProduct() {
       const payload = {
         name: cleanTranslation(product.name),
         price: Number(product.price) || 0,
-        category: product.category || "",
-        subCategory: product.subCategory || "",
+        categories: Array.isArray(product.categories) ? product.categories : [],
+        subCategories: Array.isArray(product.subCategories) ? product.subCategories : [],
         image: product.image || "",
         description: cleanTranslation(product.description),
         available: product.available,
@@ -361,13 +379,17 @@ export default function EditProduct() {
 
           <div>
             <div className="form-group">
-              <label className="form-label">Category</label>
+              <label className="form-label form-label-required">Categories</label>
               <select
                 className="select"
-                value={typeof product.category === 'string' ? product.category : (product.category?.en || product.category?.ar || product.category?.he || "")}
-                onChange={e => setProduct({ ...product, category: e.target.value, subCategory: "" })}
+                multiple
+                size={Math.min(categories.length + 1, 8)}
+                value={Array.isArray(product.categories) ? product.categories : []}
+                onChange={e => {
+                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                  setProduct({ ...product, categories: selected, subCategories: [] });
+                }}
               >
-                <option value="">Select category...</option>
                 {categories.map(cat => {
                   const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
                   return (
@@ -375,28 +397,53 @@ export default function EditProduct() {
                   );
                 })}
               </select>
+              <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple categories</small>
+              {Array.isArray(product.categories) && product.categories.length > 0 && (
+                <div className="mt-2">
+                  <span className="text-sm font-medium">Selected: </span>
+                  <span className="text-sm">{product.categories.join(", ")}</span>
+                </div>
+              )}
             </div>
           </div>
 
           {(() => {
-            const productCategory = typeof product.category === 'string' ? product.category : (product.category?.en || product.category?.ar || product.category?.he || "");
-            const selectedCategoryObj = categories.find(cat => {
-              const catName = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
-              return catName === productCategory;
+            // Get all sub-categories from selected categories
+            const availableSubCategories = [];
+            const seen = new Set();
+            
+            (Array.isArray(product.categories) ? product.categories : []).forEach(catName => {
+              const categoryObj = categories.find(cat => {
+                const catNameFromObj = typeof cat.name === 'string' ? cat.name : (cat.name?.en || cat.name?.ar || cat.name?.he || "");
+                return catNameFromObj === catName;
+              });
+              
+              if (categoryObj?.subCategories) {
+                categoryObj.subCategories.forEach(sub => {
+                  const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
+                  if (subName && !seen.has(subName)) {
+                    seen.add(subName);
+                    availableSubCategories.push(sub);
+                  }
+                });
+              }
             });
-            const availableSubCategories = selectedCategoryObj?.subCategories || [];
             
             if (availableSubCategories.length > 0) {
               return (
                 <div>
                   <div className="form-group">
-                    <label className="form-label">Sub-Category</label>
+                    <label className="form-label">Sub-Categories (optional)</label>
                     <select
                       className="select"
-                      value={typeof product.subCategory === 'string' ? product.subCategory : (product.subCategory?.en || product.subCategory?.ar || product.subCategory?.he || "")}
-                      onChange={e => setProduct({ ...product, subCategory: e.target.value })}
+                      multiple
+                      size={Math.min(availableSubCategories.length + 1, 8)}
+                      value={Array.isArray(product.subCategories) ? product.subCategories : []}
+                      onChange={e => {
+                        const selected = Array.from(e.target.selectedOptions, option => option.value);
+                        setProduct({ ...product, subCategories: selected });
+                      }}
                     >
-                      <option value="">Select sub-category (optional)...</option>
                       {availableSubCategories.map((sub, idx) => {
                         const subName = typeof sub.name === 'string' ? sub.name : (sub.name?.en || sub.name?.ar || sub.name?.he || "");
                         return (
@@ -404,6 +451,13 @@ export default function EditProduct() {
                         );
                       })}
                     </select>
+                    <small className="text-muted">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sub-categories</small>
+                    {Array.isArray(product.subCategories) && product.subCategories.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-sm font-medium">Selected: </span>
+                        <span className="text-sm">{product.subCategories.join(", ")}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
