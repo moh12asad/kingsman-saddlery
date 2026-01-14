@@ -274,8 +274,17 @@ router.post("/create", async (req, res) => {
     
     // Calculate delivery cost server-side based on zone and weight
     // Each 30kg increment adds another delivery fee (max 2 fees total)
-    const calculateDeliveryCost = (zone, weight) => {
+    // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+    const calculateDeliveryCost = (zone, weight, subtotal) => {
       if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      // Free delivery thresholds
+      const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+      
+      // Check if order qualifies for free delivery
+      if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+        return 0;
+      }
       
       const baseFee = DELIVERY_ZONE_FEES[zone];
       // Calculate number of 30kg increments (each increment adds another base fee)
@@ -312,8 +321,9 @@ router.post("/create", async (req, res) => {
     const itemTotalWeight = totalWeight > 0 ? totalWeight : (metadata?.totalWeight || 0);
     
     // Calculate delivery cost based on zone and weight
+    // Pass subtotal (after discount) to check for free delivery threshold
     const deliveryCost = roundTo2Decimals(deliveryType === "delivery" && deliveryZone
-      ? calculateDeliveryCost(deliveryZone, itemTotalWeight)
+      ? calculateDeliveryCost(deliveryZone, itemTotalWeight, orderSubtotal)
       : 0);
     
     // Calculate base amount (subtotal + delivery) before tax

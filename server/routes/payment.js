@@ -157,8 +157,17 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     
     // Calculate delivery cost server-side based on zone and weight
     // Each 30kg increment adds another delivery fee (max 2 fees total)
-    const calculateDeliveryCost = (zone, weight) => {
+    // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+    const calculateDeliveryCost = (zone, weight, subtotal) => {
       if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+      
+      // Free delivery thresholds
+      const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+      
+      // Check if order qualifies for free delivery
+      if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+        return 0;
+      }
       
       const baseFee = DELIVERY_ZONE_FEES[zone];
       // Calculate number of 30kg increments (each increment adds another base fee)
@@ -170,31 +179,15 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
       return baseFee * increments;
     };
     
-    // SECURITY: Calculate expected delivery cost server-side
+    // Note: Delivery cost will be calculated after discount is applied (to check free delivery threshold)
     const validatedWeight = typeof totalWeight === "number" && totalWeight >= 0 && isFinite(totalWeight) ? totalWeight : 0;
-    const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
-      ? calculateDeliveryCost(deliveryZone, validatedWeight)
-      : 0;
-    
-    // SECURITY: Validate client-provided delivery cost matches server calculation
-    let validatedDeliveryCost = 0;
-    if (typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)) {
-      const difference = Math.abs(deliveryCost - expectedDeliveryCost);
-      if (deliveryCost === 0 && expectedDeliveryCost === 0) {
-        validatedDeliveryCost = 0; // Pickup
-      } else if (difference < 0.01) {
-        validatedDeliveryCost = expectedDeliveryCost; // Matches expected
-      } else {
-        // Log security warning for unexpected delivery cost
-        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Delivery cost mismatch: client=${deliveryCost}, expected=${expectedDeliveryCost}, zone=${deliveryZone}, weight=${validatedWeight}`);
-        validatedDeliveryCost = expectedDeliveryCost; // Use server-calculated value for security
-      }
-    }
 
     console.log(`[PAYMENT] [${requestId}] Validated Inputs:`, {
       subtotal: subtotal,
       tax: validatedTax,
-      deliveryCost: validatedDeliveryCost
+      deliveryCost: deliveryCost, // Client-provided, will be validated later
+      deliveryZone: deliveryZone,
+      totalWeight: validatedWeight
     });
 
     // SECURITY: Check discount eligibility server-side (never trust client)
@@ -229,6 +222,28 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     // Calculate final total: (Subtotal - Discount) + Delivery, then apply tax on total
     // SECURITY: Ensure values are never negative
     const finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));
+    
+    // SECURITY: Recalculate delivery cost with final subtotal (after discount) for free delivery check
+    const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
+      ? calculateDeliveryCost(deliveryZone, validatedWeight, finalSubtotal)
+      : 0;
+    
+    // SECURITY: Validate client-provided delivery cost matches server calculation
+    let validatedDeliveryCost = 0;
+    if (typeof deliveryCost === "number" && deliveryCost >= 0 && isFinite(deliveryCost)) {
+      const difference = Math.abs(deliveryCost - expectedDeliveryCost);
+      if (deliveryCost === 0 && expectedDeliveryCost === 0) {
+        validatedDeliveryCost = 0; // Pickup
+      } else if (difference < 0.01) {
+        validatedDeliveryCost = expectedDeliveryCost; // Matches expected
+      } else {
+        // Log security warning for unexpected delivery cost
+        console.warn(`[PAYMENT] [${requestId}] [SECURITY] Delivery cost mismatch: client=${deliveryCost}, expected=${expectedDeliveryCost}, zone=${deliveryZone}, weight=${validatedWeight}, subtotal=${finalSubtotal}`);
+        validatedDeliveryCost = expectedDeliveryCost; // Use server-calculated value for security
+      }
+    } else {
+      validatedDeliveryCost = expectedDeliveryCost;
+    }
     
     // Round delivery cost to 2 decimal places
     const roundedDeliveryCost = roundTo2Decimals(validatedDeliveryCost);
@@ -474,8 +489,17 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       
       // Calculate delivery cost server-side based on zone and weight
       // Each 30kg increment adds another delivery fee (max 2 fees total)
-      const calculateDeliveryCost = (zone, weight) => {
+      // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+      const calculateDeliveryCost = (zone, weight, subtotal) => {
         if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+        
+        // Free delivery thresholds
+        const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+        
+        // Check if order qualifies for free delivery
+        if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+          return 0;
+        }
         
         const baseFee = DELIVERY_ZONE_FEES[zone];
         // Calculate number of 30kg increments (each increment adds another base fee)
@@ -493,7 +517,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
         : 0;
       
       const expectedDeliveryCost = deliveryZone && DELIVERY_ZONE_FEES[deliveryZone]
-        ? calculateDeliveryCost(deliveryZone, totalWeight)
+        ? calculateDeliveryCost(deliveryZone, totalWeight, finalSubtotal)
         : 0;
       
       // SECURITY: Validate client-provided delivery cost matches server calculation

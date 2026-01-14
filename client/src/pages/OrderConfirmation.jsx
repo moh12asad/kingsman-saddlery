@@ -66,8 +66,17 @@ export default function OrderConfirmation() {
   
   // Calculate delivery cost based on zone and weight
   // Each 30kg increment adds another delivery fee (max 2 fees total)
-  const calculateDeliveryCost = (zone, weight) => {
+  // Free delivery: orders over 850 ILS (all zones except westbank), or over 1500 ILS (westbank)
+  const calculateDeliveryCost = (zone, weight, subtotal) => {
     if (!zone || !DELIVERY_ZONE_FEES[zone]) return 0;
+    
+    // Free delivery thresholds
+    const FREE_DELIVERY_THRESHOLD = zone === "westbank" ? 1500 : 850;
+    
+    // Check if order qualifies for free delivery
+    if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+      return 0;
+    }
     
     const baseFee = DELIVERY_ZONE_FEES[zone];
     // Calculate number of 30kg increments (each increment adds another base fee)
@@ -110,8 +119,10 @@ export default function OrderConfirmation() {
       const subtotal = getTotalPrice();
       const totalWeight = getTotalWeight();
       // Calculate delivery cost based on zone and weight
+      // Note: Use subtotal for initial calculation (before discount), server will recalculate with final subtotal after discount
+      // This is just an estimate for the request - server will use final subtotal for free delivery check
       const requestDeliveryCost = requestDeliveryType === "delivery" && requestDeliveryZone
-        ? calculateDeliveryCost(requestDeliveryZone, totalWeight)
+        ? calculateDeliveryCost(requestDeliveryZone, totalWeight, subtotal)
         : 0;
 
       // SECURITY: Send items array so server can recalculate subtotal from database prices
@@ -310,8 +321,9 @@ export default function OrderConfirmation() {
   // the displayed value matches what the user will actually be charged
   // The server uses authoritative weight data from the database, which may differ
   // from client-side calculations if cart items lack weight information
+  // Use subtotal after discount for free delivery check
   const clientDeliveryCost = deliveryType === "delivery" && deliveryZone
-    ? calculateDeliveryCost(deliveryZone, totalWeight)
+    ? calculateDeliveryCost(deliveryZone, totalWeight, subtotalAfterDiscount)
     : 0;
   
   // Use server-calculated delivery cost when available (authoritative source)
@@ -927,7 +939,7 @@ export default function OrderConfirmation() {
                       <span className="font-semibold">{t("orderConfirmation.delivery")}</span>
                       {deliveryZone && (
                         <span className="text-sm text-muted ml-2">
-                          ({formatPrice(calculateDeliveryCost(deliveryZone, getTotalWeight()))})
+                          ({formatPrice(calculateDeliveryCost(deliveryZone, getTotalWeight(), subtotalAfterDiscount))})
                         </span>
                       )}
                       <p className="text-xs text-muted mt-1">{t("orderConfirmation.deliveryDescription")}</p>
