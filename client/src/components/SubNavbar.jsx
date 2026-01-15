@@ -15,9 +15,20 @@ export default function SubNavbar() {
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [navbarHeight, setNavbarHeight] = useState(96); // Default 6rem
+  const [isMobile, setIsMobile] = useState(false);
   const itemRefs = useRef({});
   const hoverTimeoutRef = useRef(null);
   const navigate = useNavigate();
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Calculate navbar height dynamically
   useEffect(() => {
@@ -186,7 +197,34 @@ export default function SubNavbar() {
     };
   }, []);
 
-  const handleCategoryClick = (category) => {
+  // Close dropdown on mobile when clicking outside
+  useEffect(() => {
+    if (!isMobile || !hoveredCategory) return;
+
+    function handleClickOutside(event) {
+      // Check if click is outside the category item and dropdown
+      const clickedCategoryItem = event.target.closest('.subnavbar-item');
+      const clickedDropdown = event.target.closest('.subnavbar-dropdown');
+      
+      if (!clickedCategoryItem && !clickedDropdown) {
+        setHoveredCategory(null);
+      }
+    }
+
+    // Small delay to prevent immediate closure
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 10);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobile, hoveredCategory]);
+
+  const handleCategoryClick = (category, event) => {
     const categoryName = getTranslated(category.name, i18n.language || 'en');
     const categoryNameEn = getTranslated(category.name, 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
@@ -196,12 +234,69 @@ export default function SubNavbar() {
       return pCategory === categoryNameEn && p.available;
     });
     
-    if (hasSubCategories) {
-      // Navigate to subcategories page
-      navigate(`/subcategories/${encodeURIComponent(categoryName)}`);
-    } else if (hasProducts) {
-      // Navigate directly to products page with category filter
-      navigate(`/products?category=${encodeURIComponent(categoryName)}`);
+    const categoryKey = category.id || categoryName;
+    const subCategories = category.subCategories || [];
+    const visibleSubCategories = subCategories.filter((subCat) => {
+      const subCatName = getTranslated(subCat.name, i18n.language || 'en');
+      return subCatName && subCatName.trim() !== '';
+    });
+    
+    // On mobile, if category has subcategories, toggle dropdown instead of navigating
+    if (isMobile && hasSubCategories && visibleSubCategories.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Toggle dropdown
+      if (hoveredCategory === categoryKey) {
+        setHoveredCategory(null);
+      } else {
+        // Calculate dropdown position
+        const element = itemRefs.current[categoryKey];
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          
+          let top = rect.bottom;
+          let left = rect.left;
+          let width = Math.max(300, rect.width);
+          
+          const estimatedDropdownHeight = 400;
+          if (top + estimatedDropdownHeight > viewportHeight) {
+            const spaceAbove = rect.top;
+            const spaceBelow = viewportHeight - rect.bottom;
+            if (spaceAbove > spaceBelow && spaceAbove > estimatedDropdownHeight) {
+              top = rect.top - estimatedDropdownHeight;
+            } else {
+              top = Math.max(10, viewportHeight - estimatedDropdownHeight - 10);
+            }
+          }
+          
+          if (left + width > viewportWidth) {
+            left = Math.max(10, viewportWidth - width - 10);
+          }
+          
+          if (left < 0) {
+            left = 10;
+          }
+          
+          setDropdownPosition({
+            top: Math.max(10, top),
+            left: Math.max(10, left),
+            width: width
+          });
+        }
+        setHoveredCategory(categoryKey);
+      }
+    } else {
+      // Desktop behavior or category without subcategories
+      if (hasSubCategories) {
+        // Navigate to subcategories page
+        navigate(`/subcategories/${encodeURIComponent(categoryName)}`);
+      } else if (hasProducts) {
+        // Navigate directly to products page with category filter
+        navigate(`/products?category=${encodeURIComponent(categoryName)}`);
+      }
     }
   };
 
@@ -328,6 +423,9 @@ export default function SubNavbar() {
                     // Show dropdown if category has subcategories
                     if (hasSubCategories && visibleSubCategories.length > 0) {
                       setHoveredCategory(categoryKey);
+                    } else {
+                      // Clear hovered category if this category has no subcategories
+                      setHoveredCategory(null);
                     }
                   }}
                   onMouseLeave={() => {
@@ -338,7 +436,7 @@ export default function SubNavbar() {
                   }}
                 >
                   <button
-                    onClick={() => handleCategoryClick(category)}
+                    onClick={(e) => handleCategoryClick(category, e)}
                     className="subnavbar-link"
                   >
                     {getTranslated(category.name, i18n.language || 'en')}
