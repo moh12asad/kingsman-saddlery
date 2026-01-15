@@ -979,7 +979,7 @@ export default function OrderConfirmation() {
                       {deliveryType === "delivery" && deliveryZone && (
                         <>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted">{t("orderConfirmation.delivery")}:</span>
+                            <span className="text-sm text-muted">{t("orderConfirmation.delivery")}</span>
                             <span className="text-sm font-semibold">{formatPrice(deliveryCost)}</span>
                           </div>
                           {(() => {
