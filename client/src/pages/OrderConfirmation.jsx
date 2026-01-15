@@ -979,7 +979,7 @@ export default function OrderConfirmation() {
                       {deliveryType === "delivery" && deliveryZone && (
                         <>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted">{t("orderConfirmation.delivery")}:</span>
+                            <span className="text-sm text-muted">{t("orderConfirmation.delivery")}</span>
                             <span className="text-sm font-semibold">{formatPrice(deliveryCost)}</span>
                           </div>
                           {(() => {
@@ -1048,6 +1048,9 @@ export default function OrderConfirmation() {
               {/* Action Buttons - Outside the card */}
               {total !== null && !discountCalculationError && (
                 <div className="flex gap-4">
+                  <Link to="/" className="btn btn-secondary">
+                    {t("orderConfirmation.backToHome")}
+                  </Link>
                   <Link to="/cart" className="btn btn-secondary">
                     {t("orderConfirmation.backToCart")}
                   </Link>

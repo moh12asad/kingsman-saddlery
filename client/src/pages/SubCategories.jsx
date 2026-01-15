@@ -9,7 +9,7 @@ const API = import.meta.env.VITE_API_BASE_URL || "";
 export default function SubCategories() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,9 +103,9 @@ export default function SubCategories() {
             <p className="text-error heading-3">{error || "Category not found"}</p>
             <button
               onClick={() => navigate("/")}
-              className="btn-primary margin-top-md"
+              className="btn btn-secondary margin-top-md"
             >
-              Go to Home
+              {t("orderConfirmation.backToHome")}
             </button>
           </div>
         </div>
@@ -128,9 +128,9 @@ export default function SubCategories() {
         <div className="mb-8">
           <button
             onClick={() => navigate("/")}
-            className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center gap-2"
+            className="btn btn-secondary mb-4 flex items-center gap-2"
           >
-            ← Back to Home
+            ← {t("orderConfirmation.backToHome")}
           </button>
           <h1 className="text-4xl font-bold mb-2">{getTranslated(category.name, i18n.language || 'en')}</h1>
           {category.description && (

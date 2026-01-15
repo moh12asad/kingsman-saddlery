@@ -464,7 +464,7 @@ export default function Products() {
         <div className="mb-6 margin-top-xl products-page-header">
           <button
             onClick={() => navigate("/shop")}
-            className="text-indigo-600 hover:text-indigo-800 mb-4 flex items-center gap-2 products-back-button"
+            className="btn btn-secondary mb-4 flex items-center gap-2 products-back-button"
           >
             {t("products.backToShop")}
           </button>

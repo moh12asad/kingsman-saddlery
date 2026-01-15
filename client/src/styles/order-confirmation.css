@@ -1,29 +1,45 @@
 /* Order Confirmation Page Styles */
 
+/* Extended borders for all cards on order confirmation page */
+.order-confirmation-page .card {
+  border-width: 3px;
+  border-style: solid;
+}
+
+/* Make order summary labels bolder - specifically Total Weight, Subtotal, Delivery, Tax */
+.order-confirmation-page .space-y-2 .flex.justify-between .text-muted,
+.order-confirmation-page .border-top .flex.justify-between .text-muted {
+  font-weight: 900;
+}
+
 /* Success Messages */
 .order-confirmation-success {
   background: #dcfce7;
   border-color: #22c55e;
+  border-width: 3px;
 }
 
 .order-confirmation-success-text {
   color: #16a34a;
+  font-weight: 700;
 }
 
 .order-confirmation-success-text-bold {
   color: #16a34a;
-  font-weight: 600;
+  font-weight: 900;
 }
 
 .order-confirmation-success-text-secondary {
   color: #15803d;
   font-size: 0.875rem;
+  font-weight: 700;
   margin-top: 0.25rem;
 }
 
 .order-confirmation-success-text-small {
   color: #16a34a;
   font-size: 0.875rem;
+  font-weight: 700;
   margin-top: 0.5rem;
 }
 
@@ -31,12 +47,14 @@
 .order-confirmation-error {
   background: #fee2e2;
   border-color: #ef4444;
+  border-width: 3px;
 }
 
 /* Warning Messages */
 .order-confirmation-warning {
   background: #fef3c7;
   border-color: #f59e0b;
+  border-width: 3px;
 }
 
 .order-confirmation-warning-text {
@@ -46,6 +64,7 @@
 /* Discount Text */
 .order-confirmation-discount-text {
   color: #22c55e;
+  font-weight: 900;
 }
 
 /* Mandatory Field Asterisk */
