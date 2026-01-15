@@ -145,6 +145,24 @@ export default function ProductSelector({
 
       {/* Search and Filter Controls */}
       <div className="space-y-2">
+        {/* Category Filter */}
+        <select
+          className="select w-full"
+          value={selectedCategory}
+          onChange={(e) => {
+            setSelectedCategory(e.target.value);
+            setShowDropdown(true);
+          }}
+        >
+          <option value="">All Categories</option>
+          {categories.map(cat => {
+            const catName = getTranslated(cat.name, i18n.language || 'en');
+            return (
+              <option key={cat.id} value={catName}>{catName}</option>
+            );
+          })}
+        </select>
+
         <div className="relative">
           <input
             type="text"
@@ -164,7 +182,7 @@ export default function ProductSelector({
                 className="fixed inset-0 z-10"
                 onClick={() => setShowDropdown(false)}
               />
-              <div className="absolute z-20 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto mt-2 w-full">
+              <div className="absolute z-[10000] bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto mt-2 w-full">
                 {loading ? (
                   <div className="p-4 text-center text-gray-500">Loading products...</div>
                 ) : filteredProducts.length > 0 ? (
@@ -213,24 +231,6 @@ export default function ProductSelector({
             </>
           )}
         </div>
-
-        {/* Category Filter */}
-        <select
-          className="select w-full"
-          value={selectedCategory}
-          onChange={(e) => {
-            setSelectedCategory(e.target.value);
-            setShowDropdown(true);
-          }}
-        >
-          <option value="">All Categories</option>
-          {categories.map(cat => {
-            const catName = getTranslated(cat.name, i18n.language || 'en');
-            return (
-              <option key={cat.id} value={catName}>{catName}</option>
-            );
-          })}
-        </select>
       </div>
 
       {selectedProducts.length === 0 && (

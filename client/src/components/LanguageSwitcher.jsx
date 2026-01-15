@@ -222,8 +222,9 @@ export default function LanguageSwitcher() {
               left: 0,
               right: 0,
               bottom: 0,
-              zIndex: 1010,
-              backgroundColor: 'transparent'
+              zIndex: 9999,
+              backgroundColor: 'transparent',
+              pointerEvents: 'auto'
             }}
             onClick={() => setIsOpen(false)}
           />
@@ -245,7 +246,8 @@ export default function LanguageSwitcher() {
                 ? { right: `${dropdownPosition.right}px` }
                 : { left: `${dropdownPosition.left || 0}px` }
               ),
-              zIndex: 1011
+              zIndex: 10000,
+              isolation: 'isolate'
             }}
           >
             {languages.map((lang) => (

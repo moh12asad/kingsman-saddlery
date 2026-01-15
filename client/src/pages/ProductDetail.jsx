@@ -598,6 +598,17 @@ export default function ProductDetail() {
                       onClick={(e) => {
                         e.stopPropagation();
                         addToCart(relatedProduct);
+                        
+                        // Trigger animation
+                        const buttonRect = e.currentTarget.getBoundingClientRect();
+                        const position = {
+                          x: buttonRect.left + buttonRect.width / 2 - 30,
+                          y: buttonRect.top + buttonRect.height / 2 - 30
+                        };
+                        setAnimationTrigger({
+                          productImage: relatedProduct.image,
+                          startPosition: position
+                        });
                       }}
                       className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
                       style={{ marginTop: '0.75rem' }}
