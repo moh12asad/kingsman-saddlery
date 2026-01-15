@@ -7,13 +7,13 @@ import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
-import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner } from "react-icons/fa";
+import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner, FaShoppingCart, FaChevronLeft, FaChevronRight, FaTrash } from "react-icons/fa";
 import "../styles/order-confirmation.css";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
 export default function OrderConfirmation() {
-  const { cartItems, getTotalPrice, getTotalWeight, isLoaded, clearCart } = useCart();
+  const { cartItems, getTotalPrice, getTotalWeight, isLoaded, clearCart, addToCart, removeFromCart, updateQuantity } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
@@ -55,6 +55,9 @@ export default function OrderConfirmation() {
   const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState(null); // Store calculated delivery cost from server
   const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
   const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
+  const [saleProducts, setSaleProducts] = useState([]); // Products on sale
+  const [loadingSaleProducts, setLoadingSaleProducts] = useState(false); // Loading state for sale products
+  const saleProductsScrollRef = useRef(null); // Ref for sale products carousel scroll
   
   // Delivery zone fees (in ILS)
   const DELIVERY_ZONE_FEES = {
@@ -227,6 +230,46 @@ export default function OrderConfirmation() {
       navigate("/cart");
     }
   }, [isLoaded, cartItems.length, navigate]);
+
+  // Load sale products
+  useEffect(() => {
+    async function loadSaleProducts() {
+      try {
+        setLoadingSaleProducts(true);
+        const lang = i18n.language || 'en';
+        const response = await fetch(`${API}/api/products?lang=${lang}`);
+        if (response.ok) {
+          const data = await response.json();
+          const availableProducts = (data.products || []).filter(
+            (product) => product.available === true && product.sale === true
+          );
+          // Limit to first 10 sale products
+          setSaleProducts(availableProducts.slice(0, 10));
+        }
+      } catch (err) {
+        console.error("Error loading sale products:", err);
+        setSaleProducts([]);
+      } finally {
+        setLoadingSaleProducts(false);
+      }
+    }
+
+    loadSaleProducts();
+  }, [i18n.language]);
+
+  // Scroll function for sale products carousel
+  const scrollSaleProducts = (direction) => {
+    if (saleProductsScrollRef.current) {
+      const cardWidth = 140; // Smaller card width
+      const scrollAmount = cardWidth + 10; // Reduced gap
+      const isRTL = i18n.language === 'ar' || i18n.language === 'he';
+      const effectiveDirection = isRTL ? (direction === 'left' ? 'right' : 'left') : direction;
+      saleProductsScrollRef.current.scrollBy({
+        left: effectiveDirection === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   async function loadUserProfile() {
     try {
@@ -769,6 +812,48 @@ export default function OrderConfirmation() {
           <div className="grid gap-6 md:grid-cols-2">
             {/* Left Column: Order Details & Items */}
             <div className="space-y-6">
+              {/* This Month's Sale Section - Moved to top for visibility */}
+              {saleProducts.length > 0 && (
+                <div className="card">
+                  <h2 className="section-title margin-bottom-md">{t("orderConfirmation.thisMonthsSale")}</h2>
+                  {loadingSaleProducts ? (
+                    <div className="text-center padding-y-md">
+                      <p className="text-muted">{t("orderConfirmation.loadingSaleProducts")}</p>
+                    </div>
+                  ) : (
+                    <div className="products-tabs-content">
+                      <div className="product-carousel-container">
+                        <button
+                          className="product-carousel-arrow product-carousel-arrow-left"
+                          onClick={() => scrollSaleProducts('left')}
+                          aria-label={t("shop.common.scrollLeft")}
+                        >
+                          {(i18n.language === 'ar' || i18n.language === 'he') ? <FaChevronRight /> : <FaChevronLeft />}
+                        </button>
+                        <button
+                          className="product-carousel-arrow product-carousel-arrow-right"
+                          onClick={() => scrollSaleProducts('right')}
+                          aria-label={t("shop.common.scrollRight")}
+                        >
+                          {(i18n.language === 'ar' || i18n.language === 'he') ? <FaChevronLeft /> : <FaChevronRight />}
+                        </button>
+                        <div className="product-carousel" ref={saleProductsScrollRef}>
+                          {saleProducts.map((product) => (
+                            <SaleProductCard
+                              key={product.id}
+                              product={product}
+                              onAddToCart={() => addToCart(product)}
+                              formatPrice={formatPrice}
+                              navigate={navigate}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Order Items */}
               <div className="card">
                 <div className="flex items-center justify-between margin-bottom-md">
@@ -779,7 +864,7 @@ export default function OrderConfirmation() {
                 </div>
                 <div className="space-y-3">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-4 padding-y-sm border-bottom">
+                    <div key={item.id} className="flex gap-4 padding-y-sm border-bottom relative">
                       {item.image ? (
                         <img
                           src={item.image}
@@ -797,19 +882,51 @@ export default function OrderConfirmation() {
                           <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
                         )}
                         <div className="flex items-center gap-2 margin-top-xs">
-                          <span className="text-sm text-muted">{t("orderConfirmation.qty")} {item.quantity}</span>
                           {item.weight && item.weight > 0 && (
                             <span className="text-sm text-muted">
                               {t("orderConfirmation.weight")}: {((item.weight || 0) * item.quantity).toFixed(2)} kg
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 margin-top-xs">
+                        <div className="flex items-center gap-4 margin-top-xs">
+                          <div className="quantity-controls">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(item.id, item.quantity - 1);
+                              }}
+                              className="quantity-button"
+                              aria-label={t("cart.decreaseQuantity")}
+                            >
+                              -
+                            </button>
+                            <span className="quantity-display">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(item.id, item.quantity + 1);
+                              }}
+                              className="quantity-button"
+                              aria-label={t("cart.increaseQuantity")}
+                            >
+                              +
+                            </button>
+                          </div>
                           <span className="text-sm font-semibold">
                             {formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
                       </div>
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        className="order-item-remove-btn"
+                        aria-label={t("cart.removeItem")}
+                        title={t("cart.removeItem")}
+                      >
+                        <FaTrash />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -893,6 +1010,39 @@ export default function OrderConfirmation() {
                     </>
                   )}
                 </div>
+                
+                {/* Warning message for mandatory fields - directly under total */}
+                {(!hasCompleteAddress || !hasDeliveryZone || !profileData.phone) && (
+                  <div className="card padding-md margin-top-md order-confirmation-warning">
+                    <p className="text-sm order-confirmation-warning-text">
+                      <strong>{t("orderConfirmation.pleaseFillMandatoryFields")} <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
+                      {deliveryType === "delivery" && !hasCompleteAddress && (
+                        <>
+                          {isEditingAddress 
+                            ? t("orderConfirmation.completeMandatoryAddress")
+                            : t("orderConfirmation.addCompleteDeliveryAddress")}
+                        </>
+                      )}
+                      {deliveryType === "delivery" && !hasDeliveryZone && (
+                        <> {t("orderConfirmation.selectDeliveryZoneMandatory")}</>
+                      )}
+                      {!profileData.phone && t("orderConfirmation.addPhoneNumberMandatory")}
+                      {deliveryType === "delivery" && !hasCompleteAddress && !isEditingAddress && (
+                        <button onClick={handleUseDifferentAddress} className="underline">
+                          {t("orderConfirmation.addAddressForThisOrder")}
+                        </button>
+                      )}
+                      {!profileData.phone && (
+                        <>
+                          {" "}{t("orderConfirmation.or")}{" "}
+                          <Link to="/profile" className="underline">
+                            {t("orderConfirmation.updateProfile")}
+                          </Link>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons - Outside the card */}
@@ -1236,41 +1386,82 @@ export default function OrderConfirmation() {
               </div>
             </div>
           </div>
-
-          {(!hasCompleteAddress || !hasDeliveryZone || !profileData.phone) && (
-            <div className="card padding-md margin-top-md order-confirmation-warning">
-              <p className="text-sm order-confirmation-warning-text">
-                <strong>{t("orderConfirmation.pleaseFillMandatoryFields")} <span className="order-confirmation-mandatory-asterisk">*</span>):</strong>{" "}
-                {deliveryType === "delivery" && !hasCompleteAddress && (
-                  <>
-                    {isEditingAddress 
-                      ? t("orderConfirmation.completeMandatoryAddress")
-                      : t("orderConfirmation.addCompleteDeliveryAddress")}
-                  </>
-                )}
-                {deliveryType === "delivery" && !hasDeliveryZone && (
-                  <> {t("orderConfirmation.selectDeliveryZoneMandatory")}</>
-                )}
-                {!profileData.phone && t("orderConfirmation.addPhoneNumberMandatory")}
-                {deliveryType === "delivery" && !hasCompleteAddress && !isEditingAddress && (
-                  <button onClick={handleUseDifferentAddress} className="underline">
-                    {t("orderConfirmation.addAddressForThisOrder")}
-                  </button>
-                )}
-                {!profileData.phone && (
-                  <>
-                    {" "}{t("orderConfirmation.or")}{" "}
-                    <Link to="/profile" className="underline">
-                      {t("orderConfirmation.updateProfile")}
-                    </Link>
-                  </>
-                )}
-              </p>
-            </div>
-          )}
         </div>
       </main>
     </AuthRoute>
+  );
+}
+
+// Sale Product Card Component
+function SaleProductCard({ product, onAddToCart, formatPrice, navigate }) {
+  const { t, i18n } = useTranslation();
+
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleAddToCartClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onAddToCart();
+  };
+
+  return (
+    <div className="card-product-carousel" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
+      <div className="card-product-image-wrapper">
+        <div className="card-product-image-container">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={getTranslated(product.name, i18n.language || 'en')}
+              className="card-product-image"
+            />
+          ) : (
+            <div className="card-product-placeholder">
+              {t("cart.noImage")}
+            </div>
+          )}
+          {product.sale && (
+            <span className="card-product-badge">
+              <span className="badge-text">{t("shop.common.sale")}</span>
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="card-product-content">
+        <h3 className="card-product-title">
+          {getTranslated(product.name, i18n.language || 'en')}
+        </h3>
+        <div className="card-product-separator"></div>
+        <div className="card-product-price">
+          {product.sale && product.sale_proce > 0 ? (
+            <>
+              <span className="price-sale">
+                {formatPrice(product.sale_proce)}
+              </span>
+              <span className="price-original">
+                {formatPrice(product.price)}
+              </span>
+            </>
+          ) : (
+            <span className="price">
+              {formatPrice(product.price)}
+            </span>
+          )}
+        </div>
+        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={handleAddToCartClick}
+            className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+            style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto', width: '100%' }}
+          >
+            <FaShoppingCart style={{ marginRight: '0.5rem' }} />
+            {t("products.addToCart")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
