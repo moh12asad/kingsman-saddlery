@@ -506,6 +506,8 @@
     "addAddressForThisOrder": "إضافة عنوان لهذا الطلب",
     "or": "أو",
     "updateProfile": "تحديث الملف الشخصي",
+    "thisMonthsSale": "عروض هذا الشهر",
+    "loadingSaleProducts": "جاري تحميل المنتجات المعروضة...",
     "errors": {
       "geolocationNotSupported": "الموقع الجغرافي غير مدعوم من متصفحك",
       "failedToFetchAddress": "فشل جلب العنوان",

@@ -506,6 +506,8 @@
     "addAddressForThisOrder": "הוסף כתובת להזמנה זו",
     "or": "או",
     "updateProfile": "עדכן פרופיל",
+    "thisMonthsSale": "מבצע החודש",
+    "loadingSaleProducts": "טוען מוצרים במבצע...",
     "errors": {
       "geolocationNotSupported": "מיקום גיאוגרפי אינו נתמך על ידי הדפדפן שלך",
       "failedToFetchAddress": "נכשל בקבלת הכתובת",

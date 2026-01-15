@@ -592,6 +592,8 @@
     "addAddressForThisOrder": "Add Address for This Order",
     "or": "or",
     "updateProfile": "Update Profile",
+    "thisMonthsSale": "This Month's Sale",
+    "loadingSaleProducts": "Loading sale products...",
     "errors": {
       "geolocationNotSupported": "Geolocation is not supported by your browser",
       "failedToFetchAddress": "Failed to fetch address",
