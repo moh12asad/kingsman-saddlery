@@ -864,7 +864,7 @@ export default function OrderConfirmation() {
                 </div>
                 <div className="space-y-3">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-4 padding-y-sm border-bottom relative">
+                    <div key={item.id} className="flex gap-4 padding-y-sm border-bottom relative order-item-container">
                       {item.image ? (
                         <img
                           src={item.image}

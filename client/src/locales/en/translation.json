@@ -279,7 +279,8 @@
     "askAboutProduct": "Ask us about this product",
     "askOnWhatsApp": "Ask us on WhatsApp",
     "whatsappNotConfigured": "WhatsApp number not configured. Please contact the administrator.",
-    "priceNote": "* Price does not include VAT (18%)"
+    "priceNote": "* Price does not include VAT (18%)",
+    "relatedProducts": "Related Products"
   },
   "footer": {
     "siteMap": "Site Map",
@@ -396,7 +397,8 @@
     "askAboutProduct": "Ask us about this product",
     "askOnWhatsApp": "Ask us on WhatsApp",
     "whatsappNotConfigured": "WhatsApp number not configured. Please contact the administrator.",
-    "priceNote": "* Price does not include VAT (18%)"
+    "priceNote": "* Price does not include VAT (18%)",
+    "relatedProducts": "Related Products"
   },
   "footer": {
     "siteMap": "Site Map",

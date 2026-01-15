@@ -37,6 +37,7 @@ export default function ProductDetail() {
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
   const [animationTrigger, setAnimationTrigger] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const { addToCart } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
@@ -46,6 +47,14 @@ export default function ProductDetail() {
     loadProduct();
     loadSettings();
   }, [id, i18n.language]);
+
+  useEffect(() => {
+    if (product?.relatedProducts && product.relatedProducts.length > 0) {
+      loadRelatedProducts();
+    } else {
+      setRelatedProducts([]);
+    }
+  }, [product?.relatedProducts, i18n.language]);
 
   async function loadSettings() {
     try {
@@ -83,6 +92,29 @@ export default function ProductDetail() {
       console.error("Error loading product:", err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadRelatedProducts() {
+    try {
+      if (!product?.relatedProducts || product.relatedProducts.length === 0) {
+        setRelatedProducts([]);
+        return;
+      }
+
+      const lang = i18n.language || 'en';
+      const response = await fetch(`${API}/api/products?lang=${lang}`);
+      const data = await response.json();
+      
+      if (response.ok && data.products) {
+        const related = data.products.filter(p => 
+          product.relatedProducts.includes(p.id)
+        );
+        setRelatedProducts(related);
+      }
+    } catch (err) {
+      console.error("Error loading related products:", err);
+      setRelatedProducts([]);
     }
   }
 
@@ -497,6 +529,99 @@ export default function ProductDetail() {
 
           </div>
         </div>
+
+        {/* Related Products Section - Moved Higher */}
+        {relatedProducts.length > 0 && (
+          <div className="related-products-section">
+            <h2 className="related-products-title">
+              {t("productDetail.relatedProducts")}
+            </h2>
+            <div className="related-products-grid">
+              {relatedProducts.map((relatedProduct) => (
+                <div
+                  key={relatedProduct.id}
+                  className="card-product-carousel"
+                  onClick={() => navigate(`/product/${relatedProduct.id}`)}
+                >
+                  <div className="card-product-image-wrapper">
+                    <div className="card-product-image-container">
+                      {relatedProduct.image ? (
+                        <img
+                          src={relatedProduct.image}
+                          alt={getTranslated(relatedProduct.name, i18n.language || 'en')}
+                          className="card-product-image"
+                        />
+                      ) : (
+                        <div className="card-product-placeholder">
+                          {t("products.noImage")}
+                        </div>
+                      )}
+                      <button
+                        className={`card-product-favorite ${isFavorite(relatedProduct.id) ? 'active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(relatedProduct);
+                        }}
+                        aria-label={isFavorite(relatedProduct.id) ? t("products.removeFromFavorites") : t("products.addToFavorites")}
+                      >
+                        <FaHeart />
+                      </button>
+                      {relatedProduct.sale && (
+                        <span className="card-product-badge">
+                          <span className="badge-text">{t("products.sale")}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="card-product-content">
+                    <h3 className="card-product-title">
+                      {getTranslated(relatedProduct.name, i18n.language || 'en')}
+                    </h3>
+                    <div className="card-product-separator"></div>
+                    <div className="card-product-price">
+                      {relatedProduct.sale && relatedProduct.sale_proce > 0 ? (
+                        <>
+                          <span className="price-sale">
+                            {formatPrice(relatedProduct.sale_proce)}
+                          </span>
+                          <span className="price-original">
+                            {formatPrice(relatedProduct.price)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="price">
+                          {formatPrice(relatedProduct.price)}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(relatedProduct);
+                        
+                        // Trigger animation
+                        const buttonRect = e.currentTarget.getBoundingClientRect();
+                        const position = {
+                          x: buttonRect.left + buttonRect.width / 2 - 30,
+                          y: buttonRect.top + buttonRect.height / 2 - 30
+                        };
+                        setAnimationTrigger({
+                          productImage: relatedProduct.image,
+                          startPosition: position
+                        });
+                      }}
+                      className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
+                      style={{ marginTop: '0.75rem' }}
+                    >
+                      <FaShoppingCart style={{ marginRight: '0.5rem' }} />
+                      {t("products.addToCart")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Image Zoom Modal */}

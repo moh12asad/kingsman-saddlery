@@ -81,6 +81,7 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       videoUrl = "",
       additionalImages = [],
       weight = 0,
+      relatedProducts = [],
       // Translation fields (can be objects or strings for backward compatibility)
       name,
       description,
@@ -138,6 +139,7 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       videoUrl: videoUrl || "",
       additionalImages: Array.isArray(additionalImages) ? additionalImages : [],
       weight: Math.max(0, Number(weight) || 0),
+      relatedProducts: Array.isArray(relatedProducts) ? relatedProducts.filter(id => id && typeof id === 'string') : [],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -303,6 +305,13 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
     // Validate weight if provided (must be >= 0)
     if (updates.weight !== undefined) {
       updates.weight = Math.max(0, Number(updates.weight) || 0);
+    }
+    
+    // Handle relatedProducts if provided
+    if (updates.relatedProducts !== undefined) {
+      updates.relatedProducts = Array.isArray(updates.relatedProducts) 
+        ? updates.relatedProducts.filter(id => id && typeof id === 'string') 
+        : [];
     }
     
     // Add updated timestamp

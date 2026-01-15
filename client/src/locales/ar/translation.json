@@ -310,7 +310,8 @@
     "askAboutProduct": "اسألنا عن هذا المنتج",
     "askOnWhatsApp": "اسألنا على WhatsApp",
     "whatsappNotConfigured": "رقم WhatsApp غير مُكوّن. يرجى الاتصال بالمسؤول.",
-    "priceNote": "* السعر لا يشمل ضريبة القيمة المضافة (18%)"
+    "priceNote": "* السعر لا يشمل ضريبة القيمة المضافة (18%)",
+    "relatedProducts": "منتجات ذات صلة"
   },
   "footer": {
     "siteMap": "خريطة الموقع",
