@@ -5,6 +5,7 @@ import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
 import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
+import ProductSelector from "../../components/Admin/ProductSelector";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -28,10 +29,11 @@ export default function CreateProduct(){
     additionalDetails: { en: "", ar: "", he: "" },
     warranty: { en: "", ar: "", he: "" },
     shippingInfo: { en: "", ar: "", he: "" },
-    videoUrl: "",
-    additionalImages: [],
-    weight: 0,
-  });
+      videoUrl: "",
+      additionalImages: [],
+      weight: 0,
+      relatedProducts: [],
+    });
   
   // State for adding new category pair
   const [newCategoryPair, setNewCategoryPair] = useState({
@@ -187,6 +189,7 @@ export default function CreateProduct(){
         videoUrl: form.videoUrl || "",
         additionalImages: form.additionalImages || [],
         weight: Number(form.weight) || 0,
+        relatedProducts: Array.isArray(form.relatedProducts) ? form.relatedProducts : [],
       };
 
       const res = await fetch(`${API}/api/products`, {
@@ -614,6 +617,13 @@ export default function CreateProduct(){
               />
               <span className="text-sm">Featured (for Suggested tab)</span>
             </label>
+          </div>
+          <div>
+            <ProductSelector
+              selectedProductIds={form.relatedProducts || []}
+              onSelectionChange={(ids) => setForm({...form, relatedProducts: ids})}
+              label="Related Products"
+            />
           </div>
         </div>
         <div className="flex gap-3">

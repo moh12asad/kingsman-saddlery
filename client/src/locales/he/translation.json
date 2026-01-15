@@ -310,7 +310,8 @@
     "askAboutProduct": "שאל אותנו על המוצר הזה",
     "askOnWhatsApp": "שאל אותנו ב-WhatsApp",
     "whatsappNotConfigured": "מספר WhatsApp לא מוגדר. אנא פנה למנהל.",
-    "priceNote": "* המחיר אינו כולל מע\"ם (18%)"
+    "priceNote": "* המחיר אינו כולל מע\"ם (18%)",
+    "relatedProducts": "מוצרים קשורים"
   },
   "footer": {
     "siteMap": "מפת האתר",

@@ -5,6 +5,7 @@ import { auth, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
 import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
+import ProductSelector from "../../components/Admin/ProductSelector";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -85,6 +86,7 @@ export default function EditProduct() {
           shippingInfo: ensureTranslationObject(found.shippingInfo),
           weight: found.weight || 0,
           categoryPairs: categoryPairs,
+          relatedProducts: Array.isArray(found.relatedProducts) ? found.relatedProducts : [],
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -281,6 +283,7 @@ export default function EditProduct() {
         videoUrl: product.videoUrl || "",
         additionalImages: product.additionalImages || [],
         weight: Number(product.weight) || 0,
+        relatedProducts: Array.isArray(product.relatedProducts) ? product.relatedProducts : [],
       };
 
       const res = await fetch(`${API}/api/products/${id}`, {
@@ -719,6 +722,15 @@ export default function EditProduct() {
               </div>
             </div>
           )}
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <ProductSelector
+              selectedProductIds={product.relatedProducts || []}
+              onSelectionChange={(ids) => setProduct({ ...product, relatedProducts: ids })}
+              excludeProductId={id}
+              label="Related Products"
+            />
+          </div>
         </div>
 
         {error && <p className="form-error">{error}</p>}
