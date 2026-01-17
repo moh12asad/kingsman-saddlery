@@ -484,4 +484,44 @@
   }
 }
 
+/* RTL Support for Cart Dropdown */
+/* LTR (English) - text-align left */
+.cart-dropdown-total-label {
+  text-align: left;
+}
+
+.cart-dropdown-total-amount {
+  text-align: right;
+}
+
+.cart-dropdown-actions .btn-secondary.btn-sm,
+.cart-dropdown-actions .btn-cta {
+  text-align: left;
+}
+
+/* RTL (Arabic/Hebrew) - text-align right */
+[dir="rtl"] .cart-dropdown-total {
+  direction: rtl;
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .cart-dropdown-total-label {
+  text-align: right !important;
+}
+
+[dir="rtl"] .cart-dropdown-total-amount {
+  text-align: right !important;
+}
+
+[dir="rtl"] .cart-dropdown-actions {
+  direction: rtl;
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .cart-dropdown-actions .btn-secondary.btn-sm,
+[dir="rtl"] .cart-dropdown-actions .btn-cta {
+  direction: rtl;
+  text-align: right !important;
+}
+
 

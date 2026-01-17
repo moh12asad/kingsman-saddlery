@@ -241,7 +241,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
 
           <div className="cart-dropdown-footer">
             <div className="cart-dropdown-total">
-              <span className="cart-dropdown-total-label">{t("cart.total")}:</span>
+              <span className="cart-dropdown-total-label">{t("cart.total")}</span>
               <span className="cart-dropdown-total-amount">{formatPrice(total)}</span>
             </div>
             {!user && (
@@ -258,7 +258,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
                 {t("cart.continueShopping")}
               </Link>
               <button
-                className="btn-primary btn-sm"
+                className="btn btn-cta btn-lg"
                 onClick={handleCheckout}
               >
                 {t("cart.proceedToCheckout")}
