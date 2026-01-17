@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
 import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 import ProductSelector from "../../components/Admin/ProductSelector";
+import ArrayInput from "../../components/Admin/ArrayInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -33,6 +34,8 @@ export default function CreateProduct(){
       additionalImages: [],
       weight: 0,
       relatedProducts: [],
+      size: [],
+      color: [],
     });
   
   // State for adding new category pair
@@ -190,6 +193,8 @@ export default function CreateProduct(){
         additionalImages: form.additionalImages || [],
         weight: Number(form.weight) || 0,
         relatedProducts: Array.isArray(form.relatedProducts) ? form.relatedProducts : [],
+        size: Array.isArray(form.size) ? form.size.filter(s => s && s.trim()) : [],
+        color: Array.isArray(form.color) ? form.color.filter(c => c && c.trim()) : [],
       };
 
       const res = await fetch(`${API}/api/products`, {
@@ -617,6 +622,24 @@ export default function CreateProduct(){
               />
               <span className="text-sm">Featured (for Suggested tab)</span>
             </label>
+          </div>
+          <div>
+            <ArrayInput
+              label="Sizes"
+              placeholder="e.g., Small, Medium, Large"
+              value={Array.isArray(form.size) ? form.size : []}
+              onChange={(sizes) => setForm({...form, size: sizes})}
+              helpText="Add sizes one by one. Press Enter or click Add to add each size."
+            />
+          </div>
+          <div>
+            <ArrayInput
+              label="Colors"
+              placeholder="e.g., Red, Blue, Green"
+              value={Array.isArray(form.color) ? form.color : []}
+              onChange={(colors) => setForm({...form, color: colors})}
+              helpText="Add colors one by one. Press Enter or click Add to add each color."
+            />
           </div>
           <div>
             <ProductSelector

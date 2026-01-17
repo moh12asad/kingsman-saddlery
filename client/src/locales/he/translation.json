@@ -311,7 +311,11 @@
     "askOnWhatsApp": "שאל אותנו ב-WhatsApp",
     "whatsappNotConfigured": "מספר WhatsApp לא מוגדר. אנא פנה למנהל.",
     "priceNote": "* המחיר אינו כולל מע\"ם (18%)",
-    "relatedProducts": "מוצרים קשורים"
+    "relatedProducts": "מוצרים קשורים",
+    "size": "מידה",
+    "color": "צבע",
+    "selectSize": "בחר מידה",
+    "selectColor": "בחר צבע"
   },
   "footer": {
     "siteMap": "מפת האתר",

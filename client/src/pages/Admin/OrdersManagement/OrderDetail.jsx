@@ -358,6 +358,16 @@ export default function AdminOrderDetail() {
                 {order.shippingAddress.country && (
                   <p>{order.shippingAddress.country}</p>
                 )}
+                {order.metadata?.deliveryZone && (
+                  <p className="mt-2">
+                    <span className="font-semibold">Delivery Zone: </span>
+                    {order.metadata.deliveryZone === "telaviv_north" && "North (Tel Aviv to North of Israel) (65 ILS)"}
+                    {order.metadata.deliveryZone === "jerusalem" && "Jerusalem (85 ILS)"}
+                    {order.metadata.deliveryZone === "south" && "South (85 ILS)"}
+                    {order.metadata.deliveryZone === "westbank" && "West Bank (85 ILS)"}
+                    {!["telaviv_north", "jerusalem", "south", "westbank"].includes(order.metadata.deliveryZone) && order.metadata.deliveryZone}
+                  </p>
+                )}
                 {/* Navigation Links - Always show for delivery addresses */}
                 <div className="flex gap-2 mt-3 pt-3 border-t">
                   {order.shippingAddress.latitude && order.shippingAddress.longitude ? (
@@ -555,6 +565,39 @@ export default function AdminOrderDetail() {
                     )}
                     <div className="flex-1">
                       <h3 className="font-semibold">{typeof item.name === 'string' ? item.name : (item.name?.en || item.name?.ar || item.name?.he || "-")}</h3>
+                      
+                      {/* Display Size and Color - check all possible property names */}
+                      {(() => {
+                        const sizeValue = item.selectedSize ?? item.size ?? null;
+                        const colorValue = item.selectedColor ?? item.color ?? null;
+                        const hasSize = sizeValue !== null && sizeValue !== undefined && String(sizeValue).trim() !== '';
+                        const hasColor = colorValue !== null && colorValue !== undefined && String(colorValue).trim() !== '';
+                        
+                        if (hasSize || hasColor) {
+                          return (
+                            <div className="mt-2 space-y-1">
+                              {hasSize && (
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Size: </span>
+                                  <span className="text-gray-900">
+                                    {String(sizeValue).trim()}
+                                  </span>
+                                </p>
+                              )}
+                              {hasColor && (
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Color: </span>
+                                  <span className="text-gray-900">
+                                    {String(colorValue).trim()}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
                       <div className="flex items-center gap-4 mt-2 text-sm">
                         <span className="text-gray-600">Qty: {item.quantity}</span>
                         <span className="font-semibold">

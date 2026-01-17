@@ -194,6 +194,20 @@ router.post("/create", async (req, res) => {
           : (productWeightMap.has(productId) ? productWeightMap.get(productId) : 0);
         
         // Always use database price (source of truth)
+        // Save selectedSize and selectedColor - be permissive with data types
+        let savedSize = null;
+        let savedColor = null;
+        
+        if (item.selectedSize !== undefined && item.selectedSize !== null) {
+          const sizeStr = String(item.selectedSize).trim();
+          if (sizeStr) savedSize = sizeStr;
+        }
+        
+        if (item.selectedColor !== undefined && item.selectedColor !== null) {
+          const colorStr = String(item.selectedColor).trim();
+          if (colorStr) savedColor = colorStr;
+        }
+        
         normalizedItems.push({
           productId,
           name: item.name || `Item ${normalizedItems.length + 1}`,
@@ -201,6 +215,8 @@ router.post("/create", async (req, res) => {
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
           weight: itemWeight, // Store weight for order record
+          selectedSize: savedSize,
+          selectedColor: savedColor,
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -223,6 +239,20 @@ router.post("/create", async (req, res) => {
           ? item.weight
           : 0;
         
+        // Save selectedSize and selectedColor - be permissive with data types
+        let savedSize = null;
+        let savedColor = null;
+        
+        if (item.selectedSize !== undefined && item.selectedSize !== null) {
+          const sizeStr = String(item.selectedSize).trim();
+          if (sizeStr) savedSize = sizeStr;
+        }
+        
+        if (item.selectedColor !== undefined && item.selectedColor !== null) {
+          const colorStr = String(item.selectedColor).trim();
+          if (colorStr) savedColor = colorStr;
+        }
+        
         normalizedItems.push({
           productId: "",
           name: item.name || `Item ${normalizedItems.length + 1}`,
@@ -230,6 +260,8 @@ router.post("/create", async (req, res) => {
           quantity,
           price: clientPrice,
           weight: itemWeight, // Store weight for order record
+          selectedSize: savedSize,
+          selectedColor: savedColor,
         });
       }
     }
@@ -671,12 +703,28 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           : (productWeightMap.has(productId) ? productWeightMap.get(productId) : 0);
         
         // Always use database price (source of truth)
+        // Save selectedSize and selectedColor - be permissive with data types
+        let savedSize = null;
+        let savedColor = null;
+        
+        if (item.selectedSize !== undefined && item.selectedSize !== null) {
+          const sizeStr = String(item.selectedSize).trim();
+          if (sizeStr) savedSize = sizeStr;
+        }
+        
+        if (item.selectedColor !== undefined && item.selectedColor !== null) {
+          const colorStr = String(item.selectedColor).trim();
+          if (colorStr) savedColor = colorStr;
+        }
+        
         normalizedItems.push({
           productId,
           name: item.name || `Item ${normalizedItems.length + 1}`,
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
           weight: itemWeight, // Store weight for order record
+          selectedSize: savedSize,
+          selectedColor: savedColor,
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -699,12 +747,28 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           ? item.weight
           : 0;
         
+        // Save selectedSize and selectedColor - be permissive with data types
+        let savedSize = null;
+        let savedColor = null;
+        
+        if (item.selectedSize !== undefined && item.selectedSize !== null) {
+          const sizeStr = String(item.selectedSize).trim();
+          if (sizeStr) savedSize = sizeStr;
+        }
+        
+        if (item.selectedColor !== undefined && item.selectedColor !== null) {
+          const colorStr = String(item.selectedColor).trim();
+          if (colorStr) savedColor = colorStr;
+        }
+        
         normalizedItems.push({
           productId: "",
           name: item.name || `Item ${normalizedItems.length + 1}`,
           quantity,
           price: clientPrice,
           weight: itemWeight, // Store weight for order record
+          selectedSize: savedSize,
+          selectedColor: savedColor,
         });
       }
     }

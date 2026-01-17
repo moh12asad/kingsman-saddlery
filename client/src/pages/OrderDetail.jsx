@@ -259,6 +259,18 @@ export default function OrderDetail() {
                           {item.category && (
                             <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
                           )}
+                          {(() => {
+                            const size = item.selectedSize && typeof item.selectedSize === 'string' && item.selectedSize.trim() ? item.selectedSize.trim() : null;
+                            const color = item.selectedColor && typeof item.selectedColor === 'string' && item.selectedColor.trim() ? item.selectedColor.trim() : null;
+                            if (size || color) {
+                              return (
+                                <p className="text-xs text-muted margin-top-xs">
+                                  {size && color ? `${size}, ${color}` : (size || color || '')}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })()}
                           <div className="flex items-center gap-2 margin-top-xs">
                             <span className="text-sm text-muted">{t("orderDetail.qty")} {item.quantity}</span>
                             <span className="text-sm font-semibold">
@@ -417,6 +429,16 @@ export default function OrderDetail() {
                     )}
                     {order.shippingAddress.country && (
                       <p className="order-text-no-margin">{order.shippingAddress.country}</p>
+                    )}
+                    {order.metadata?.deliveryZone && (
+                      <p className="order-text-no-margin margin-top-sm">
+                        <span className="font-semibold">{t("orderConfirmation.deliveryZone")}: </span>
+                        {order.metadata.deliveryZone === "telaviv_north" && t("orderConfirmation.deliveryZoneTelAvivNorth")}
+                        {order.metadata.deliveryZone === "jerusalem" && t("orderConfirmation.deliveryZoneJerusalem")}
+                        {order.metadata.deliveryZone === "south" && t("orderConfirmation.deliveryZoneSouth")}
+                        {order.metadata.deliveryZone === "westbank" && t("orderConfirmation.deliveryZoneWestBank")}
+                        {!["telaviv_north", "jerusalem", "south", "westbank"].includes(order.metadata.deliveryZone) && order.metadata.deliveryZone}
+                      </p>
                     )}
                   </div>
                 </div>

@@ -141,6 +141,13 @@ export default function Cart() {
               {item.category && (
                 <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
               )}
+              {(item.selectedSize || item.selectedColor) && (
+                <p className="text-xs text-muted margin-top-xs">
+                  {item.selectedSize && item.selectedColor 
+                    ? `${item.selectedSize}, ${item.selectedColor}`
+                    : item.selectedSize || item.selectedColor}
+                </p>
+              )}
               <div className="flex-row flex-gap-sm margin-top-sm">
                 {item.sale ? (
                   <>
@@ -161,7 +168,7 @@ export default function Cart() {
             <div className="flex-row flex-gap-sm" onClick={(e) => e.stopPropagation()}>
               <div className="quantity-controls">
                 <button
-                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedSize || null, item.selectedColor || null)}
                   className="quantity-button"
                 >
                   -
@@ -170,7 +177,7 @@ export default function Cart() {
                   {item.quantity}
                 </span>
                 <button
-                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedSize || null, item.selectedColor || null)}
                   className="quantity-button"
                 >
                   +
@@ -182,7 +189,7 @@ export default function Cart() {
                 </p>
               </div>
               <button
-                onClick={() => removeFromCart(item.id)}
+                onClick={() => removeFromCart(item.id, item.selectedSize || null, item.selectedColor || null)}
                 className="text-error padding-x-sm padding-y-sm text-lg transition"
                 style={{ lineHeight: 1 }}
                 title={t("cart.removeItem")}

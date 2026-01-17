@@ -157,7 +157,7 @@ export default function OrderConfirmation() {
       // SECURITY: Only update state if this is still the current request
       // This prevents race conditions where an old request overwrites newer state
       if (currentRequestRef.current !== requestId) {
-        console.log("Ignoring stale discount calculation response (deliveryType changed)");
+        //console.log("Ignoring stale discount calculation response (deliveryType changed)");
         return;
       }
 
@@ -638,6 +638,8 @@ export default function OrderConfirmation() {
           quantity: item.quantity,
           price: item.price,
           weight: item.weight || 0, // Include weight for server-side calculation
+          selectedSize: item.selectedSize || null,
+          selectedColor: item.selectedColor || null,
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
         total: total, // This is guaranteed to be the correct total with discount
@@ -881,6 +883,13 @@ export default function OrderConfirmation() {
                         {item.category && (
                           <p className="text-xs text-muted">{getTranslated(item.category, i18n.language || 'en')}</p>
                         )}
+                        {(item.selectedSize || item.selectedColor) && (
+                          <p className="text-xs text-muted margin-top-xs">
+                            {item.selectedSize && item.selectedColor 
+                              ? `${item.selectedSize}, ${item.selectedColor}`
+                              : item.selectedSize || item.selectedColor}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 margin-top-xs">
                           {item.weight && item.weight > 0 && (
                             <span className="text-sm text-muted">
@@ -893,7 +902,7 @@ export default function OrderConfirmation() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                updateQuantity(item.id, item.quantity - 1);
+                                updateQuantity(item.id, item.quantity - 1, item.selectedSize || null, item.selectedColor || null);
                               }}
                               className="quantity-button"
                               aria-label={t("cart.decreaseQuantity")}
@@ -906,7 +915,7 @@ export default function OrderConfirmation() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                updateQuantity(item.id, item.quantity + 1);
+                                updateQuantity(item.id, item.quantity + 1, item.selectedSize || null, item.selectedColor || null);
                               }}
                               className="quantity-button"
                               aria-label={t("cart.increaseQuantity")}
@@ -920,7 +929,7 @@ export default function OrderConfirmation() {
                         </div>
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(item.id, item.selectedSize || null, item.selectedColor || null)}
                         className="order-item-remove-btn"
                         aria-label={t("cart.removeItem")}
                         title={t("cart.removeItem")}

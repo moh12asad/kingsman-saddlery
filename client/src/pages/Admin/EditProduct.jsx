@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
 import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 import ProductSelector from "../../components/Admin/ProductSelector";
+import ArrayInput from "../../components/Admin/ArrayInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -87,6 +88,8 @@ export default function EditProduct() {
           weight: found.weight || 0,
           categoryPairs: categoryPairs,
           relatedProducts: Array.isArray(found.relatedProducts) ? found.relatedProducts : [],
+          size: Array.isArray(found.size) ? found.size : [],
+          color: Array.isArray(found.color) ? found.color : [],
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -284,6 +287,8 @@ export default function EditProduct() {
         additionalImages: product.additionalImages || [],
         weight: Number(product.weight) || 0,
         relatedProducts: Array.isArray(product.relatedProducts) ? product.relatedProducts : [],
+        size: Array.isArray(product.size) ? product.size.filter(s => s && s.trim()) : [],
+        color: Array.isArray(product.color) ? product.color.filter(c => c && c.trim()) : [],
       };
 
       const res = await fetch(`${API}/api/products/${id}`, {
@@ -722,6 +727,30 @@ export default function EditProduct() {
               </div>
             </div>
           )}
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <ArrayInput
+                label="Sizes"
+                placeholder="e.g., Small, Medium, Large"
+                value={Array.isArray(product.size) ? product.size : []}
+                onChange={(sizes) => setProduct({ ...product, size: sizes })}
+                helpText="Add sizes one by one. Press Enter or click Add to add each size."
+              />
+            </div>
+          </div>
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <ArrayInput
+                label="Colors"
+                placeholder="e.g., Red, Blue, Green"
+                value={Array.isArray(product.color) ? product.color : []}
+                onChange={(colors) => setProduct({ ...product, color: colors })}
+                helpText="Add colors one by one. Press Enter or click Add to add each color."
+              />
+            </div>
+          </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <ProductSelector

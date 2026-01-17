@@ -82,6 +82,8 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       additionalImages = [],
       weight = 0,
       relatedProducts = [],
+      size = [],
+      color = [],
       // Translation fields (can be objects or strings for backward compatibility)
       name,
       description,
@@ -140,6 +142,8 @@ router.post("/", requireRole("ADMIN", "STAFF"), async (req, res) => {
       additionalImages: Array.isArray(additionalImages) ? additionalImages : [],
       weight: Math.max(0, Number(weight) || 0),
       relatedProducts: Array.isArray(relatedProducts) ? relatedProducts.filter(id => id && typeof id === 'string') : [],
+      size: Array.isArray(size) ? size.filter(s => s && typeof s === 'string' && s.trim()) : [],
+      color: Array.isArray(color) ? color.filter(c => c && typeof c === 'string' && c.trim()) : [],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -311,6 +315,20 @@ router.patch("/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
     if (updates.relatedProducts !== undefined) {
       updates.relatedProducts = Array.isArray(updates.relatedProducts) 
         ? updates.relatedProducts.filter(id => id && typeof id === 'string') 
+        : [];
+    }
+    
+    // Handle size if provided
+    if (updates.size !== undefined) {
+      updates.size = Array.isArray(updates.size) 
+        ? updates.size.filter(s => s && typeof s === 'string' && s.trim()) 
+        : [];
+    }
+    
+    // Handle color if provided
+    if (updates.color !== undefined) {
+      updates.color = Array.isArray(updates.color) 
+        ? updates.color.filter(c => c && typeof c === 'string' && c.trim()) 
         : [];
     }
     
