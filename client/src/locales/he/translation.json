@@ -746,6 +746,7 @@
       "name": "שם",
       "description": "תיאור",
       "image": "תמונה",
+      "order": "סדר",
       "subCategories": "תת-קטגוריות",
       "addSubCategory": "הוסף תת-קטגוריה",
       "createSubCategory": "צור תת-קטגוריה",

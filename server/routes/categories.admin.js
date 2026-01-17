@@ -32,8 +32,17 @@ router.get("/", async (req, res) => {
       categories = categories.map(cat => getTranslatedCategory(cat, lang));
     }
 
-    // Sort by translated name (or original name if all languages)
+    // Sort by order field first (lower numbers first), then alphabetically by name
     categories.sort((a, b) => {
+      const orderA = a.order ?? 999;
+      const orderB = b.order ?? 999;
+      
+      // If orders are different, sort by order
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // If orders are the same, fallback to alphabetical by name
       const nameA = typeof a.name === 'string' ? a.name : (a.name?.en || '');
       const nameB = typeof b.name === 'string' ? b.name : (b.name?.en || '');
       return nameA.localeCompare(nameB);
@@ -52,7 +61,7 @@ router.use(verifyFirebaseToken);
 // Create category (ADMIN only)
 router.post("/", requireRole("ADMIN"), async (req, res) => {
   try {
-    const { image = "", subCategories = [], name, description } = req.body;
+    const { image = "", subCategories = [], name, description, order } = req.body;
 
     // Validate name (can be string or translation object)
     const nameValue = typeof name === 'string' ? name : (name?.en || '');
@@ -67,6 +76,13 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       image: image || "",
       subCategories: subCategories || [],
     });
+
+    // Add order field if provided (default to 999 if not provided)
+    if (order !== undefined) {
+      categoryData.order = typeof order === 'number' ? order : parseInt(order, 10) || 999;
+    } else {
+      categoryData.order = 999;
+    }
 
     // Validate subCategories structure
     if (Array.isArray(categoryData.subCategories)) {
@@ -102,7 +118,7 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
     }
     
     const existingData = existingDoc.data();
-    const { name, description, image, subCategories } = req.body;
+    const { name, description, image, subCategories, order } = req.body;
 
     const updateData = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -131,6 +147,11 @@ router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
     }
 
     if (image !== undefined) updateData.image = image || "";
+    
+    // Handle order field
+    if (order !== undefined) {
+      updateData.order = typeof order === 'number' ? order : parseInt(order, 10) || 999;
+    }
     
     // Handle subCategories
     if (subCategories !== undefined) {

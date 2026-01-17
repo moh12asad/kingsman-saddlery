@@ -56,6 +56,7 @@ export default function EditCategory() {
         ...found,
         name: ensureTranslationObject(found.name),
         description: ensureTranslationObject(found.description),
+        order: found.order !== undefined ? found.order : 999,
         subCategories: (found.subCategories || []).map(sub => ({
           ...sub,
           name: ensureTranslationObject(sub.name)
@@ -209,6 +210,7 @@ export default function EditCategory() {
         name: cleanTranslation(category.name),
         description: cleanTranslation(category.description),
         image: category.image || "",
+        order: category.order !== undefined ? Number(category.order) : 999,
         subCategories: (category.subCategories || []).map(sub => ({
           name: cleanTranslation(sub.name),
           image: sub.image || ""
@@ -290,6 +292,21 @@ export default function EditCategory() {
               type="textarea"
               rows={3}
             />
+          </div>
+
+          <div className="grid-col-span-full">
+            <div className="form-group">
+              <label className="form-label">Display Order</label>
+              <input
+                type="number"
+                className="input"
+                placeholder="Order (lower numbers appear first, default: 999)"
+                value={category.order !== undefined ? category.order : 999}
+                onChange={(e) => setCategory({ ...category, order: e.target.value === '' ? 999 : Number(e.target.value) })}
+                min="0"
+              />
+              <p className="text-small text-muted margin-top-sm">Lower numbers appear first in the subnavbar. Categories with the same order will be sorted alphabetically.</p>
+            </div>
           </div>
 
           <div className="grid-col-span-full">
