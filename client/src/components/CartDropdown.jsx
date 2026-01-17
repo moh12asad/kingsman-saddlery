@@ -241,7 +241,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
 
           <div className="cart-dropdown-footer">
             <div className="cart-dropdown-total">
-              <span className="cart-dropdown-total-label">{t("cart.total")}:</span>
+              <span className="cart-dropdown-total-label">{t("cart.total")}</span>
               <span className="cart-dropdown-total-amount">{formatPrice(total)}</span>
             </div>
             {!user && (
