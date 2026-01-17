@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { checkAdmin } from "../../utils/checkAdmin";
 import MultiLanguageInput from "../../components/Admin/MultiLanguageInput";
 import ProductSelector from "../../components/Admin/ProductSelector";
+import ArrayInput from "../../components/Admin/ArrayInput";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -729,37 +730,25 @@ export default function EditProduct() {
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">
-              <label className="form-label">Sizes (comma-separated or one per line)</label>
-              <textarea
-                className="input"
-                placeholder="e.g., Small, Medium, Large or S, M, L"
-                value={Array.isArray(product.size) ? product.size.join('\n') : product.size || ''}
-                onChange={e => {
-                  const value = e.target.value;
-                  const sizes = value.split(/[,\n]/).map(s => s.trim()).filter(s => s);
-                  setProduct({ ...product, size: sizes });
-                }}
-                rows={3}
+              <ArrayInput
+                label="Sizes"
+                placeholder="e.g., Small, Medium, Large"
+                value={Array.isArray(product.size) ? product.size : []}
+                onChange={(sizes) => setProduct({ ...product, size: sizes })}
+                helpText="Add sizes one by one. Press Enter or click Add to add each size."
               />
-              <small className="text-muted">Enter sizes separated by commas or new lines</small>
             </div>
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <div className="form-group">
-              <label className="form-label">Colors (comma-separated or one per line)</label>
-              <textarea
-                className="input"
-                placeholder="e.g., Red, Blue, Green or Black, White"
-                value={Array.isArray(product.color) ? product.color.join('\n') : product.color || ''}
-                onChange={e => {
-                  const value = e.target.value;
-                  const colors = value.split(/[,\n]/).map(c => c.trim()).filter(c => c);
-                  setProduct({ ...product, color: colors });
-                }}
-                rows={3}
+              <ArrayInput
+                label="Colors"
+                placeholder="e.g., Red, Blue, Green"
+                value={Array.isArray(product.color) ? product.color : []}
+                onChange={(colors) => setProduct({ ...product, color: colors })}
+                helpText="Add colors one by one. Press Enter or click Add to add each color."
               />
-              <small className="text-muted">Enter colors separated by commas or new lines</small>
             </div>
           </div>
 
