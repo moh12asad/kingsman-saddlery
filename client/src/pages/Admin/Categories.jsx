@@ -95,6 +95,7 @@ export default function AdminCategories() {
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>{t('admin.categories.image')}</th>
+                <th style={{ textAlign: 'left' }}>{t('admin.categories.order')}</th>
                 <th style={{ textAlign: 'left' }}>{t('admin.categories.name')}</th>
                 <th style={{ textAlign: 'left' }}>{t('admin.categories.description')}</th>
                 <th style={{ textAlign: 'left' }}>{t('admin.categories.subCategories')}</th>
@@ -110,6 +111,9 @@ export default function AdminCategories() {
                     ) : (
                       <div className="w-16 h-16 bg-gray-100 rounded-lg border-2 border-gray-300 flex items-center justify-center text-gray-400 text-xs">No image</div>
                     )}
+                  </td>
+                  <td style={{ textAlign: 'left' }}>
+                    <span className="font-mono text-sm">{category.order !== undefined ? category.order : 999}</span>
                   </td>
                   <td className="font-semibold" style={{ textAlign: 'left' }}>{typeof category.name === 'string' ? category.name : (category.name?.en || category.name?.ar || category.name?.he || "-")}</td>
                   <td className="text-gray-600" style={{ textAlign: 'left' }}>{typeof category.description === 'string' ? category.description : (category.description?.en || category.description?.ar || category.description?.he || "-")}</td>

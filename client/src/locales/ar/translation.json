@@ -747,6 +747,7 @@
       "name": "الاسم",
       "description": "الوصف",
       "image": "الصورة",
+      "order": "الترتيب",
       "subCategories": "الفئات الفرعية",
       "addSubCategory": "إضافة فئة فرعية",
       "createSubCategory": "إنشاء فئة فرعية",

@@ -17,7 +17,8 @@ export default function CreateCategory() {
   const [form, setForm] = useState({ 
     name: { en: "", ar: "", he: "" }, 
     description: { en: "", ar: "", he: "" }, 
-    image: ""
+    image: "",
+    order: 999
   });
 
   async function uploadImage(file) {
@@ -102,7 +103,8 @@ export default function CreateCategory() {
         name: cleanTranslation(form.name),
         description: cleanTranslation(form.description),
         image: form.image || "",
-        subCategories: []
+        subCategories: [],
+        order: form.order !== undefined ? Number(form.order) : 999
       };
 
       const res = await fetch(`${API}/api/categories`, {
@@ -156,6 +158,19 @@ export default function CreateCategory() {
             type="textarea"
             rows={3}
           />
+        </div>
+
+        <div className="space-y-2">
+          <label className="form-label">Display Order</label>
+          <input
+            type="number"
+            className="input"
+            placeholder="Order (lower numbers appear first, default: 999)"
+            value={form.order}
+            onChange={(e) => setForm((prev) => ({ ...prev, order: e.target.value === '' ? 999 : Number(e.target.value) }))}
+            min="0"
+          />
+          <p className="text-sm text-gray-500">Lower numbers appear first in the subnavbar. Categories with the same order will be sorted alphabetically.</p>
         </div>
 
         <div className="space-y-2">

@@ -838,6 +838,7 @@
       "name": "Name",
       "description": "Description",
       "image": "Image",
+      "order": "Order",
       "subCategories": "Sub-Categories",
       "addSubCategory": "Add Sub-Category",
       "createSubCategory": "Create Sub-Category",
