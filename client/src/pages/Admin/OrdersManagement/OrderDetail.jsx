@@ -565,18 +565,39 @@ export default function AdminOrderDetail() {
                     )}
                     <div className="flex-1">
                       <h3 className="font-semibold">{typeof item.name === 'string' ? item.name : (item.name?.en || item.name?.ar || item.name?.he || "-")}</h3>
+                      
+                      {/* Display Size and Color - check all possible property names */}
                       {(() => {
-                        const size = item.selectedSize && typeof item.selectedSize === 'string' && item.selectedSize.trim() ? item.selectedSize.trim() : null;
-                        const color = item.selectedColor && typeof item.selectedColor === 'string' && item.selectedColor.trim() ? item.selectedColor.trim() : null;
-                        if (size || color) {
+                        const sizeValue = item.selectedSize ?? item.size ?? null;
+                        const colorValue = item.selectedColor ?? item.color ?? null;
+                        const hasSize = sizeValue !== null && sizeValue !== undefined && String(sizeValue).trim() !== '';
+                        const hasColor = colorValue !== null && colorValue !== undefined && String(colorValue).trim() !== '';
+                        
+                        if (hasSize || hasColor) {
                           return (
-                            <p className="text-xs text-gray-600 mt-1">
-                              {size && color ? `${size}, ${color}` : (size || color || '')}
-                            </p>
+                            <div className="mt-2 space-y-1">
+                              {hasSize && (
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Size: </span>
+                                  <span className="text-gray-900">
+                                    {String(sizeValue).trim()}
+                                  </span>
+                                </p>
+                              )}
+                              {hasColor && (
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-medium">Color: </span>
+                                  <span className="text-gray-900">
+                                    {String(colorValue).trim()}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
                           );
                         }
                         return null;
                       })()}
+                      
                       <div className="flex items-center gap-4 mt-2 text-sm">
                         <span className="text-gray-600">Qty: {item.quantity}</span>
                         <span className="font-semibold">
