@@ -201,6 +201,8 @@ router.post("/create", async (req, res) => {
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
           weight: itemWeight, // Store weight for order record
+          selectedSize: item.selectedSize && typeof item.selectedSize === 'string' && item.selectedSize.trim() ? item.selectedSize.trim() : null,
+          selectedColor: item.selectedColor && typeof item.selectedColor === 'string' && item.selectedColor.trim() ? item.selectedColor.trim() : null,
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -230,6 +232,8 @@ router.post("/create", async (req, res) => {
           quantity,
           price: clientPrice,
           weight: itemWeight, // Store weight for order record
+          selectedSize: item.selectedSize && typeof item.selectedSize === 'string' && item.selectedSize.trim() ? item.selectedSize.trim() : null,
+          selectedColor: item.selectedColor && typeof item.selectedColor === 'string' && item.selectedColor.trim() ? item.selectedColor.trim() : null,
         });
       }
     }
@@ -677,6 +681,8 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           quantity,
           price: databasePrice, // SECURITY: Use database price, not client price
           weight: itemWeight, // Store weight for order record
+          selectedSize: item.selectedSize && typeof item.selectedSize === 'string' && item.selectedSize.trim() ? item.selectedSize.trim() : null,
+          selectedColor: item.selectedColor && typeof item.selectedColor === 'string' && item.selectedColor.trim() ? item.selectedColor.trim() : null,
         });
       } else if (productId) {
         // Product ID provided but product not found in database
@@ -705,6 +711,8 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
           quantity,
           price: clientPrice,
           weight: itemWeight, // Store weight for order record
+          selectedSize: item.selectedSize && typeof item.selectedSize === 'string' && item.selectedSize.trim() ? item.selectedSize.trim() : null,
+          selectedColor: item.selectedColor && typeof item.selectedColor === 'string' && item.selectedColor.trim() ? item.selectedColor.trim() : null,
         });
       }
     }

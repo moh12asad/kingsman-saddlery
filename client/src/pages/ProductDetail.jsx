@@ -31,6 +31,8 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showImageZoom, setShowImageZoom] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -120,8 +122,13 @@ export default function ProductDetail() {
 
   const handleAddToCart = (e) => {
     if (product) {
+      const productWithOptions = {
+        ...product,
+        selectedSize: selectedSize || null,
+        selectedColor: selectedColor || null,
+      };
       for (let i = 0; i < quantity; i++) {
-        addToCart(product);
+        addToCart(productWithOptions);
       }
       
       // Trigger animation if button was clicked
@@ -351,6 +358,44 @@ export default function ProductDetail() {
                 {t("productDetail.priceNote")}
               </p>
             </div>
+
+            {/* Size Selector */}
+            {product.size && Array.isArray(product.size) && product.size.length > 0 && (
+              <div className="product-option-selector margin-top-lg">
+                <label className="product-option-label">{t("productDetail.size")}</label>
+                <select
+                  className="product-option-select"
+                  value={selectedSize}
+                  onChange={(e) => setSelectedSize(e.target.value)}
+                >
+                  <option value="">{t("productDetail.selectSize")}</option>
+                  {product.size.map((size, idx) => (
+                    <option key={idx} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Color Selector */}
+            {product.color && Array.isArray(product.color) && product.color.length > 0 && (
+              <div className="product-option-selector margin-top-lg">
+                <label className="product-option-label">{t("productDetail.color")}</label>
+                <select
+                  className="product-option-select"
+                  value={selectedColor}
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                >
+                  <option value="">{t("productDetail.selectColor")}</option>
+                  {product.color.map((color, idx) => (
+                    <option key={idx} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Quantity Selector */}
             <div className="product-quantity-selector margin-top-lg">

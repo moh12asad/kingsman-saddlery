@@ -179,6 +179,13 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
                   >
                     {getTranslated(item.name, i18n.language || 'en')}
                   </h4>
+                  {(item.selectedSize || item.selectedColor) && (
+                    <p className="cart-dropdown-item-options text-xs text-muted">
+                      {item.selectedSize && item.selectedColor 
+                        ? `${item.selectedSize}, ${item.selectedColor}`
+                        : item.selectedSize || item.selectedColor}
+                    </p>
+                  )}
                   <div className="cart-dropdown-item-price-row">
                     <div className="cart-dropdown-item-price">
                       {item.sale ? (
@@ -198,7 +205,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
                     </div>
                     <div className="cart-dropdown-item-quantity">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedSize || null, item.selectedColor || null)}
                         className="quantity-button quantity-button-sm"
                         aria-label="Decrease quantity"
                       >
@@ -208,7 +215,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedSize || null, item.selectedColor || null)}
                         className="quantity-button quantity-button-sm"
                         aria-label="Increase quantity"
                       >
@@ -221,7 +228,7 @@ export default function CartDropdown({ isOpen, onClose, buttonRef }) {
                   </div>
                 </div>
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.id, item.selectedSize || null, item.selectedColor || null)}
                   className="cart-dropdown-item-remove"
                   aria-label={t("cart.removeItem")}
                   title={t("cart.removeItem")}

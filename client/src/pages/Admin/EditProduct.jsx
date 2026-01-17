@@ -87,6 +87,8 @@ export default function EditProduct() {
           weight: found.weight || 0,
           categoryPairs: categoryPairs,
           relatedProducts: Array.isArray(found.relatedProducts) ? found.relatedProducts : [],
+          size: Array.isArray(found.size) ? found.size : [],
+          color: Array.isArray(found.color) ? found.color : [],
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -284,6 +286,8 @@ export default function EditProduct() {
         additionalImages: product.additionalImages || [],
         weight: Number(product.weight) || 0,
         relatedProducts: Array.isArray(product.relatedProducts) ? product.relatedProducts : [],
+        size: Array.isArray(product.size) ? product.size.filter(s => s && s.trim()) : [],
+        color: Array.isArray(product.color) ? product.color.filter(c => c && c.trim()) : [],
       };
 
       const res = await fetch(`${API}/api/products/${id}`, {
@@ -722,6 +726,42 @@ export default function EditProduct() {
               </div>
             </div>
           )}
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Sizes (comma-separated or one per line)</label>
+              <textarea
+                className="input"
+                placeholder="e.g., Small, Medium, Large or S, M, L"
+                value={Array.isArray(product.size) ? product.size.join('\n') : product.size || ''}
+                onChange={e => {
+                  const value = e.target.value;
+                  const sizes = value.split(/[,\n]/).map(s => s.trim()).filter(s => s);
+                  setProduct({ ...product, size: sizes });
+                }}
+                rows={3}
+              />
+              <small className="text-muted">Enter sizes separated by commas or new lines</small>
+            </div>
+          </div>
+
+          <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
+            <div className="form-group">
+              <label className="form-label">Colors (comma-separated or one per line)</label>
+              <textarea
+                className="input"
+                placeholder="e.g., Red, Blue, Green or Black, White"
+                value={Array.isArray(product.color) ? product.color.join('\n') : product.color || ''}
+                onChange={e => {
+                  const value = e.target.value;
+                  const colors = value.split(/[,\n]/).map(c => c.trim()).filter(c => c);
+                  setProduct({ ...product, color: colors });
+                }}
+                rows={3}
+              />
+              <small className="text-muted">Enter colors separated by commas or new lines</small>
+            </div>
+          </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3">
             <ProductSelector

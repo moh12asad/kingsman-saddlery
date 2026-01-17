@@ -33,6 +33,8 @@ export default function CreateProduct(){
       additionalImages: [],
       weight: 0,
       relatedProducts: [],
+      size: [],
+      color: [],
     });
   
   // State for adding new category pair
@@ -190,6 +192,8 @@ export default function CreateProduct(){
         additionalImages: form.additionalImages || [],
         weight: Number(form.weight) || 0,
         relatedProducts: Array.isArray(form.relatedProducts) ? form.relatedProducts : [],
+        size: Array.isArray(form.size) ? form.size.filter(s => s && s.trim()) : [],
+        color: Array.isArray(form.color) ? form.color.filter(c => c && c.trim()) : [],
       };
 
       const res = await fetch(`${API}/api/products`, {
@@ -617,6 +621,36 @@ export default function CreateProduct(){
               />
               <span className="text-sm">Featured (for Suggested tab)</span>
             </label>
+          </div>
+          <div>
+            <label className="form-label">Sizes (comma-separated or one per line)</label>
+            <textarea
+              className="input"
+              placeholder="e.g., Small, Medium, Large or S, M, L"
+              value={Array.isArray(form.size) ? form.size.join('\n') : form.size || ''}
+              onChange={e => {
+                const value = e.target.value;
+                const sizes = value.split(/[,\n]/).map(s => s.trim()).filter(s => s);
+                setForm({...form, size: sizes});
+              }}
+              rows={3}
+            />
+            <small className="text-muted">Enter sizes separated by commas or new lines</small>
+          </div>
+          <div>
+            <label className="form-label">Colors (comma-separated or one per line)</label>
+            <textarea
+              className="input"
+              placeholder="e.g., Red, Blue, Green or Black, White"
+              value={Array.isArray(form.color) ? form.color.join('\n') : form.color || ''}
+              onChange={e => {
+                const value = e.target.value;
+                const colors = value.split(/[,\n]/).map(c => c.trim()).filter(c => c);
+                setForm({...form, color: colors});
+              }}
+              rows={3}
+            />
+            <small className="text-muted">Enter colors separated by commas or new lines</small>
           </div>
           <div>
             <ProductSelector

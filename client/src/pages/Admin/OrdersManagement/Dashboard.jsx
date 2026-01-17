@@ -85,9 +85,17 @@ export default function OrdersDashboard() {
           customerEmail.includes(query) ||
           orderId.includes(query) ||
           phone.includes(query) ||
-          (order.items || []).some(item => 
-            (item.name || "").toLowerCase().includes(query)
-          )
+          (order.items || []).some(item => {
+            // Handle both string and translation object for item.name
+            let itemName = "";
+            if (typeof item.name === 'string') {
+              itemName = item.name;
+            } else if (item.name && typeof item.name === 'object') {
+              // Translation object - get first available language
+              itemName = item.name.en || item.name.ar || item.name.he || "";
+            }
+            return itemName.toLowerCase().includes(query);
+          })
         );
       });
     }

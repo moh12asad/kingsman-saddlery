@@ -311,7 +311,11 @@
     "askOnWhatsApp": "اسألنا على WhatsApp",
     "whatsappNotConfigured": "رقم WhatsApp غير مُكوّن. يرجى الاتصال بالمسؤول.",
     "priceNote": "* السعر لا يشمل ضريبة القيمة المضافة (18%)",
-    "relatedProducts": "منتجات ذات صلة"
+    "relatedProducts": "منتجات ذات صلة",
+    "size": "المقاس",
+    "color": "اللون",
+    "selectSize": "اختر المقاس",
+    "selectColor": "اختر اللون"
   },
   "footer": {
     "siteMap": "خريطة الموقع",
