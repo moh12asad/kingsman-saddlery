@@ -172,6 +172,11 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
       ? roundTo2Decimals(subtotalBeforeDiscount)
       : computedSubtotal;
     
+    // Use provided discount if available (already validated server-side)
+    const orderDiscount = discount && typeof discount === "object" && discount.amount > 0 ? discount : null;
+    // Calculate order subtotal (after discount) - needed for delivery cost calculation
+    const orderSubtotal = roundTo2Decimals(typeof subtotal === "number" && subtotal >= 0 ? subtotal : computedSubtotal);
+    
     // Delivery zone fees (in ILS)
     const DELIVERY_ZONE_FEES = {
       telaviv_north: 65,  // North (Tel Aviv to North of Israel)
@@ -213,10 +218,6 @@ router.post("/order-confirmation", verifyFirebaseToken, async (req, res) => {
     const deliveryCost = roundTo2Decimals(deliveryType === "delivery" && deliveryZone
       ? calculateDeliveryCost(deliveryZone, totalWeight, orderSubtotal)
       : 0);
-    
-    // Use provided discount if available (already validated server-side)
-    const orderDiscount = discount && typeof discount === "object" && discount.amount > 0 ? discount : null;
-    const orderSubtotal = roundTo2Decimals(typeof subtotal === "number" && subtotal >= 0 ? subtotal : computedSubtotal);
     
     // Calculate base amount (subtotal + delivery) before tax
     const baseAmount = roundTo2Decimals(orderSubtotal + deliveryCost);
