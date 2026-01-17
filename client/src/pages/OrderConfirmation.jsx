@@ -157,7 +157,7 @@ export default function OrderConfirmation() {
       // SECURITY: Only update state if this is still the current request
       // This prevents race conditions where an old request overwrites newer state
       if (currentRequestRef.current !== requestId) {
-        console.log("Ignoring stale discount calculation response (deliveryType changed)");
+        //console.log("Ignoring stale discount calculation response (deliveryType changed)");
         return;
       }
 
