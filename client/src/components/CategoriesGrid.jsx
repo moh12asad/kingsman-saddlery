@@ -49,15 +49,45 @@ export default function CategoriesGrid() {
     loadData();
   }, [i18n.language]);
 
+  // Helper function to check if a product belongs to a category
+  // Handles multiple category formats: category (string), categories (array), categoryPairs (array of objects)
+  const productBelongsToCategory = (product, categoryNameEn) => {
+    if (!product.available) return false;
+    
+    // Check categoryPairs first (new format)
+    if (Array.isArray(product.categoryPairs) && product.categoryPairs.length > 0) {
+      return product.categoryPairs.some(pair => {
+        const pairCategory = typeof pair.category === 'string' 
+          ? pair.category 
+          : getTranslated(pair.category, 'en');
+        return pairCategory === categoryNameEn;
+      });
+    }
+    
+    // Check categories array
+    if (Array.isArray(product.categories) && product.categories.length > 0) {
+      return product.categories.some(cat => {
+        const catName = typeof cat === 'string' ? cat : getTranslated(cat, 'en');
+        return catName === categoryNameEn;
+      });
+    }
+    
+    // Check single category field (backward compatibility)
+    if (product.category) {
+      const pCategory = typeof product.category === 'string' 
+        ? product.category 
+        : getTranslated(product.category, 'en');
+      return pCategory === categoryNameEn;
+    }
+    
+    return false;
+  };
+
   const handleCategoryClick = (category) => {
     const categoryName = getTranslated(category.name, i18n.language || 'en');
     const categoryNameEn = getTranslated(category.name, 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
-    const hasProducts = products.some(p => {
-      // Products store category as English string, so compare with English category name
-      const productCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
-      return productCategory === categoryNameEn && p.available;
-    });
+    const hasProducts = products.some(p => productBelongsToCategory(p, categoryNameEn));
     
     if (hasSubCategories) {
       // Navigate to subcategories page
@@ -94,11 +124,7 @@ export default function CategoriesGrid() {
             return null;
           }
           
-          const hasProducts = products.some(p => {
-            // Products store category as English string, so compare with English category name
-            const productCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
-            return productCategory === categoryNameEn && p.available;
-          });
+          const hasProducts = products.some(p => productBelongsToCategory(p, categoryNameEn));
           const hasSubCategories = category.subCategories && category.subCategories.length > 0;
           
           // Only show categories that have products or subcategories

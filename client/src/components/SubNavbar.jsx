@@ -224,15 +224,45 @@ export default function SubNavbar() {
     };
   }, [isMobile, hoveredCategory]);
 
+  // Helper function to check if a product belongs to a category
+  // Handles multiple category formats: category (string), categories (array), categoryPairs (array of objects)
+  const productBelongsToCategory = (product, categoryNameEn) => {
+    if (!product.available) return false;
+    
+    // Check categoryPairs first (new format)
+    if (Array.isArray(product.categoryPairs) && product.categoryPairs.length > 0) {
+      return product.categoryPairs.some(pair => {
+        const pairCategory = typeof pair.category === 'string' 
+          ? pair.category 
+          : getTranslated(pair.category, 'en');
+        return pairCategory === categoryNameEn;
+      });
+    }
+    
+    // Check categories array
+    if (Array.isArray(product.categories) && product.categories.length > 0) {
+      return product.categories.some(cat => {
+        const catName = typeof cat === 'string' ? cat : getTranslated(cat, 'en');
+        return catName === categoryNameEn;
+      });
+    }
+    
+    // Check single category field (backward compatibility)
+    if (product.category) {
+      const pCategory = typeof product.category === 'string' 
+        ? product.category 
+        : getTranslated(product.category, 'en');
+      return pCategory === categoryNameEn;
+    }
+    
+    return false;
+  };
+
   const handleCategoryClick = (category, event) => {
     const categoryName = getTranslated(category.name, i18n.language || 'en');
     const categoryNameEn = getTranslated(category.name, 'en');
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
-    const hasProducts = products.some(p => {
-      // Products store category as English string, so compare with English category name
-      const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
-      return pCategory === categoryNameEn && p.available;
-    });
+    const hasProducts = products.some(p => productBelongsToCategory(p, categoryNameEn));
     
     const categoryKey = category.id || categoryName;
     const subCategories = category.subCategories || [];
@@ -322,11 +352,7 @@ export default function SubNavbar() {
       return false;
     }
     
-    const hasProducts = products.some(p => {
-      // Products store category as English string, so compare with English category name
-      const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
-      return pCategory === categoryNameEn && p.available;
-    });
+    const hasProducts = products.some(p => productBelongsToCategory(p, categoryNameEn));
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     return hasProducts || hasSubCategories;
   });
