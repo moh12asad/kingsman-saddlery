@@ -229,7 +229,11 @@ export function CurrencyProvider({ children }) {
         return `${symbol}${Math.round(convertedPrice).toLocaleString()}`;
       }
       
-      return `${symbol}${convertedPrice.toFixed(2)}`;
+      // Use toLocaleString with options to add thousand separators and 2 decimal places
+      return `${symbol}${convertedPrice.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
     };
   }, [currency, exchangeRate]);
 
