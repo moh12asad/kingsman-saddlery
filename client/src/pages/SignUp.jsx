@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, signInWithGoogle } from "../lib/firebase";
+import { auth, signInWithGoogle, signInWithApple } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import GuestRoute from "../components/GuestRoute";
-import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock, FaEnvelope } from "react-icons/fa";
+import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock, FaEnvelope, FaApple } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -383,6 +383,29 @@ export default function SignUp() {
     }
   }
 
+  async function onApple() {
+    setError("");
+    setLoading(true);
+    try {
+      await signInWithApple();
+      // Redirect will be handled by the useEffect hook when user state updates
+    } catch (e) {
+      const code = e.code || "";
+      let errorMessage = e.message || "Apple sign-up failed.";
+      
+      if (code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-up popup was closed.";
+      } else if (code === "auth/popup-blocked") {
+        errorMessage = "Sign-up popup was blocked. Please allow popups for this site.";
+      }
+      
+      console.error("Apple sign-up error:", code, errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // If already signed in, redirect
   useEffect(() => {
     if (!authLoading && user) {
@@ -685,6 +708,25 @@ export default function SignUp() {
               >
                 <FcGoogle className="icon-lg" />
                 <span>{t("signUp.continueWithGoogle")}</span>
+              </button>
+              <button
+                onClick={onApple}
+                className="btn-secondary flex-row flex-items-center flex-gap-sm btn-icon-only margin-top-sm"
+                style={{ backgroundColor: '#000', color: '#fff', borderColor: '#000' }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.target.style.backgroundColor = '#1a1a1a';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.target.style.backgroundColor = '#000';
+                  }
+                }}
+                disabled={loading}
+              >
+                <FaApple className="icon-lg" />
+                <span>{t("signUp.continueWithApple")}</span>
               </button>
             </div>
 
