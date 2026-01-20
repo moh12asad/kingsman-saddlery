@@ -561,11 +561,12 @@ export default function CompleteProfile() {
                     <FaPhone />
                     Phone Number *
                   </label>
-                  <div className="flex-row flex-gap-sm">
+                  <div className="flex-row flex-gap-sm" style={{ alignItems: "stretch" }}>
                     <select
                       className="select select-country-code-large"
                       value={profileData.phoneCountryCode}
                       onChange={e => setProfileData({ ...profileData, phoneCountryCode: e.target.value })}
+                      style={{ width: "100px" }}
                     >
                       <option value="+972">🇮🇱 +972</option>
                       <option value="+1">🇺🇸 +1</option>
@@ -582,6 +583,7 @@ export default function CompleteProfile() {
                       onChange={e => setProfileData({ ...profileData, phone: e.target.value.replace(/\D/g, "") })}
                       placeholder="Enter phone number"
                       required
+                      style={{ minWidth: "200px" }}
                     />
                   </div>
                 </div>
