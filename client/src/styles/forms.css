@@ -93,7 +93,13 @@
 
 .select-country-code-large {
   flex-shrink: 0;
-  min-width: 120px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+/* Phone input should have minimum width */
+.input.flex-1[type="tel"] {
+  min-width: 150px;
 }
 
 /* Ensure select elements have proper borders */

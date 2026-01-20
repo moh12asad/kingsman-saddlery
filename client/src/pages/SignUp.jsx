@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, signInWithGoogle } from "../lib/firebase";
+import { auth, signInWithGoogle, signInWithApple } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import GuestRoute from "../components/GuestRoute";
-import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock, FaEnvelope } from "react-icons/fa";
+import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock, FaEnvelope, FaApple } from "react-icons/fa";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -383,6 +383,40 @@ export default function SignUp() {
     }
   }
 
+  async function onApple() {
+    setError("");
+    setLoading(true);
+    try {
+      await signInWithApple();
+      // Redirect will be handled by the useEffect hook when user state updates
+    } catch (e) {
+      const code = e.code || "";
+      let errorMessage = e.message || "Apple sign-up failed.";
+      
+      // Handle specific Firebase configuration errors
+      if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
+        errorMessage = "Firebase Authentication configuration not found. This usually means:\n\n1. ❌ Your API key doesn't match the project ID\n   → Check that VITE_FIREBASE_API_KEY belongs to the 'kingsman-saddlery' project\n\n2. ❌ Authentication is not enabled in Firebase Console\n   → Go to Firebase Console → Authentication → Get Started\n\n3. ❌ API key restrictions in Google Cloud Console\n   → Check Google Cloud Console → APIs & Services → Credentials\n\n4. ❌ Wrong project configuration\n   → Make sure ALL .env values are from the SAME Firebase project\n\nTo fix: Get a fresh config from Firebase Console → Project Settings → General → Your apps";
+      } else if (code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-up popup was closed.";
+      } else if (code === "auth/popup-blocked") {
+        errorMessage = "Sign-up popup was blocked. Please allow popups for this site.";
+      } else if (code === "auth/cancelled-popup-request") {
+        errorMessage = "Sign-up popup was cancelled. Please try again.";
+      } else if (code === "auth/account-exists-with-different-credential") {
+        errorMessage = "An account already exists with the same email address but different sign-in credentials. Please sign in using your original method.";
+      } else if (code === "auth/operation-not-allowed") {
+        errorMessage = "Apple Sign-In is not enabled. Please contact support.";
+      } else if (code === "auth/invalid-credential") {
+        errorMessage = "Invalid Apple credentials. Please try again.";
+      }
+      
+      console.error("Apple sign-up error:", code, errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // If already signed in, redirect
   useEffect(() => {
     if (!authLoading && user) {
@@ -685,6 +719,25 @@ export default function SignUp() {
               >
                 <FcGoogle className="icon-lg" />
                 <span>{t("signUp.continueWithGoogle")}</span>
+              </button>
+              <button
+                onClick={onApple}
+                className="btn-secondary flex-row flex-items-center flex-gap-sm btn-icon-only margin-top-sm"
+                style={{ backgroundColor: '#000', color: '#fff', borderColor: '#000' }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.target.style.backgroundColor = '#1a1a1a';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.target.style.backgroundColor = '#000';
+                  }
+                }}
+                disabled={loading}
+              >
+                <FaApple className="icon-lg" />
+                <span>{t("signUp.continueWithApple")}</span>
               </button>
             </div>
 

@@ -9,7 +9,7 @@ import {
   EmailAuthProvider,
   linkWithCredential
 } from "firebase/auth";
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaCalendarAlt, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaLock, FaCalendarAlt, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import AuthRoute from "../components/AuthRoute";
 
@@ -19,6 +19,7 @@ export default function Profile() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -346,6 +347,83 @@ export default function Profile() {
     }
   }
 
+  // Get user's location and reverse geocode to address
+  async function handleUseLocation() {
+    if (!navigator.geolocation) {
+      setError(t("orderConfirmation.errors.geolocationNotSupported"));
+      return;
+    }
+
+    setLocationLoading(true);
+    setError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use a reverse geocoding service (using OpenStreetMap Nominatim API - free, no API key needed)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'KingsmanSaddlery/1.0' // Required by Nominatim
+              }
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch address");
+          }
+
+          const data = await response.json();
+          const address = data.address || {};
+
+          // Map the response to our address structure
+          setProfileData(prev => ({
+            ...prev,
+            address: {
+              street: [
+                address.road,
+                address.house_number,
+                address.building
+              ].filter(Boolean).join(" ") || "",
+              city: address.city || address.town || address.village || address.municipality || "",
+              zipCode: address.postcode || "",
+              country: address.country || ""
+            }
+          }));
+
+          setLocationLoading(false);
+        } catch (err) {
+          console.error("Geocoding error:", err);
+          setError(t("orderConfirmation.errors.failedToGetAddress"));
+          setLocationLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        let errorMessage = t("orderConfirmation.errors.failedToGetLocation");
+        if (err.code === 1) {
+          errorMessage += " " + t("orderConfirmation.errors.allowLocationAccess");
+        } else if (err.code === 2) {
+          errorMessage += " " + t("orderConfirmation.errors.locationUnavailable");
+        } else if (err.code === 3) {
+          errorMessage += " " + t("orderConfirmation.errors.locationTimeout");
+        } else {
+          errorMessage += " " + t("orderConfirmation.errors.enterAddressManually");
+        }
+        setError(errorMessage);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: false, // Set to false to reduce timeout issues
+        timeout: 20000, // Increased to 20 seconds
+        maximumAge: 60000 // Allow cached location up to 1 minute old
+      }
+    );
+  }
+
   function formatDate(dateString) {
     if (!dateString) return "N/A";
     try {
@@ -456,10 +534,33 @@ export default function Profile() {
             </div>
 
             <div className="margin-top-md">
-              <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
-                <FaMapMarkerAlt />
-                {t("profile.fields.address")}
-              </label>
+              <div className="flex-row flex-gap-sm flex-items-center margin-bottom-sm">
+                <label className="text-sm font-medium flex-row flex-gap-sm">
+                  <FaMapMarkerAlt />
+                  {t("profile.fields.address")}
+                </label>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={handleUseLocation}
+                    disabled={locationLoading}
+                    className="btn-secondary flex-row flex-gap-sm btn-sm"
+                    style={{ marginLeft: "auto" }}
+                  >
+                    {locationLoading ? (
+                      <>
+                        <FaSpinner className="animate-spin" />
+                        {t("orderConfirmation.gettingLocation")}
+                      </>
+                    ) : (
+                      <>
+                        <FaLocationArrow />
+                        {t("orderConfirmation.useMyLocation")}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
               <div className="grid-form margin-top-sm">
                 <div className="grid-col-span-full">
                   <label className="text-sm font-medium margin-bottom-sm">{t("profile.fields.streetAddress")}</label>
@@ -534,7 +635,7 @@ export default function Profile() {
                   <button
                     className="btn-primary flex-row flex-gap-sm"
                     onClick={handleUpdateProfile}
-                    disabled={loading}
+                    disabled={loading || locationLoading}
                   >
                     <FaCheck />
                     {loading ? t("common.saving") : t("profile.saveChanges")}

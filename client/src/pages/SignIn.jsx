@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, signInWithGoogle } from "../lib/firebase";
+import { auth, signInWithGoogle, signInWithApple } from "../lib/firebase";
 import { FcGoogle } from "react-icons/fc";
+import { FaApple } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext"; // assumes you expose user + loading
 import { resolveRole } from "../utils/resolveRole";
@@ -138,6 +139,40 @@ export default function SignIn() {
         }
     }
 
+    async function onApple() {
+        setErr(""); setLoading(true);
+        hasRedirected.current = false; // Reset redirect flag
+        try {
+            await signInWithApple(); // must return a UserCredential
+            // Redirect will be handled by the useEffect hook when user state updates
+        } catch (e) {
+            const code = e.code || "";
+            let errorMessage = e.message || t("signIn.errors.failed");
+            
+            // Handle specific Firebase configuration errors
+            if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
+                errorMessage = "Firebase Authentication configuration not found. This usually means:\n\n1. ❌ Your API key doesn't match the project ID\n   → Check that VITE_FIREBASE_API_KEY belongs to the 'kingsman-saddlery' project\n\n2. ❌ Authentication is not enabled in Firebase Console\n   → Go to Firebase Console → Authentication → Get Started\n\n3. ❌ API key restrictions in Google Cloud Console\n   → Check Google Cloud Console → APIs & Services → Credentials\n\n4. ❌ Wrong project configuration\n   → Make sure ALL .env values are from the SAME Firebase project\n\nTo fix: Get a fresh config from Firebase Console → Project Settings → General → Your apps";
+            } else if (code === "auth/popup-closed-by-user") {
+                errorMessage = t("signIn.errors.popupClosed");
+            } else if (code === "auth/popup-blocked") {
+                errorMessage = t("signIn.errors.popupBlocked");
+            } else if (code === "auth/cancelled-popup-request") {
+                errorMessage = t("signIn.errors.popupCancelled");
+            } else if (code === "auth/account-exists-with-different-credential") {
+                errorMessage = "An account already exists with the same email address but different sign-in credentials. Please sign in using your original method.";
+            } else if (code === "auth/operation-not-allowed") {
+                errorMessage = "Apple Sign-In is not enabled. Please contact support.";
+            } else if (code === "auth/invalid-credential") {
+                errorMessage = "Invalid Apple credentials. Please try again.";
+            }
+            
+            console.error("Sign-in error:", code, errorMessage);
+            setErr(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div className="max-w-md mx-auto px-4 py-12 signin-page-container">
             <h1 className="text-2xl font-bold mb-6">{t("signIn.title")}</h1>
@@ -214,6 +249,25 @@ export default function SignIn() {
                     >
                         <FcGoogle className="text-xl" />
                         <span>{t("signIn.continueWithGoogle")}</span>
+                    </button>
+                </div>
+                <div className="mt-3">
+                    <button
+                        onClick={onApple}
+                        className="flex items-center justify-center gap-3 w-full border border-gray-300 rounded-md bg-black px-4 py-3 text-sm font-medium text-white shadow-sm hover:bg-gray-900 active:bg-gray-800 focus:outline-none transition"
+                        style={{ 
+                            '--tw-ring-color': 'var(--brand)',
+                        }}
+                        onFocus={(e) => {
+                            e.target.style.boxShadow = '0 0 0 2px var(--brand)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.boxShadow = '';
+                        }}
+                        disabled={loading}
+                    >
+                        <FaApple className="text-xl" />
+                        <span>{t("signIn.continueWithApple")}</span>
                     </button>
                 </div>
                 <div className="mt-4 text-sm">

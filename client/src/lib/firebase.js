@@ -1,5 +1,5 @@
 import { initializeApp, deleteApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, OAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage"; //for uploading images
 
@@ -50,10 +50,15 @@ try {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app); //for uploading images
-const provider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
+const appleProvider = new OAuthProvider('apple.com');
 
 export async function signInWithGoogle() {
-  return await signInWithPopup(auth, provider);
+  return await signInWithPopup(auth, googleProvider);
+}
+
+export async function signInWithApple() {
+  return await signInWithPopup(auth, appleProvider);
 }
 
 export async function signOutUser() {
