@@ -49,11 +49,14 @@ export default function CompleteProfile() {
     confirm: false
   });
 
-  // Check if user signed in with Google (no password provider)
-  const isGoogleUser = useMemo(() => {
+  // Check if user signed in with Google or Apple (no password provider)
+  const isOAuthUser = useMemo(() => {
     if (!user) return false;
-    return user.providerData?.some(provider => provider.providerId === "google.com") && 
-           !user.providerData?.some(provider => provider.providerId === "password");
+    const hasOAuthProvider = user.providerData?.some(provider => 
+      provider.providerId === "google.com" || provider.providerId === "apple.com"
+    );
+    const hasPasswordProvider = user.providerData?.some(provider => provider.providerId === "password");
+    return hasOAuthProvider && !hasPasswordProvider;
   }, [user]);
 
   // Check if profile is already complete and redirect if so
@@ -277,8 +280,8 @@ export default function CompleteProfile() {
       setLoading(true);
       setPasswordError("");
 
-      if (isGoogleUser) {
-        // For Google users, link email/password provider
+      if (isOAuthUser) {
+        // For Google or Apple users, link email/password provider
         const credential = EmailAuthProvider.credential(
           user.email,
           trimmedNewPassword
