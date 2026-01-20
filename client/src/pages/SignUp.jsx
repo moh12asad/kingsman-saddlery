@@ -393,10 +393,21 @@ export default function SignUp() {
       const code = e.code || "";
       let errorMessage = e.message || "Apple sign-up failed.";
       
-      if (code === "auth/popup-closed-by-user") {
+      // Handle specific Firebase configuration errors
+      if (code === "auth/configuration-not-found" || errorMessage.includes("CONFIGURATION_NOT_FOUND")) {
+        errorMessage = "Firebase Authentication configuration not found. This usually means:\n\n1. ❌ Your API key doesn't match the project ID\n   → Check that VITE_FIREBASE_API_KEY belongs to the 'kingsman-saddlery' project\n\n2. ❌ Authentication is not enabled in Firebase Console\n   → Go to Firebase Console → Authentication → Get Started\n\n3. ❌ API key restrictions in Google Cloud Console\n   → Check Google Cloud Console → APIs & Services → Credentials\n\n4. ❌ Wrong project configuration\n   → Make sure ALL .env values are from the SAME Firebase project\n\nTo fix: Get a fresh config from Firebase Console → Project Settings → General → Your apps";
+      } else if (code === "auth/popup-closed-by-user") {
         errorMessage = "Sign-up popup was closed.";
       } else if (code === "auth/popup-blocked") {
         errorMessage = "Sign-up popup was blocked. Please allow popups for this site.";
+      } else if (code === "auth/cancelled-popup-request") {
+        errorMessage = "Sign-up popup was cancelled. Please try again.";
+      } else if (code === "auth/account-exists-with-different-credential") {
+        errorMessage = "An account already exists with the same email address but different sign-in credentials. Please sign in using your original method.";
+      } else if (code === "auth/operation-not-allowed") {
+        errorMessage = "Apple Sign-In is not enabled. Please contact support.";
+      } else if (code === "auth/invalid-credential") {
+        errorMessage = "Invalid Apple credentials. Please try again.";
       }
       
       console.error("Apple sign-up error:", code, errorMessage);

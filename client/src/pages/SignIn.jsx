@@ -158,6 +158,12 @@ export default function SignIn() {
                 errorMessage = t("signIn.errors.popupBlocked");
             } else if (code === "auth/cancelled-popup-request") {
                 errorMessage = t("signIn.errors.popupCancelled");
+            } else if (code === "auth/account-exists-with-different-credential") {
+                errorMessage = "An account already exists with the same email address but different sign-in credentials. Please sign in using your original method.";
+            } else if (code === "auth/operation-not-allowed") {
+                errorMessage = "Apple Sign-In is not enabled. Please contact support.";
+            } else if (code === "auth/invalid-credential") {
+                errorMessage = "Invalid Apple credentials. Please try again.";
             }
             
             console.error("Sign-in error:", code, errorMessage);
