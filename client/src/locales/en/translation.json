@@ -245,7 +245,8 @@
     "scrollLeft": "Scroll left",
     "scrollRight": "Scroll right",
     "addToFavorites": "Add to favorites",
-    "removeFromFavorites": "Remove from favorites"
+    "removeFromFavorites": "Remove from favorites",
+    "outOfStock": "Out of Stock"
   },
   "productDetail": {
     "loading": "Loading product...",
@@ -722,6 +723,7 @@
       "description": "Description",
       "descriptionPlaceholder": "Product description",
       "available": "Available",
+      "outOfStock": "Out of Stock",
       "sale": "On Sale",
       "salePrice": "Sale price",
       "salePricePlaceholder": "Sale price (₪ ILS)",

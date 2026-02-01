@@ -242,7 +242,8 @@
     "scrollLeft": "التمرير لليسار",
     "scrollRight": "التمرير لليمين",
     "addToFavorites": "إضافة إلى المفضلة",
-    "removeFromFavorites": "إزالة من المفضلة"
+    "removeFromFavorites": "إزالة من المفضلة",
+    "outOfStock": "نفدت الكمية"
   },
   "shop": {
     "tabs": {
@@ -631,6 +632,7 @@
       "description": "الوصف",
       "descriptionPlaceholder": "وصف المنتج",
       "available": "متاح",
+      "outOfStock": "نفدت الكمية",
       "sale": "عرض خاص",
       "salePrice": "سعر البيع",
       "salePricePlaceholder": "سعر البيع (₪ ILS)",

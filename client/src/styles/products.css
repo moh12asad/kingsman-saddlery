@@ -325,6 +325,57 @@ html {
   transform: translateY(-2px);
 }
 
+/* Out of Stock Styling */
+.card-product-carousel.out-of-stock {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+  position: relative;
+}
+
+.card-product-carousel.out-of-stock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.card-product-carousel.out-of-stock:hover {
+  transform: none;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-product-carousel.out-of-stock .card-product-image {
+  filter: grayscale(0.3);
+}
+
+.card-product-badge-out-of-stock {
+  background: #6b7280 !important;
+  border-color: #4b5563 !important;
+}
+
+.card-product-badge-out-of-stock .badge-text {
+  font-size: 0.5rem;
+  line-height: 1.2;
+}
+
+.card-product-carousel.out-of-stock .btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #9ca3af;
+  border-color: #9ca3af;
+}
+
+/* Allow favorite button to work on out-of-stock products */
+.card-product-carousel.out-of-stock .card-product-favorite {
+  pointer-events: auto;
+  z-index: 6;
+}
+
 .card-product-image-wrapper {
   position: relative;
   width: 100%;
