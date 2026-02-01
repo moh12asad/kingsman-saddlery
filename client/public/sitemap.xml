@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://kingsmansaddlery.com/</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/?lang=he" />
+  </url>
+  
+  <!-- Shop -->
+  <url>
+    <loc>https://kingsmansaddlery.com/shop</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/shop" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/shop?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/shop?lang=he" />
+  </url>
+  
+  <!-- Products -->
+  <url>
+    <loc>https://kingsmansaddlery.com/products</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/products" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/products?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/products?lang=he" />
+  </url>
+  
+  <!-- About Us -->
+  <url>
+    <loc>https://kingsmansaddlery.com/about</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/about" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/about?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/about?lang=he" />
+  </url>
+  
+  <!-- Contact -->
+  <url>
+    <loc>https://kingsmansaddlery.com/contact</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/contact" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/contact?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/contact?lang=he" />
+  </url>
+  
+  <!-- Shipping & Returns -->
+  <url>
+    <loc>https://kingsmansaddlery.com/shipping</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/shipping" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/shipping?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/shipping?lang=he" />
+  </url>
+  
+  <!-- Terms & Conditions -->
+  <url>
+    <loc>https://kingsmansaddlery.com/terms</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/terms" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/terms?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/terms?lang=he" />
+  </url>
+  
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://kingsmansaddlery.com/privacy</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kingsmansaddlery.com/privacy" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kingsmansaddlery.com/privacy?lang=ar" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://kingsmansaddlery.com/privacy?lang=he" />
+  </url>
+  
+</urlset>
+
+

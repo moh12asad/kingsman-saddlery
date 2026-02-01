@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and private pages
+Disallow: /admin/
+Disallow: /signin
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /profile
+Disallow: /complete-profile
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /favorites
+Disallow: /401
+Disallow: /500
+
+# Allow public pages
+Allow: /
+Allow: /shop
+Allow: /products
+Allow: /product/
+Allow: /subcategories/
+Allow: /about
+Allow: /contact
+Allow: /shipping
+Allow: /terms
+Allow: /privacy
+
+# Sitemap location
+Sitemap: https://kingsmansaddlery.com/sitemap.xml
+
+
