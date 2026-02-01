@@ -90,6 +90,7 @@ export default function EditProduct() {
           relatedProducts: Array.isArray(found.relatedProducts) ? found.relatedProducts : [],
           size: Array.isArray(found.size) ? found.size : [],
           color: Array.isArray(found.color) ? found.color : [],
+          outOfStock: found.outOfStock || false,
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -274,6 +275,7 @@ export default function EditProduct() {
         image: product.image || "",
         description: cleanTranslation(product.description),
         available: product.available,
+        outOfStock: product.outOfStock || false,
         sale: product.sale,
         sale_proce: Number(product.sale_proce) || 0,
         featured: product.featured || false,
@@ -679,34 +681,40 @@ export default function EditProduct() {
           </div>
 
           <div className="grid-col-span-full md:col-span-2 lg:col-span-3 flex-row flex-gap-xl">
-            <label className="flex-row flex-gap-sm cursor-pointer">
+            <label className="admin-checkbox-container">
               <input
                 type="checkbox"
                 checked={product.available}
                 onChange={e => setProduct({ ...product, available: e.target.checked })}
-                className="w-4 h-4"
               />
-              <span className="text-small">Available</span>
+              <span className="admin-checkbox-label">Available</span>
             </label>
 
-            <label className="flex-row flex-gap-sm cursor-pointer">
+            <label className="admin-checkbox-container">
+              <input
+                type="checkbox"
+                checked={product.outOfStock || false}
+                onChange={e => setProduct({ ...product, outOfStock: e.target.checked })}
+              />
+              <span className="admin-checkbox-label">{t('admin.createProduct.outOfStock') || "Out of Stock"}</span>
+            </label>
+
+            <label className="admin-checkbox-container">
               <input
                 type="checkbox"
                 checked={product.sale}
                 onChange={e => setProduct({ ...product, sale: e.target.checked })}
-                className="w-4 h-4"
               />
-              <span className="text-small">{t("products.onSale")}</span>
+              <span className="admin-checkbox-label">{t("products.onSale")}</span>
             </label>
 
-            <label className="flex-row flex-gap-sm cursor-pointer">
+            <label className="admin-checkbox-container">
               <input
                 type="checkbox"
                 checked={product.featured || false}
                 onChange={e => setProduct({ ...product, featured: e.target.checked })}
-                className="w-4 h-4"
               />
-              <span className="text-small">Featured (for Suggested tab)</span>
+              <span className="admin-checkbox-label">Featured (for Suggested tab)</span>
             </label>
           </div>
 

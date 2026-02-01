@@ -63,8 +63,9 @@ export default function Products() {
           throw new Error(data.error || t("products.failedToFetch"));
         }
 
+        // Show products that are available OR out of stock (but not unavailable)
         const availableProducts = (data.products || []).filter(
-          (product) => product.available === true
+          (product) => product.available === true || product.outOfStock === true
         );
 
         // Match brands with products
@@ -785,6 +786,7 @@ function ProductCard({ product, onAddToCart }) {
   const { toggleFavorite, isFavorite: checkFavorite } = useFavorites();
   const { formatPrice } = useCurrency();
   const isFav = checkFavorite(product.id);
+  const isOutOfStock = product.outOfStock === true;
 
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
@@ -792,16 +794,24 @@ function ProductCard({ product, onAddToCart }) {
   };
 
   const handleCardClick = () => {
-    navigate(`/product/${product.id}`);
+    if (!isOutOfStock) {
+      navigate(`/product/${product.id}`);
+    }
   };
 
   const handleAddToCartClick = (e) => {
     e.stopPropagation();
-    onAddToCart(product);
+    if (!isOutOfStock) {
+      onAddToCart(product);
+    }
   };
 
   return (
-    <div className="card-product-carousel" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
+    <div 
+      className={`card-product-carousel ${isOutOfStock ? 'out-of-stock' : ''}`} 
+      onClick={handleCardClick} 
+      style={{ cursor: isOutOfStock ? 'not-allowed' : 'pointer' }}
+    >
       <div className="card-product-image-wrapper">
         <div className="card-product-image-container">
           {product.image ? (
@@ -822,7 +832,12 @@ function ProductCard({ product, onAddToCart }) {
           >
             <FaHeart />
           </button>
-          {product.sale && (
+          {isOutOfStock && (
+            <span className="card-product-badge card-product-badge-out-of-stock">
+              <span className="badge-text">{t("products.outOfStock") || "Out of Stock"}</span>
+            </span>
+          )}
+          {product.sale && !isOutOfStock && (
             <span className="card-product-badge">
               <span className="badge-text">{t("products.sale")}</span>
             </span>
@@ -861,11 +876,12 @@ function ProductCard({ product, onAddToCart }) {
         </div>
         <button
           onClick={handleAddToCartClick}
-          className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm"
+          disabled={isOutOfStock}
+          className={`btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition margin-top-sm ${isOutOfStock ? 'disabled' : ''}`}
           style={{ marginTop: '0.75rem' }}
         >
           <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-          {t("products.addToCart")}
+          {isOutOfStock ? (t("products.outOfStock") || "Out of Stock") : t("products.addToCart")}
         </button>
       </div>
     </div>
