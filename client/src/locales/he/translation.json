@@ -242,7 +242,8 @@
     "scrollLeft": "גלול שמאלה",
     "scrollRight": "גלול ימינה",
     "addToFavorites": "הוסף למועדפים",
-    "removeFromFavorites": "הסר ממועדפים"
+    "removeFromFavorites": "הסר ממועדפים",
+    "outOfStock": "אזל מהמלאי"
   },
   "shop": {
     "tabs": {
@@ -630,6 +631,7 @@
       "description": "תיאור",
       "descriptionPlaceholder": "תיאור המוצר",
       "available": "זמין",
+      "outOfStock": "אזל מהמלאי",
       "sale": "במבצע",
       "salePrice": "מחיר מבצע",
       "salePricePlaceholder": "מחיר מבצע (₪ ILS)",

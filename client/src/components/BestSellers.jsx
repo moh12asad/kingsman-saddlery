@@ -54,8 +54,9 @@ export default function BestSellers() {
           throw new Error("Failed to fetch products");
         }
         const productsData = await productsRes.json();
+        // Show products that are available OR out of stock (but not unavailable)
         const availableProducts = (productsData.products || []).filter(
-          (product) => product.available === true
+          (product) => product.available === true || product.outOfStock === true
         );
 
         // Match brands with products
@@ -186,23 +187,28 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
   const { t, i18n } = useTranslation();
+  const isOutOfStock = product.outOfStock === true;
 
   const handleCardClick = () => {
-    navigate(`/product/${product.id}`);
+    if (!isOutOfStock) {
+      navigate(`/product/${product.id}`);
+    }
   };
 
   const handleAddToCartClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Get button position for animation
-    const buttonRect = e.currentTarget.getBoundingClientRect();
-    const position = {
-      x: buttonRect.left + buttonRect.width / 2 - 30, // Center minus half image width
-      y: buttonRect.top + buttonRect.height / 2 - 30
-    };
-    
-    onAddToCart(position);
+    if (!isOutOfStock) {
+      // Get button position for animation
+      const buttonRect = e.currentTarget.getBoundingClientRect();
+      const position = {
+        x: buttonRect.left + buttonRect.width / 2 - 30, // Center minus half image width
+        y: buttonRect.top + buttonRect.height / 2 - 30
+      };
+      
+      onAddToCart(position);
+    }
   };
 
   const handleFavoriteClick = (e) => {
@@ -211,7 +217,11 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
   };
 
   return (
-    <div className="card-product-carousel" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
+    <div 
+      className={`card-product-carousel ${isOutOfStock ? 'out-of-stock' : ''}`} 
+      onClick={handleCardClick} 
+      style={{ cursor: isOutOfStock ? 'not-allowed' : 'pointer' }}
+    >
       <div className="card-product-image-wrapper">
         <div className="card-product-image-container">
           {product.image ? (
@@ -232,7 +242,12 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           >
             <FaHeart />
           </button>
-          {product.sale && (
+          {isOutOfStock && (
+            <span className="card-product-badge card-product-badge-out-of-stock">
+              <span className="badge-text">{t("products.outOfStock") || "Out of Stock"}</span>
+            </span>
+          )}
+          {product.sale && !isOutOfStock && (
             <span className="card-product-badge">
               <span className="badge-text">{t("shop.common.sale")}</span>
             </span>
@@ -273,11 +288,12 @@ function ProductCard({ product, onAddToCart, isFavorite, onToggleFavorite }) {
           <button
             type="button"
             onClick={handleAddToCartClick}
-            className="btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition"
+            disabled={isOutOfStock}
+            className={`btn btn-primary btn-full padding-x-md padding-y-sm text-small font-medium transition ${isOutOfStock ? 'disabled' : ''}`}
             style={{ position: 'relative', zIndex: 10, pointerEvents: 'auto', width: '100%' }}
           >
             <FaShoppingCart style={{ marginRight: '0.5rem' }} />
-            {t("products.addToCart")}
+            {isOutOfStock ? (t("products.outOfStock") || "Out of Stock") : t("products.addToCart")}
           </button>
         </div>
       </div>

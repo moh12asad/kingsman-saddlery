@@ -21,6 +21,7 @@ export default function CreateProduct(){
     image: "",
     description: { en: "", ar: "", he: "" },
     available: true,
+    outOfStock: false,
     sale: false,
     sale_proce: 0,
     featured: false,
@@ -590,6 +591,17 @@ export default function CreateProduct(){
                 className="w-4 h-4"
               />
               <span className="text-sm">{t('admin.createProduct.available')}</span>
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={form.outOfStock} 
+                onChange={e=>setForm({...form,outOfStock:e.target.checked})}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">{t('admin.createProduct.outOfStock') || "Out of Stock"}</span>
             </label>
           </div>
           <div>

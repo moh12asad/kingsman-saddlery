@@ -90,6 +90,7 @@ export default function EditProduct() {
           relatedProducts: Array.isArray(found.relatedProducts) ? found.relatedProducts : [],
           size: Array.isArray(found.size) ? found.size : [],
           color: Array.isArray(found.color) ? found.color : [],
+          outOfStock: found.outOfStock || false,
         };
         setProduct(formattedProduct);
     } catch (err) {
@@ -274,6 +275,7 @@ export default function EditProduct() {
         image: product.image || "",
         description: cleanTranslation(product.description),
         available: product.available,
+        outOfStock: product.outOfStock || false,
         sale: product.sale,
         sale_proce: Number(product.sale_proce) || 0,
         featured: product.featured || false,
@@ -687,6 +689,16 @@ export default function EditProduct() {
                 className="w-4 h-4"
               />
               <span className="text-small">Available</span>
+            </label>
+
+            <label className="flex-row flex-gap-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={product.outOfStock || false}
+                onChange={e => setProduct({ ...product, outOfStock: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <span className="text-small">{t('admin.createProduct.outOfStock') || "Out of Stock"}</span>
             </label>
 
             <label className="flex-row flex-gap-sm cursor-pointer">
