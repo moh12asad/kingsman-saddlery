@@ -583,36 +583,33 @@ export default function CreateProduct(){
             </small>
           </div>
           <div>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="admin-checkbox-container">
               <input 
                 type="checkbox" 
                 checked={form.available} 
                 onChange={e=>setForm({...form,available:e.target.checked})}
-                className="w-4 h-4"
               />
-              <span className="text-sm">{t('admin.createProduct.available')}</span>
+              <span className="admin-checkbox-label">{t('admin.createProduct.available')}</span>
             </label>
           </div>
           <div>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="admin-checkbox-container">
               <input 
                 type="checkbox" 
                 checked={form.outOfStock} 
                 onChange={e=>setForm({...form,outOfStock:e.target.checked})}
-                className="w-4 h-4"
               />
-              <span className="text-sm">{t('admin.createProduct.outOfStock') || "Out of Stock"}</span>
+              <span className="admin-checkbox-label">{t('admin.createProduct.outOfStock') || "Out of Stock"}</span>
             </label>
           </div>
           <div>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="admin-checkbox-container">
               <input 
                 type="checkbox" 
                 checked={form.sale} 
                 onChange={e=>setForm({...form,sale:e.target.checked})}
-                className="w-4 h-4"
               />
-              <span className="text-sm">{t("products.onSale")}</span>
+              <span className="admin-checkbox-label">{t("products.onSale")}</span>
             </label>
           </div>
           <div>
@@ -625,14 +622,13 @@ export default function CreateProduct(){
             />
           </div>
           <div>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="admin-checkbox-container">
               <input 
                 type="checkbox" 
                 checked={form.featured} 
                 onChange={e=>setForm({...form,featured:e.target.checked})}
-                className="w-4 h-4"
               />
-              <span className="text-sm">Featured (for Suggested tab)</span>
+              <span className="admin-checkbox-label">Featured (for Suggested tab)</span>
             </label>
           </div>
           <div>
