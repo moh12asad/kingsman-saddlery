@@ -469,6 +469,7 @@
     "payment": "الدفع",
     "paymentMessage": "سيتم تكوين تكامل الدفع مع Tranzilla.",
     "paymentGatewayComingSoon": "بوابة الدفع قريباً",
+    "paymentConfigurationError": "خطأ في تكوين بوابة الدفع. يرجى الاتصال بالدعم.",
     "backToCart": "العودة إلى السلة",
     "backToHome": "العودة إلى الصفحة الرئيسية",
     "processing": "جاري المعالجة...",

@@ -7,10 +7,10 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=ID
 VITE_FIREBASE_STORAGE_BUCKET=PROJECT9.appspot.com
 
 # Comma-separated emails allowed to view the Admin Panel (client-side gate)
-
-
-# Comma-separated emails allowed to view the Admin Panel (client-side gate)
 VITE_ADMIN_EMAILS=moh12asad10@gmail.com,another.admin@example.com
+
+# Tranzila Payment Gateway Configuration
+VITE_TRANZILA_MERCHANT_ID=maxxx
 
 # server/.env
 PORT=5000

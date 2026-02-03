@@ -560,6 +560,7 @@
     "payment": "Payment",
     "paymentMessage": "Payment integration will be configured with Tranzilla.",
     "paymentGatewayComingSoon": "Payment gateway coming soon",
+    "paymentConfigurationError": "Payment gateway configuration error. Please contact support.",
     "backToCart": "Back to Cart",
     "backToHome": "Back to Home",
     "processing": "Processing...",

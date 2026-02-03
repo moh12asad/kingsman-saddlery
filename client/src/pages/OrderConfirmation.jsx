@@ -11,6 +11,7 @@ import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaC
 import "../styles/order-confirmation.css";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
+const TRANZILA_MERCHANT_ID = import.meta.env.VITE_TRANZILA_MERCHANT_ID || "";
 
 export default function OrderConfirmation() {
   const { cartItems, getTotalPrice, getTotalWeight, isLoaded, clearCart, addToCart, removeFromCart, updateQuantity } = useCart();
@@ -1382,18 +1383,44 @@ export default function OrderConfirmation() {
                 </div>
               </div>
 
-              {/* Payment Section - Placeholder for Tranzilla */}
+              {/* Payment Section - Tranzila Payment Widget */}
               <div className="card">
                 <h2 className="section-title margin-bottom-md">{t("orderConfirmation.payment")}</h2>
                 <div className="padding-y-md">
-                  <p className="text-muted text-sm margin-bottom-md">
-                    {t("orderConfirmation.paymentMessage")}
-                  </p>
-                  <div className="card padding-md order-confirmation-payment-placeholder">
-                    <p className="text-sm text-muted text-center">
-                      {t("orderConfirmation.paymentGatewayComingSoon")}
-                    </p>
-                  </div>
+                  {total !== null && !discountCalculationError ? (
+                    <>
+                      <p className="text-muted text-sm margin-bottom-md">
+                        {t("orderConfirmation.paymentMessage")}
+                      </p>
+                      {TRANZILA_MERCHANT_ID ? (
+                        <div className="order-confirmation-payment-iframe-container">
+                          <iframe
+                            src={`https://direct.tranzila.com/${TRANZILA_MERCHANT_ID}/iframenew.php?sum=${total}&cred_type=1&currency=1&tranmode=A`}
+                            className="order-confirmation-payment-iframe"
+                            title={t("orderConfirmation.payment")}
+                            allow="payment"
+                            frameBorder="0"
+                          />
+                        </div>
+                      ) : (
+                        <div className="card padding-md order-confirmation-error">
+                          <p className="text-sm text-error text-center">
+                            {t("orderConfirmation.paymentConfigurationError") || "Payment gateway configuration error. Please contact support."}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="card padding-md order-confirmation-payment-placeholder">
+                      <p className="text-sm text-muted text-center">
+                        {calculatingDiscount 
+                          ? t("orderConfirmation.calculatingDiscountMessage")
+                          : discountCalculationError
+                          ? t("orderConfirmation.errors.unableToCalculateDiscountRefresh")
+                          : t("orderConfirmation.loadingOrderTotal")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
