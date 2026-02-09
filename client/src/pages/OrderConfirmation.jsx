@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getTranslated } from "../utils/translations";
 import { useCart } from "../context/CartContext";
@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
+import TranzilaPaymentIframe from "../components/TranzilaPaymentIframe";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner, FaShoppingCart, FaChevronLeft, FaChevronRight, FaTrash } from "react-icons/fa";
 import "../styles/order-confirmation.css";
 
@@ -58,6 +59,9 @@ export default function OrderConfirmation() {
   const [saleProducts, setSaleProducts] = useState([]); // Products on sale
   const [loadingSaleProducts, setLoadingSaleProducts] = useState(false); // Loading state for sale products
   const saleProductsScrollRef = useRef(null); // Ref for sale products carousel scroll
+  const [showPaymentIframe, setShowPaymentIframe] = useState(false); // Show/hide payment iframe
+  const [paymentSessionId, setPaymentSessionId] = useState(null); // Payment session ID for iframe
+  const [searchParams] = useSearchParams(); // For handling payment success callback
   
   // Delivery zone fees (in ILS)
   const DELIVERY_ZONE_FEES = {
@@ -230,6 +234,19 @@ export default function OrderConfirmation() {
       navigate("/cart");
     }
   }, [isLoaded, cartItems.length, navigate]);
+
+  // Handle payment success callback from Tranzila redirect
+  useEffect(() => {
+    const paymentSuccess = searchParams.get("paymentSuccess");
+    const sessionId = searchParams.get("sessionId");
+    const transactionId = searchParams.get("transactionId");
+
+    if (paymentSuccess === "true" && sessionId && transactionId && !sendingEmail) {
+      // Payment was successful, now create the order
+      handleCreateOrderAfterPayment(sessionId, transactionId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Load sale products
   useEffect(() => {
@@ -624,8 +641,66 @@ export default function OrderConfirmation() {
         return;
       }
 
+      // Step 1: Create payment session (this will be used to get iframe URL)
+      const paymentRes = await fetch(`${API}/api/payment/process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          amount: total,
+          currency: "ILS",
+          items: cartItems.map(item => ({
+            productId: item.id || item.productId || "",
+            id: item.id || item.productId || "",
+            name: item.name || "",
+            price: item.price || 0,
+            quantity: item.quantity || 1,
+            weight: item.weight || 0
+          })),
+          subtotal: subtotal,
+          tax: tax,
+          deliveryCost: deliveryCost,
+          deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+          totalWeight: totalWeight,
+        })
+      });
+
+      const paymentResult = await paymentRes.json();
+
+      if (!paymentRes.ok || !paymentResult.success) {
+        setError(paymentResult.error || "Failed to initialize payment. Please try again.");
+        setSendingEmail(false);
+        return;
+      }
+
+      // Step 2: Show payment iframe
+      setPaymentSessionId(paymentResult.paymentSessionId);
+      setShowPaymentIframe(true);
+      setSendingEmail(false);
+    } catch (err) {
+      console.error("Error proceeding to payment:", err);
+      setError(err.message || "Failed to initialize payment");
+      setSendingEmail(false);
+    }
+  }
+
+  // Create order after payment is verified
+  async function handleCreateOrderAfterPayment(sessionId, transactionId) {
+    try {
+      setSendingEmail(true);
+      setError("");
+      setEmailSuccess("");
+
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        setError("You must be signed in to proceed");
+        setSendingEmail(false);
+        return;
+      }
+
       // Prepare order data
-      // SECURITY: total is guaranteed to include discount at this point (validated above)
       const orderData = {
         customerName: profileData.displayName || user?.displayName || "Customer",
         customerEmail: profileData.email || user?.email,
@@ -637,45 +712,19 @@ export default function OrderConfirmation() {
           image: item.image || "",
           quantity: item.quantity,
           price: item.price,
-          weight: item.weight || 0, // Include weight for server-side calculation
+          weight: item.weight || 0,
           selectedSize: item.selectedSize || null,
           selectedColor: item.selectedColor || null,
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
-        total: total, // This is guaranteed to be the correct total with discount
-        subtotal: subtotalAfterDiscount, // Use subtotal after discount
-        subtotalBeforeDiscount: subtotal, // Original subtotal before discount
-        tax: tax, // 18% VAT on subtotal after discount
-        status: "pending"
+        total: total,
+        subtotal: subtotalAfterDiscount,
+        subtotalBeforeDiscount: subtotal,
+        tax: tax,
+        status: "new"
       };
 
-      // Step 1: Process payment first (use calculated total with discount)
-      const paymentRes = await fetch(`${API}/api/payment/process`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          amount: total,
-          currency: "ILS",
-          subtotal: subtotal,
-          tax: tax,
-          deliveryCost: deliveryCost,
-          deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
-          totalWeight: totalWeight,
-          // Add other payment method details as needed
-        })
-      });
-
-      const paymentResult = await paymentRes.json();
-
-      if (!paymentRes.ok || !paymentResult.success) {
-        setError(paymentResult.error || "Payment processing failed. Please try again.");
-        return;
-      }
-
-      // Step 2: Payment successful - now create order in database
+      // Create order in database
       const orderRes = await fetch(`${API}/api/orders/create`, {
         method: "POST",
         headers: {
@@ -684,14 +733,14 @@ export default function OrderConfirmation() {
         },
         body: JSON.stringify({
           ...orderData,
-          status: "new", // New order status
-          transactionId: paymentResult.transactionId,
+          transactionId: transactionId,
           metadata: {
-            paymentMethod: "credit_card", // Credit card payment
-            deliveryType: deliveryType, // "delivery" or "pickup"
+            paymentMethod: "credit_card",
+            deliveryType: deliveryType,
             deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
             totalWeight: totalWeight,
-            transactionId: paymentResult.transactionId
+            transactionId: transactionId,
+            paymentSessionId: sessionId
           }
         })
       });
@@ -700,11 +749,11 @@ export default function OrderConfirmation() {
 
       if (!orderRes.ok) {
         setError(orderResult.error || "Payment succeeded but failed to create order. Please contact support.");
-        // TODO: In production, you might want to handle refund here if order creation fails after payment
+        setSendingEmail(false);
         return;
       }
 
-      // Step 3: Order created successfully - send confirmation email
+      // Send confirmation email
       const emailRes = await fetch(`${API}/api/email/order-confirmation`, {
         method: "POST",
         headers: {
@@ -725,7 +774,7 @@ export default function OrderConfirmation() {
             deliveryType: deliveryType,
             deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
             totalWeight: totalWeight,
-            transactionId: paymentResult.transactionId
+            transactionId: transactionId
           }
         })
       });
@@ -736,26 +785,29 @@ export default function OrderConfirmation() {
         setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! Confirmation email sent to ${orderData.customerEmail}`);
         console.log("Payment processed, order created, and email sent successfully.");
         console.log("Order ID:", orderResult.id);
-        console.log("Transaction ID:", paymentResult.transactionId);
+        console.log("Transaction ID:", transactionId);
         
-        // Clear the cart and navigate to order details page with success parameter
         clearCart();
         navigate(`/orders/${orderResult.id}?success=true`);
       } else {
-        // Payment and order succeeded but email failed - still show success
         setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! However, the confirmation email could not be sent.`);
         console.warn("Payment and order succeeded but email failed:", emailResult.error);
         
-        // Even if email failed, clear cart and navigate to order details with success parameter
         clearCart();
         navigate(`/orders/${orderResult.id}?success=true`);
       }
     } catch (err) {
-      console.error("Error proceeding to payment:", err);
-      setError(err.message || "Failed to process payment");
+      console.error("Error creating order after payment:", err);
+      setError(err.message || "Failed to create order");
     } finally {
       setSendingEmail(false);
     }
+  }
+
+  // Handle payment iframe close
+  function handleClosePaymentIframe() {
+    setShowPaymentIframe(false);
+    setPaymentSessionId(null);
   }
 
   if (!isLoaded || loading) {
@@ -773,6 +825,31 @@ export default function OrderConfirmation() {
 
   if (cartItems.length === 0) {
     return null; // Will redirect
+  }
+
+  // Show payment iframe modal if needed
+  if (showPaymentIframe && paymentSessionId) {
+    return (
+      <AuthRoute>
+        <main className="page-with-navbar order-confirmation-page">
+          <div className="container-main padding-y-xl">
+            <TranzilaPaymentIframe
+              paymentSessionId={paymentSessionId}
+              amount={total}
+              onPaymentSuccess={() => {
+                // Payment success is handled via URL redirect
+                setShowPaymentIframe(false);
+              }}
+              onPaymentFailure={() => {
+                setShowPaymentIframe(false);
+                setError("Payment was cancelled or failed. Please try again.");
+              }}
+              onClose={handleClosePaymentIframe}
+            />
+          </div>
+        </main>
+      </AuthRoute>
+    );
   }
 
   return (

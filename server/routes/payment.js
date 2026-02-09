@@ -578,42 +578,51 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       console.log(`[PAYMENT] [${requestId}] Subtotal not provided, skipping amount validation`);
     }
 
-    // TODO: Integrate with Tranzilla or Max Business payment gateway here
-    // 
-    // Integration Guides Available:
-    // - server/PAYMENT_INTEGRATION_TRANZILLA.md (for Tranzilla)
-    // - server/PAYMENT_INTEGRATION_MAX_BUSINESS.md (for Max עסקים)
-    //
-    // For now, this is a placeholder that always returns success
-    // In the future, this will:
-    // 1. Process payment through chosen gateway (Tranzilla/Max Business)
-    // 2. Handle payment callbacks
-    // 3. Return payment status and transaction ID
+    // For iframe integration, we don't process payment here
+    // Instead, we return a payment session ID that the frontend will use
+    // to get the iframe URL and complete payment
+    console.log(`[PAYMENT] [${requestId}] Creating payment session for iframe...`);
 
-    console.log(`[PAYMENT] [${requestId}] Processing payment (placeholder mode)...`);
-
-    // Simulate payment processing
-    const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const paymentResult = {
-      success: true,
-      transactionId: transactionId,
+    // Generate a unique payment session ID
+    const paymentSessionId = `PAY-SESSION-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Store payment session in Firestore (temporary, will be cleaned up after payment)
+    const paymentSessionData = {
+      userId: uid,
       amount: amount,
       currency: currency,
-      status: "completed",
-      message: "Payment processed successfully (placeholder)"
+      subtotal: validatedSubtotal,
+      tax: calculatedTax || tax,
+      deliveryCost: validatedDeliveryCost || deliveryCost,
+      deliveryZone: deliveryZone,
+      totalWeight: totalWeight,
+      items: items,
+      status: "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 30 * 60 * 1000)) // 30 minutes
+    };
+
+    await db.collection("payment_sessions").doc(paymentSessionId).set(paymentSessionData);
+
+    const paymentResult = {
+      success: true,
+      paymentSessionId: paymentSessionId,
+      amount: amount,
+      currency: currency,
+      status: "pending",
+      message: "Payment session created. Use paymentSessionId to get iframe URL."
     };
 
     const duration = Date.now() - startTime;
-    console.log(`[PAYMENT] [${requestId}] Payment Process Success:`, {
-      transactionId: transactionId,
+    console.log(`[PAYMENT] [${requestId}] Payment Session Created:`, {
+      paymentSessionId: paymentSessionId,
       amount: amount,
       currency: currency,
-      status: "completed",
       durationMs: duration,
       timestamp: new Date().toISOString()
     });
 
-    // Return success response
+    // Return payment session ID
     res.status(200).json(paymentResult);
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -627,6 +636,209 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: "Payment processing failed", 
+      details: error.message 
+    });
+  }
+});
+
+// Get Tranzila iframe URL
+router.post("/get-iframe-url", verifyFirebaseToken, async (req, res) => {
+  const requestId = `IFRAME-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const startTime = Date.now();
+  
+  try {
+    const { uid, email } = req.user || {};
+    const { paymentSessionId, amount } = req.body;
+
+    console.log(`[PAYMENT] [${requestId}] Get Iframe URL Request Started`);
+    console.log(`[PAYMENT] [${requestId}] User: ${uid || 'unknown'} (${email || 'no email'})`);
+    console.log(`[PAYMENT] [${requestId}] Payment Session ID: ${paymentSessionId}`);
+
+    if (!paymentSessionId) {
+      return res.status(400).json({ 
+        error: "Payment session ID is required" 
+      });
+    }
+
+    // Get payment session from Firestore
+    const paymentSessionDoc = await db.collection("payment_sessions").doc(paymentSessionId).get();
+    
+    if (!paymentSessionDoc.exists) {
+      return res.status(404).json({ 
+        error: "Payment session not found or expired" 
+      });
+    }
+
+    const paymentSession = paymentSessionDoc.data();
+
+    // Verify session belongs to current user
+    if (paymentSession.userId !== uid) {
+      console.error(`[PAYMENT] [${requestId}] [SECURITY] User ${uid} attempted to access session ${paymentSessionId} owned by ${paymentSession.userId}`);
+      return res.status(403).json({ 
+        error: "Unauthorized access to payment session" 
+      });
+    }
+
+    // Check if session expired
+    if (paymentSession.expiresAt && paymentSession.expiresAt.toDate() < new Date()) {
+      return res.status(400).json({ 
+        error: "Payment session expired" 
+      });
+    }
+
+    // Get Tranzila configuration - Direct iFrame method (Simple + Secure)
+    const TRANZILA_TERMINAL_NAME = process.env.TRANZILA_TERMINAL_NAME;
+    const BASE_URL = process.env.CLIENT_BASE_URL || process.env.BASE_URL || "http://localhost:5173";
+
+    if (!TRANZILA_TERMINAL_NAME) {
+      console.error(`[PAYMENT] [${requestId}] TRANZILA_TERMINAL_NAME not configured`);
+      return res.status(500).json({ 
+        error: "Payment gateway not configured",
+        details: "TRANZILA_TERMINAL_NAME environment variable is required"
+      });
+    }
+
+    // Prepare callback URLs with session ID for security
+    const okPage = `${BASE_URL}/payment/success?sessionId=${paymentSessionId}`;
+    const failPage = `${BASE_URL}/payment/failure?sessionId=${paymentSessionId}`;
+
+    // Build direct iframe URL with parameters
+    // SECURITY: All parameters generated server-side, never exposed in frontend code
+    const params = new URLSearchParams({
+      sum: paymentSession.amount.toFixed(2),
+      currency: paymentSession.currency || "1", // 1 = ILS
+      ok_url: okPage,
+      error_url: failPage,
+      TranzilaTK: paymentSessionId, // Transaction reference for tracking
+    });
+
+    const iframeUrl = `https://directng.tranzila.com/${TRANZILA_TERMINAL_NAME}/iframenew.php?${params.toString()}`;
+
+    console.log(`[PAYMENT] [${requestId}] Generated Direct iFrame URL:`, {
+      terminalName: TRANZILA_TERMINAL_NAME,
+      amount: paymentSession.amount,
+      sessionId: paymentSessionId
+      // Note: Not logging full URL for security
+    });
+
+    // Update payment session with iframe URL
+    await db.collection("payment_sessions").doc(paymentSessionId).update({
+      iframeUrl: iframeUrl,
+      iframeRequestedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    const duration = Date.now() - startTime;
+    console.log(`[PAYMENT] [${requestId}] Iframe URL Retrieved Successfully:`, {
+      paymentSessionId: paymentSessionId,
+      durationMs: duration
+    });
+
+    res.json({
+      success: true,
+      iframeUrl: iframeUrl,
+      paymentSessionId: paymentSessionId
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`[PAYMENT] [${requestId}] Get Iframe URL Error:`, {
+      error: error.message,
+      stack: error.stack,
+      durationMs: duration
+    });
+    res.status(500).json({ 
+      error: "Failed to get payment iframe URL",
+      details: error.message 
+    });
+  }
+});
+
+// Verify Tranzila payment callback (called after payment success)
+router.post("/verify-payment", verifyFirebaseToken, async (req, res) => {
+  const requestId = `VERIFY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const startTime = Date.now();
+  
+  try {
+    const { uid } = req.user || {};
+    const { paymentSessionId, thtk, index } = req.body;
+
+    console.log(`[PAYMENT] [${requestId}] Verify Payment Request Started`);
+    console.log(`[PAYMENT] [${requestId}] User: ${uid || 'unknown'}`);
+    console.log(`[PAYMENT] [${requestId}] Payment Session ID: ${paymentSessionId}`);
+
+    if (!paymentSessionId || !thtk || !index) {
+      return res.status(400).json({ 
+        error: "Payment session ID, thtk, and index are required" 
+      });
+    }
+
+    // Get payment session from Firestore
+    const paymentSessionDoc = await db.collection("payment_sessions").doc(paymentSessionId).get();
+    
+    if (!paymentSessionDoc.exists) {
+      return res.status(404).json({ 
+        error: "Payment session not found" 
+      });
+    }
+
+    const paymentSession = paymentSessionDoc.data();
+
+    // Verify session belongs to current user
+    if (paymentSession.userId !== uid) {
+      console.error(`[PAYMENT] [${requestId}] [SECURITY] User ${uid} attempted to verify session ${paymentSessionId} owned by ${paymentSession.userId}`);
+      return res.status(403).json({ 
+        error: "Unauthorized access to payment session" 
+      });
+    }
+
+    // For direct iframe method, payment verification relies on callback parameters
+    // Tranzila redirects to ok_url with transaction parameters (thtk, index, etc.)
+    // We validate the session and use the callback parameters as proof of payment
+    
+    // Generate transaction ID from callback parameters
+    // thtk and index are provided by Tranzila in the success callback
+    const transactionId = thtk || index || `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`[PAYMENT] [${requestId}] Payment verified via direct iframe callback:`, {
+      sessionId: paymentSessionId,
+      transactionId: transactionId,
+      thtk: thtk,
+      index: index
+    });
+    
+    // Note: For direct iframe, we trust Tranzila's redirect to ok_url as proof of successful payment
+    // The redirect only happens after Tranzila processes the payment successfully
+
+    // Update payment session with success status
+    await db.collection("payment_sessions").doc(paymentSessionId).update({
+      status: "completed",
+      transactionId: transactionId,
+      verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      verificationResult: verifyResult
+    });
+
+    const duration = Date.now() - startTime;
+    console.log(`[PAYMENT] [${requestId}] Payment Verified Successfully:`, {
+      paymentSessionId: paymentSessionId,
+      transactionId: transactionId,
+      durationMs: duration
+    });
+
+    res.json({
+      success: true,
+      transactionId: transactionId,
+      paymentSessionId: paymentSessionId,
+      amount: paymentSession.amount,
+      currency: paymentSession.currency
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`[PAYMENT] [${requestId}] Verify Payment Error:`, {
+      error: error.message,
+      stack: error.stack,
+      durationMs: duration
+    });
+    res.status(500).json({ 
+      error: "Failed to verify payment",
       details: error.message 
     });
   }

@@ -1,0 +1,39 @@
+.payment-status-container {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.payment-status-container h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.payment-status-container.payment-success {
+  color: #10b981;
+}
+
+.payment-status-container.payment-error {
+  color: #ef4444;
+}
+
+.payment-details {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.payment-details p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.payment-details strong {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+

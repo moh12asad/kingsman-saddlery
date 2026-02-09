@@ -617,6 +617,7 @@
       "locationUnavailable": "Location unavailable. Please enter your address manually.",
       "locationTimeout": "Location request timed out. Please try again or enter your address manually.",
       "enterAddressManually": "Please enter your address manually.",
+      "unableToCalculateDiscountRefresh": "Unable to calculate discount. Please refresh the page and try again.",
       "unableToLoadProfile": "Unable to load profile data",
       "failedToLoadProfile": "Failed to load profile data",
       "waitForDiscount": "Please wait while we calculate your discount...",
@@ -626,8 +627,7 @@
       "mustSignIn": "You must be signed in to proceed",
       "paymentProcessingFailed": "Payment processing failed. Please try again.",
       "paymentSucceededOrderFailed": "Payment succeeded but failed to create order. Please contact support.",
-      "failedToProcessPayment": "Failed to process payment",
-      "unableToCalculateDiscountRefresh": "Unable to calculate discount. Please refresh the page."
+      "failedToProcessPayment": "Failed to process payment"
     },
     "success": {
       "orderCreated": "Order #",
@@ -1024,6 +1024,26 @@
       "phoneExists": "An account with this phone number already exists. Please sign in instead.",
       "failed": "Something went wrong. Please try again."
     }
+  },
+  "payment": {
+    "loadingIframe": "Loading payment form...",
+    "close": "Close",
+    "noIframeUrl": "Unable to load payment form. Please try again.",
+    "completePayment": "Complete Payment",
+    "amount": "Amount",
+    "paymentForm": "Payment Form",
+    "securePayment": "Your payment is secured by Tranzila",
+    "verifyingPayment": "Verifying Payment",
+    "pleaseWait": "Please wait while we verify your payment...",
+    "verificationFailed": "Payment Verification Failed",
+    "backToOrder": "Back to Order",
+    "paymentSuccessful": "Payment Successful!",
+    "transactionId": "Transaction ID",
+    "redirectingToOrder": "Redirecting to order confirmation...",
+    "paymentFailed": "Payment Failed",
+    "paymentFailedMessage": "Your payment could not be processed. Please try again or contact support.",
+    "tryAgain": "Try Again",
+    "backToCart": "Back to Cart"
   }
 }
 

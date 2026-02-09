@@ -18,6 +18,8 @@ import CompleteProfile from "./pages/CompleteProfile.jsx";
 import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import Orders from "./pages/Orders.jsx";
 import OrderDetail from "./pages/OrderDetail.jsx";
+import PaymentSuccess from "./pages/PaymentSuccess.jsx";
+import PaymentFailure from "./pages/PaymentFailure.jsx";
 import SubCategories from "./pages/SubCategories.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
@@ -88,6 +90,9 @@ const router = createBrowserRouter([
       { path: "subcategories/:categoryName", element: <SubCategories /> },
       { path: "cart", element: <Cart /> },
       { path: "checkout", element: <OrderConfirmation /> },
+      { path: "order-confirmation", element: <OrderConfirmation /> },
+      { path: "payment/success", element: <PaymentSuccess /> },
+      { path: "payment/failure", element: <PaymentFailure /> },
       { path: "favorites", element: <Favorites /> },
       { path: "profile", element: <Profile /> },
       { path: "complete-profile", element: <CompleteProfile /> },
