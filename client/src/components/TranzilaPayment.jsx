@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { FaSpinner, FaCheckCircle, FaTimesCircle, FaLock } from "react-icons/fa";
 import "../styles/tranzila-payment.css";
@@ -38,7 +38,46 @@ export default function TranzilaPayment({
 
   // Get Tranzila terminal name from environment variable
   const terminalName = import.meta.env.VITE_TRANZILA_TERMINAL_NAME || "terminalname";
-  const iframeUrl = `https://directng.tranzila.com/${terminalName}/iframenew.php`;
+  
+  // Build iframe URL with amount parameter
+  // Tranzila requires the amount to be passed as a URL parameter
+  // Note: Tranzila may expect amount in agorot (cents) or in ILS - check Tranzila docs for your specific setup
+  const buildIframeUrl = useCallback(() => {
+    const baseUrl = `https://directng.tranzila.com/${terminalName}/iframenew.php`;
+    const params = new URLSearchParams();
+    
+    // Add amount (required by Tranzila)
+    // Try both formats: 'sum' (in agorot) and 'amount' (in ILS)
+    if (amount && amount > 0) {
+      // Option 1: Amount in agorot (cents) - 1 ILS = 100 agorot
+      const amountInAgorot = Math.round(amount * 100);
+      params.append('sum', amountInAgorot.toString());
+      
+      // Option 2: Also try amount in ILS (some configurations may use this)
+      // params.append('amount', amount.toFixed(2));
+    }
+    
+    // Add currency if not ILS
+    if (currency && currency !== "ILS") {
+      params.append('currency', currency);
+    }
+    
+    // Add customer information if available (optional)
+    if (customerEmail) {
+      params.append('email', customerEmail);
+    }
+    if (customerPhone) {
+      params.append('phone', customerPhone);
+    }
+    if (customerName) {
+      params.append('contact', customerName);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }, [terminalName, amount, currency, customerEmail, customerPhone, customerName]);
+  
+  const iframeUrl = buildIframeUrl();
 
   useEffect(() => {
     // Listen for messages from Tranzila iframe
