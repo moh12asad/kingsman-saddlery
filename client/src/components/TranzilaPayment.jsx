@@ -62,6 +62,12 @@ export default function TranzilaPayment({
       params.append('currency', currency);
     }
     
+    // Add success and failed redirect URLs (Tranzila will redirect here after payment)
+    const currentOrigin = window.location.origin;
+    params.append('success_url', `${currentOrigin}/payment/success`);
+    params.append('error_url', `${currentOrigin}/payment/failed`);
+    params.append('cancel_url', `${currentOrigin}/payment/failed`);
+    
     // Add customer information if available (optional)
     if (customerEmail) {
       params.append('email', customerEmail);

@@ -1,0 +1,237 @@
+.payment-result-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.payment-result-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.payment-success-card {
+  border-top: 4px solid #28a745;
+}
+
+.payment-failed-card {
+  border-top: 4px solid #dc3545;
+}
+
+.payment-result-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.success-icon {
+  color: #28a745;
+}
+
+.failed-icon {
+  color: #dc3545;
+}
+
+.payment-result-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.payment-success-card .payment-result-title {
+  color: #28a745;
+}
+
+.payment-failed-card .payment-result-title {
+  color: #dc3545;
+}
+
+.payment-result-message {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.payment-result-details {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.payment-result-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.payment-result-detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #666;
+}
+
+.detail-value {
+  font-weight: 700;
+  color: #333;
+  font-family: monospace;
+}
+
+.payment-result-info {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.payment-result-info-text {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.payment-result-order-id {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+  font-size: 1.1rem;
+}
+
+.payment-result-order-id strong {
+  color: #007bff;
+  font-family: monospace;
+}
+
+.payment-result-reasons {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.payment-result-reasons li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  color: #666;
+}
+
+.payment-result-reasons li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #dc3545;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.payment-result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.payment-result-actions .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.payment-result-actions .btn-primary {
+  background: #007bff;
+  color: #fff;
+  border: none;
+}
+
+.payment-result-actions .btn-primary:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.payment-result-actions .btn-secondary {
+  background: #6c757d;
+  color: #fff;
+  border: none;
+}
+
+.payment-result-actions .btn-secondary:hover {
+  background: #545b62;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.payment-result-footer {
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.payment-result-footer-text {
+  font-size: 0.9rem;
+  color: #999;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* RTL Support */
+[dir="rtl"] .payment-result-detail-item {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .payment-result-reasons li {
+  padding-left: 0;
+  padding-right: 1.5rem;
+}
+
+[dir="rtl"] .payment-result-reasons li::before {
+  left: auto;
+  right: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .payment-result-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .payment-result-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .payment-result-title {
+    font-size: 1.5rem;
+  }
+
+  .payment-result-icon {
+    font-size: 3rem;
+  }
+
+  .payment-result-actions {
+    gap: 0.75rem;
+  }
+
+  .payment-result-actions .btn {
+    width: 100%;
+  }
+}
+

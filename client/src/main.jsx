@@ -19,6 +19,8 @@ import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import Orders from "./pages/Orders.jsx";
 import OrderDetail from "./pages/OrderDetail.jsx";
 import SubCategories from "./pages/SubCategories.jsx";
+import PaymentSuccess from "./pages/PaymentSuccess.jsx";
+import PaymentFailed from "./pages/PaymentFailed.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -93,6 +95,8 @@ const router = createBrowserRouter([
       { path: "complete-profile", element: <CompleteProfile /> },
       { path: "orders", element: <Orders /> },
       { path: "orders/:id", element: <OrderDetail /> },
+      { path: "payment/success", element: <PaymentSuccess /> },
+      { path: "payment/failed", element: <PaymentFailed /> },
       { path: "about", element: <AboutUs /> },
       { path: "contact", element: <ContactUs /> },
       { path: "shipping", element: <ShippingReturns /> },

@@ -1035,6 +1035,33 @@
     "cancelled": "Payment was cancelled",
     "transactionId": "Transaction ID",
     "iframeError": "Failed to load payment gateway"
+  },
+  "paymentSuccess": {
+    "title": "Payment Successful!",
+    "message": "Thank you for your purchase. Your payment has been processed successfully.",
+    "transactionId": "Transaction ID",
+    "amount": "Amount Paid",
+    "orderCreated": "Your order has been created and you will receive a confirmation email shortly.",
+    "orderNumber": "Order Number",
+    "viewOrder": "View Order",
+    "viewOrders": "View My Orders",
+    "continueShopping": "Continue Shopping",
+    "footer": "If you have any questions about your order, please contact our support team."
+  },
+  "paymentFailed": {
+    "title": "Payment Failed",
+    "message": "Unfortunately, your payment could not be processed. Please try again.",
+    "transactionId": "Transaction ID",
+    "amount": "Amount",
+    "commonReasons": "Common reasons for payment failure:",
+    "reason1": "Insufficient funds",
+    "reason2": "Incorrect card details",
+    "reason3": "Card expired or blocked",
+    "reason4": "Network or technical issues",
+    "tryAgain": "Try Again",
+    "backToCart": "Back to Cart",
+    "continueShopping": "Continue Shopping",
+    "footer": "If you continue to experience issues, please contact our support team or try a different payment method."
   }
 }
 
