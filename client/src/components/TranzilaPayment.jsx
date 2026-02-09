@@ -41,22 +41,25 @@ export default function TranzilaPayment({
   
   // Build iframe URL with amount parameter
   // Tranzila requires the amount to be passed as a URL parameter
-  // Note: Tranzila may expect amount in agorot (cents) or in ILS - check Tranzila docs for your specific setup
+  // Tranzila expects amount in agorot (cents) - 1 ILS = 100 agorot
   const buildIframeUrl = useCallback(() => {
     const baseUrl = `https://directng.tranzila.com/${terminalName}/iframenew.php`;
     const params = new URLSearchParams();
     
-    // Add amount (required by Tranzila)
-    // Tranzila expects amount in ILS format (decimal), not agorot
-    if (amount && amount > 0) {
-      // Send amount in ILS format with 2 decimal places
-      params.append('amount', amount.toFixed(2));
+    // Add amount (required by Tranzila) - send as is (24.66 ILS)
+    // Ensure amount is a valid number and greater than 0
+    const validAmount = Number(amount);
+    if (validAmount && validAmount > 0 && !isNaN(validAmount)) {
+      // Send amount directly in ILS format: 24.66
+      params.append('sum', validAmount.toFixed(2));
+      console.log('[Tranzila] Amount:', validAmount, 'ILS');
+    } else {
+      console.warn('[Tranzila] Invalid amount:', amount);
     }
     
-    // Add currency if not ILS
-    if (currency && currency !== "ILS") {
-      params.append('currency', currency);
-    }
+    // Always send currency parameter (default is ILS)
+    const currencyCode = currency || "ILS";
+    params.append('currency', currencyCode);
     
     // Add success and failed redirect URLs (Tranzila will redirect here after payment)
     const currentOrigin = window.location.origin;
