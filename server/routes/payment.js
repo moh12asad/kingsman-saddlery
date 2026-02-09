@@ -582,7 +582,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
     // The payment is processed via Tranzila iframe on the frontend
     // This endpoint verifies the transaction and stores payment details
     
-    const { transactionId, paymentMethod, tranzilaResponse } = req.body;
+    const { transactionId, tranzilaResponse } = req.body;
 
     console.log(`[PAYMENT] [${requestId}] Processing Tranzila payment verification...`);
     console.log(`[PAYMENT] [${requestId}] Transaction ID: ${transactionId || 'not provided'}`);
