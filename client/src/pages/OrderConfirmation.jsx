@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { auth } from "../lib/firebase";
 import AuthRoute from "../components/AuthRoute";
+import TranzilaPayment from "../components/TranzilaPayment";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope, FaUser, FaShoppingBag, FaEdit, FaCheck, FaTimes, FaLocationArrow, FaSpinner, FaShoppingCart, FaChevronLeft, FaChevronRight, FaTrash } from "react-icons/fa";
 import "../styles/order-confirmation.css";
 
@@ -58,6 +59,8 @@ export default function OrderConfirmation() {
   const [saleProducts, setSaleProducts] = useState([]); // Products on sale
   const [loadingSaleProducts, setLoadingSaleProducts] = useState(false); // Loading state for sale products
   const saleProductsScrollRef = useRef(null); // Ref for sale products carousel scroll
+  const [showPayment, setShowPayment] = useState(false); // Show Tranzila payment iframe
+  const [paymentCompleted, setPaymentCompleted] = useState(false); // Track if payment is completed
   
   // Delivery zone fees (in ILS)
   const DELIVERY_ZONE_FEES = {
@@ -592,31 +595,41 @@ export default function OrderConfirmation() {
     );
   }
 
-  async function handleProceedToPayment() {
+  // Handle showing payment iframe
+  function handleShowPayment() {
+    // Validate all required fields before showing payment
+    if (calculatingDiscount) {
+      setError("Please wait while we calculate your discount...");
+      return;
+    }
+    
+    if (discountCalculationError) {
+      setError(`Unable to calculate discount: ${discountCalculationError}. Please refresh the page and try again.`);
+      return;
+    }
+    
+    if (!canProceedToPayment || total === null) {
+      setError("Unable to calculate order total. Please refresh the page and try again.");
+      return;
+    }
+
+    if (!hasCompleteAddress || !hasDeliveryZone || !profileData.phone) {
+      setError("Please complete all required information before proceeding to payment.");
+      return;
+    }
+
+    setError("");
+    setShowPayment(true);
+  }
+
+  // Handle Tranzila payment success
+  async function handlePaymentSuccess(paymentResult) {
     try {
+      setPaymentCompleted(true);
       setSendingEmail(true);
       setError("");
       setEmailSuccess("");
-      
-      // SECURITY: Ensure discount calculation has completed before proceeding
-      if (calculatingDiscount) {
-        setError("Please wait while we calculate your discount...");
-        setSendingEmail(false);
-        return;
-      }
-      
-      if (discountCalculationError) {
-        setError(`Unable to calculate discount: ${discountCalculationError}. Please refresh the page and try again.`);
-        setSendingEmail(false);
-        return;
-      }
-      
-      if (!canProceedToPayment || total === null) {
-        setError("Unable to calculate order total. Please refresh the page and try again.");
-        setSendingEmail(false);
-        return;
-      }
-      
+
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
         setError("You must be signed in to proceed");
@@ -625,7 +638,6 @@ export default function OrderConfirmation() {
       }
 
       // Prepare order data
-      // SECURITY: total is guaranteed to include discount at this point (validated above)
       const orderData = {
         customerName: profileData.displayName || user?.displayName || "Customer",
         customerEmail: profileData.email || user?.email,
@@ -637,19 +649,19 @@ export default function OrderConfirmation() {
           image: item.image || "",
           quantity: item.quantity,
           price: item.price,
-          weight: item.weight || 0, // Include weight for server-side calculation
+          weight: item.weight || 0,
           selectedSize: item.selectedSize || null,
           selectedColor: item.selectedColor || null,
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
-        total: total, // This is guaranteed to be the correct total with discount
-        subtotal: subtotalAfterDiscount, // Use subtotal after discount
-        subtotalBeforeDiscount: subtotal, // Original subtotal before discount
-        tax: tax, // 18% VAT on subtotal after discount
+        total: total,
+        subtotal: subtotalAfterDiscount,
+        subtotalBeforeDiscount: subtotal,
+        tax: tax,
         status: "pending"
       };
 
-      // Step 1: Process payment first (use calculated total with discount)
+      // Step 1: Verify payment with server (Tranzila callback verification)
       const paymentRes = await fetch(`${API}/api/payment/process`, {
         method: "POST",
         headers: {
@@ -664,18 +676,22 @@ export default function OrderConfirmation() {
           deliveryCost: deliveryCost,
           deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
           totalWeight: totalWeight,
-          // Add other payment method details as needed
+          transactionId: paymentResult.transactionId,
+          paymentMethod: "tranzila",
+          tranzilaResponse: paymentResult.response
         })
       });
 
-      const paymentResult = await paymentRes.json();
+      const paymentVerification = await paymentRes.json();
 
-      if (!paymentRes.ok || !paymentResult.success) {
-        setError(paymentResult.error || "Payment processing failed. Please try again.");
+      if (!paymentRes.ok || !paymentVerification.success) {
+        setError(paymentVerification.error || "Payment verification failed. Please contact support.");
+        setPaymentCompleted(false);
+        setSendingEmail(false);
         return;
       }
 
-      // Step 2: Payment successful - now create order in database
+      // Step 2: Payment verified - now create order in database
       const orderRes = await fetch(`${API}/api/orders/create`, {
         method: "POST",
         headers: {
@@ -684,14 +700,15 @@ export default function OrderConfirmation() {
         },
         body: JSON.stringify({
           ...orderData,
-          status: "new", // New order status
-          transactionId: paymentResult.transactionId,
+          status: "new",
+          transactionId: paymentResult.transactionId || paymentVerification.transactionId,
           metadata: {
-            paymentMethod: "credit_card", // Credit card payment
-            deliveryType: deliveryType, // "delivery" or "pickup"
+            paymentMethod: "credit_card",
+            paymentGateway: "tranzila",
+            deliveryType: deliveryType,
             deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
             totalWeight: totalWeight,
-            transactionId: paymentResult.transactionId
+            transactionId: paymentResult.transactionId || paymentVerification.transactionId
           }
         })
       });
@@ -1063,21 +1080,23 @@ export default function OrderConfirmation() {
                   <Link to="/cart" className="btn btn-secondary">
                     {t("orderConfirmation.backToCart")}
                   </Link>
-                  <button
-                    className="btn btn-cta"
-                    disabled={!hasCompleteAddress || !hasDeliveryZone || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
-                    onClick={handleProceedToPayment}
-                  >
-                    {sendingEmail 
-                      ? t("orderConfirmation.processing")
-                      : calculatingDiscount
-                      ? t("orderConfirmation.calculatingDiscount")
-                      : !canProceedToPayment
-                      ? t("orderConfirmation.loadingOrderTotal")
-                      : !hasCompleteAddress || !hasDeliveryZone || !profileData.phone
-                      ? t("orderConfirmation.completeInformationToContinue")
-                      : `${t("orderConfirmation.proceedToPayment")} (${formatPrice(total)})`}
-                  </button>
+                  {!showPayment && !paymentCompleted && (
+                    <button
+                      className="btn btn-cta"
+                      disabled={!hasCompleteAddress || !hasDeliveryZone || !profileData.phone || sendingEmail || calculatingDiscount || !canProceedToPayment}
+                      onClick={handleShowPayment}
+                    >
+                      {sendingEmail 
+                        ? t("orderConfirmation.processing")
+                        : calculatingDiscount
+                        ? t("orderConfirmation.calculatingDiscount")
+                        : !canProceedToPayment
+                        ? t("orderConfirmation.loadingOrderTotal")
+                        : !hasCompleteAddress || !hasDeliveryZone || !profileData.phone
+                        ? t("orderConfirmation.completeInformationToContinue")
+                        : `${t("orderConfirmation.proceedToPayment")} (${formatPrice(total)})`}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1382,20 +1401,29 @@ export default function OrderConfirmation() {
                 </div>
               </div>
 
-              {/* Payment Section - Placeholder for Tranzilla */}
-              <div className="card">
-                <h2 className="section-title margin-bottom-md">{t("orderConfirmation.payment")}</h2>
-                <div className="padding-y-md">
-                  <p className="text-muted text-sm margin-bottom-md">
-                    {t("orderConfirmation.paymentMessage")}
-                  </p>
-                  <div className="card padding-md order-confirmation-payment-placeholder">
-                    <p className="text-sm text-muted text-center">
-                      {t("orderConfirmation.paymentGatewayComingSoon")}
-                    </p>
+              {/* Payment Section - Tranzila Integration */}
+              {showPayment && !paymentCompleted && total !== null && (
+                <div className="card">
+                  <h2 className="section-title margin-bottom-md">{t("orderConfirmation.payment")}</h2>
+                  <div className="padding-y-md">
+                    <TranzilaPayment
+                      amount={total}
+                      currency="ILS"
+                      customerName={profileData.displayName || user?.displayName || ""}
+                      customerEmail={profileData.email || user?.email || ""}
+                      customerPhone={profileData.phone || ""}
+                      onSuccess={handlePaymentSuccess}
+                      onError={(error) => {
+                        setError(error.error || "Payment failed. Please try again.");
+                        setShowPayment(false);
+                      }}
+                      onCancel={() => {
+                        setShowPayment(false);
+                      }}
+                    />
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

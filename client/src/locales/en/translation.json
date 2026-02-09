@@ -1024,6 +1024,17 @@
       "phoneExists": "An account with this phone number already exists. Please sign in instead.",
       "failed": "Something went wrong. Please try again."
     }
+  },
+  "payment": {
+    "securePayment": "Secure Payment",
+    "amount": "Amount",
+    "loading": "Loading secure payment gateway...",
+    "processing": "Processing your payment...",
+    "success": "Payment successful!",
+    "failed": "Payment failed",
+    "cancelled": "Payment was cancelled",
+    "transactionId": "Transaction ID",
+    "iframeError": "Failed to load payment gateway"
   }
 }
 
