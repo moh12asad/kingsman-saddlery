@@ -47,14 +47,10 @@ export default function TranzilaPayment({
     const params = new URLSearchParams();
     
     // Add amount (required by Tranzila)
-    // Try both formats: 'sum' (in agorot) and 'amount' (in ILS)
+    // Tranzila expects amount in ILS format (decimal), not agorot
     if (amount && amount > 0) {
-      // Option 1: Amount in agorot (cents) - 1 ILS = 100 agorot
-      const amountInAgorot = Math.round(amount * 100);
-      params.append('sum', amountInAgorot.toString());
-      
-      // Option 2: Also try amount in ILS (some configurations may use this)
-      // params.append('amount', amount.toFixed(2));
+      // Send amount in ILS format with 2 decimal places
+      params.append('amount', amount.toFixed(2));
     }
     
     // Add currency if not ILS
