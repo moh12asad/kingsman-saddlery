@@ -454,6 +454,12 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       });
     }
 
+    // Initialize variables that will be used later
+    let calculatedTax = tax || 0;
+    let validatedDeliveryCost = deliveryCost || 0;
+    let discountAmount = 0;
+    let finalSubtotal = validatedSubtotal;
+
     // SECURITY: Recalculate expected total with discount using server-calculated subtotal
     if (validatedSubtotal > 0) {
       console.log(`[PAYMENT] [${requestId}] Recalculating expected total with discount...`);
@@ -466,8 +472,6 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
         reason: discountCheck.reason || "N/A"
       });
       
-      let discountAmount = 0;
-      
       if (discountCheck.eligible) {
         // SECURITY: Use server-calculated subtotal, not client-provided subtotal
         discountAmount = calculateDiscountAmount(validatedSubtotal, discountCheck.discountPercentage);
@@ -476,7 +480,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
         console.log(`[PAYMENT] [${requestId}] Discount calculated: ${discountAmount} ILS (${discountCheck.discountPercentage}% of ${validatedSubtotal})`);
       }
 
-      const finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));
+      finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));
       
       // SECURITY: Validate delivery cost (should be 0 or 50, but allow any non-negative value)
       // Delivery zone fees (in ILS)
@@ -522,14 +526,14 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       
       // SECURITY: Validate client-provided delivery cost matches server calculation
       // Always use server-calculated value for security (never trust client-provided delivery cost)
-      const validatedDeliveryCost = roundTo2Decimals(expectedDeliveryCost);
+      validatedDeliveryCost = roundTo2Decimals(expectedDeliveryCost);
       
       // Calculate base amount (subtotal + delivery) before tax
       const baseAmount = roundTo2Decimals(finalSubtotal + validatedDeliveryCost);
       
       // SECURITY: Recalculate tax server-side (never trust client-provided tax)
       const VAT_RATE = 0.18;
-      const calculatedTax = roundTo2Decimals(baseAmount * VAT_RATE);
+      calculatedTax = roundTo2Decimals(baseAmount * VAT_RATE);
       
       // Calculate expected total
       const expectedTotal = roundTo2Decimals(Math.max(0, baseAmount + calculatedTax));
@@ -575,7 +579,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       
       console.log(`[PAYMENT] [${requestId}] Amount validation passed (difference: ${difference.toFixed(4)} ILS)`);
     } else {
-      console.log(`[PAYMENT] [${requestId}] Subtotal not provided, skipping amount validation`);
+      console.log(`[PAYMENT] [${requestId}] Subtotal is 0 or not provided, using provided tax and delivery cost`);
     }
 
     // For iframe integration, we don't process payment here

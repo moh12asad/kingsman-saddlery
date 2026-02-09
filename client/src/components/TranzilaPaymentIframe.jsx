@@ -143,8 +143,7 @@ export default function TranzilaPaymentIframe({
           className="tranzila-payment-iframe"
           title={t("payment.paymentForm")}
           onLoad={handleIframeLoad}
-          allow="payment"
-          sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
+          allow="payment *"
         />
       </div>
       <div className="tranzila-payment-footer">
