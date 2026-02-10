@@ -153,6 +153,22 @@ The component listens for messages from the Tranzila iframe:
 - **Check network tab**: Verify API calls to `/api/payment/process` succeed
 - **Check authentication**: Ensure user token is valid
 
+### 404 Error After Tranzila Redirect
+
+If you get a 404 error when Tranzila redirects to `/payment/success` or `/payment/failed`:
+
+**Problem**: Vite preview server doesn't handle SPA routing for direct redirects from external services.
+
+**Solution**: The application uses an Express server for Railway deployment that handles SPA routing properly.
+
+**What to do**:
+1. Ensure `client/server.js` exists (created automatically)
+2. Ensure `express` is in `client/package.json` dependencies
+3. Ensure `client/railway.json` uses `"startCommand": "npm start"`
+4. Redeploy your frontend service on Railway
+
+The Express server will serve `index.html` for all routes, allowing React Router to handle routing on the client side.
+
 ## Security Considerations
 
 1. **HTTPS Required**: Always use HTTPS in production for secure payment processing
@@ -177,7 +193,11 @@ The component listens for messages from the Tranzila iframe:
 
 - `client/src/components/TranzilaPayment.jsx` - Payment component
 - `client/src/pages/OrderConfirmation.jsx` - Checkout page integration
+- `client/src/pages/PaymentSuccess.jsx` - Payment success page
+- `client/src/pages/PaymentFailed.jsx` - Payment failed page
 - `server/routes/payment.js` - Payment processing endpoint
 - `client/src/styles/tranzila-payment.css` - Payment component styles
+- `client/src/styles/payment-result.css` - Success/failed page styles
 - `client/src/locales/en/translation.json` - Payment translations
+- `client/server.js` - Express server for SPA routing (Railway deployment)
 

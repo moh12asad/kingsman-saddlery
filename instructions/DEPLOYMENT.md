@@ -166,7 +166,8 @@ preview: {
 
 - Railway will use your `client/railway.json` which:
   - Builds with: `npm install && npm run build`
-  - Starts with: `npm run preview`
+  - Starts with: `npm start` (uses Express server for SPA routing)
+- **Important**: The Express server (`client/server.js`) handles SPA routing, ensuring external redirects (like from Tranzila payment gateway) work correctly
 - Wait for deployment to complete
 
 #### 3.6 Get Frontend URL
