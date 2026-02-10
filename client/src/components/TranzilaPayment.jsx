@@ -95,16 +95,31 @@ export default function TranzilaPayment({
 
         // Handle redirect messages from success/failure pages loaded in iframe
         if (data.type === "payment_success_redirect") {
-          // Iframe has navigated to success page - redirect entire page
+          // Iframe has navigated to success page
           setLoading(false);
-          const params = new URLSearchParams();
-          if (data.transactionId) params.append('transactionId', data.transactionId);
-          if (data.amount) params.append('amount', data.amount);
-          if (data.orderId) params.append('orderId', data.orderId);
-          // Use the URL from the message or construct it
-          const redirectUrl = data.url || `/payment/success?${params.toString()}`;
-          window.location.href = redirectUrl;
-          return;
+          
+          // Call success callback first (for order creation)
+          // The callback will handle order creation and then redirect the entire page
+          if (onSuccess) {
+            onSuccess({
+              transactionId: data.transactionId,
+              amount: data.amount ? parseFloat(data.amount) : amount,
+              currency: currency,
+              response: data,
+            });
+            // Don't redirect here - let the callback handle it after order creation
+            return;
+          } else {
+            // If no callback, redirect entire page to success page
+            const params = new URLSearchParams();
+            if (data.transactionId) params.append('transactionId', data.transactionId);
+            if (data.amount) params.append('amount', data.amount);
+            if (data.orderId) params.append('orderId', data.orderId);
+            // Use the URL from the message or construct it
+            const redirectUrl = data.url || `/payment/success?${params.toString()}`;
+            window.location.href = redirectUrl;
+            return;
+          }
         }
 
         if (data.type === "payment_failed_redirect") {
