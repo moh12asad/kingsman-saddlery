@@ -93,6 +93,33 @@ export default function TranzilaPayment({
 
         console.log("[Tranzila] Received message:", data);
 
+        // Handle redirect messages from success/failure pages loaded in iframe
+        if (data.type === "payment_success_redirect") {
+          // Iframe has navigated to success page - redirect entire page
+          setLoading(false);
+          const params = new URLSearchParams();
+          if (data.transactionId) params.append('transactionId', data.transactionId);
+          if (data.amount) params.append('amount', data.amount);
+          if (data.orderId) params.append('orderId', data.orderId);
+          // Use the URL from the message or construct it
+          const redirectUrl = data.url || `/payment/success?${params.toString()}`;
+          window.location.href = redirectUrl;
+          return;
+        }
+
+        if (data.type === "payment_failed_redirect") {
+          // Iframe has navigated to failed page - redirect entire page
+          setLoading(false);
+          const params = new URLSearchParams();
+          if (data.error) params.append('error', data.error);
+          if (data.transactionId) params.append('transactionId', data.transactionId);
+          if (data.amount) params.append('amount', data.amount);
+          // Use the URL from the message or construct it
+          const redirectUrl = data.url || `/payment/failed?${params.toString()}`;
+          window.location.href = redirectUrl;
+          return;
+        }
+
         // Handle different message types from Tranzila
         if (data.type === "payment_success" || data.status === "success" || data.Response === "000") {
           const txId = data.transactionId || data.TransactionId || data.RefNo || null;
@@ -190,6 +217,29 @@ export default function TranzilaPayment({
 
   const handleIframeLoad = () => {
     setLoading(false);
+    
+    // Check if iframe has navigated to our success/failure pages
+    // This is a fallback in case postMessage doesn't work
+    try {
+      const iframe = iframeRef.current;
+      if (iframe && iframe.contentWindow) {
+        // Try to access iframe's location (only works if same-origin)
+        // Since Tranzila redirects to our domain, this should work after redirect
+        const iframeUrl = iframe.contentWindow.location.href;
+        
+        if (iframeUrl.includes('/payment/success')) {
+          // Iframe has navigated to success page - redirect entire page
+          window.location.href = iframeUrl;
+        } else if (iframeUrl.includes('/payment/failed')) {
+          // Iframe has navigated to failed page - redirect entire page
+          window.location.href = iframeUrl;
+        }
+      }
+    } catch (err) {
+      // Cross-origin error - iframe is still on Tranzila's domain
+      // This is expected and normal. The postMessage approach will handle the redirect.
+      // Silently ignore this error
+    }
   };
 
   const handleIframeError = () => {

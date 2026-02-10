@@ -24,6 +24,19 @@ export default function PaymentFailed() {
     if (error) setErrorMessage(error);
     if (txId) setTransactionId(txId);
     if (amt) setAmount(parseFloat(amt));
+
+    // Notify parent window if we're inside an iframe (from Tranzila redirect)
+    // This allows the checkout page to redirect the entire page instead of just the iframe
+    if (window.self !== window.top) {
+      const message = {
+        type: "payment_failed_redirect",
+        error: error,
+        transactionId: txId,
+        amount: amt,
+        url: window.location.href
+      };
+      window.parent.postMessage(message, "*");
+    }
   }, [searchParams]);
 
   const handleRetry = () => {

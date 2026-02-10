@@ -24,6 +24,19 @@ export default function PaymentSuccess() {
     if (txId) setTransactionId(txId);
     if (amt) setAmount(parseFloat(amt));
     if (ordId) setOrderId(ordId);
+
+    // Notify parent window if we're inside an iframe (from Tranzila redirect)
+    // This allows the checkout page to redirect the entire page instead of just the iframe
+    if (window.self !== window.top) {
+      const message = {
+        type: "payment_success_redirect",
+        transactionId: txId,
+        amount: amt,
+        orderId: ordId,
+        url: window.location.href
+      };
+      window.parent.postMessage(message, "*");
+    }
   }, [searchParams]);
 
   return (
