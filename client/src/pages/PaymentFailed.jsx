@@ -90,17 +90,17 @@ export default function PaymentFailed() {
             </div>
 
             <div className="payment-result-actions">
-              <button onClick={handleRetry} className="btn btn-primary">
+              <button onClick={handleRetry} className="btn btn-cta btn-icon">
                 <FaRedo />
                 {t("paymentFailed.tryAgain") || "Try Again"}
               </button>
               
-              <Link to="/cart" className="btn btn-secondary">
+              <Link to="/cart" className="btn btn-secondary btn-icon">
                 <FaShoppingCart />
                 {t("paymentFailed.backToCart") || "Back to Cart"}
               </Link>
               
-              <Link to="/shop" className="btn btn-secondary">
+              <Link to="/shop" className="btn btn-secondary btn-icon">
                 <FaHome />
                 {t("paymentFailed.continueShopping") || "Continue Shopping"}
               </Link>

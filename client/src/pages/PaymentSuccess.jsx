@@ -85,18 +85,18 @@ export default function PaymentSuccess() {
 
             <div className="payment-result-actions">
               {orderId ? (
-                <Link to={`/orders/${orderId}`} className="btn btn-primary">
+                <Link to={`/orders/${orderId}`} className="btn btn-cta btn-icon">
                   <FaFileInvoice />
                   {t("paymentSuccess.viewOrder") || "View Order"}
                 </Link>
               ) : (
-                <Link to="/orders" className="btn btn-primary">
+                <Link to="/orders" className="btn btn-cta btn-icon">
                   <FaShoppingBag />
                   {t("paymentSuccess.viewOrders") || "View My Orders"}
                 </Link>
               )}
               
-              <Link to="/shop" className="btn btn-secondary">
+              <Link to="/shop" className="btn btn-secondary btn-icon">
                 <FaHome />
                 {t("paymentSuccess.continueShopping") || "Continue Shopping"}
               </Link>
