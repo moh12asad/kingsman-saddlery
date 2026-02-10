@@ -749,24 +749,23 @@ export default function OrderConfirmation() {
 
       const emailResult = await emailRes.json();
 
+      // Clear the cart
+      clearCart();
+      
       if (emailRes.ok) {
-        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! Confirmation email sent to ${orderData.customerEmail}`);
         console.log("Payment processed, order created, and email sent successfully.");
         console.log("Order ID:", orderResult.id);
         console.log("Transaction ID:", paymentResult.transactionId);
-        
-        // Clear the cart and navigate to order details page with success parameter
-        clearCart();
-        navigate(`/orders/${orderResult.id}?success=true`);
       } else {
-        // Payment and order succeeded but email failed - still show success
-        setEmailSuccess(`Order #${orderResult.id.substring(0, 8)} created and paid successfully! However, the confirmation email could not be sent.`);
         console.warn("Payment and order succeeded but email failed:", emailResult.error);
-        
-        // Even if email failed, clear cart and navigate to order details with success parameter
-        clearCart();
-        navigate(`/orders/${orderResult.id}?success=true`);
       }
+      
+      // Redirect to payment success page with order and transaction details
+      const params = new URLSearchParams();
+      if (paymentResult.transactionId) params.append('transactionId', paymentResult.transactionId);
+      if (total) params.append('amount', total.toString());
+      if (orderResult.id) params.append('orderId', orderResult.id);
+      navigate(`/payment/success?${params.toString()}`);
     } catch (err) {
       console.error("Error proceeding to payment:", err);
       setError(err.message || "Failed to process payment");
@@ -1414,11 +1413,12 @@ export default function OrderConfirmation() {
                       customerPhone={profileData.phone || ""}
                       onSuccess={handlePaymentSuccess}
                       onError={(error) => {
-                        setError(error.error || "Payment failed. Please try again.");
-                        setShowPayment(false);
+                        // Error will redirect entire page to /payment/failed
+                        console.error("Payment error:", error);
                       }}
                       onCancel={() => {
-                        setShowPayment(false);
+                        // Cancel will redirect entire page to /payment/failed
+                        console.log("Payment cancelled by user");
                       }}
                     />
                   </div>

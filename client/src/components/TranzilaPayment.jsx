@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { FaSpinner, FaCheckCircle, FaTimesCircle, FaLock } from "react-icons/fa";
+import { FaSpinner, FaLock } from "react-icons/fa";
 import "../styles/tranzila-payment.css";
 
 /**
@@ -32,9 +32,6 @@ export default function TranzilaPayment({
   const { t } = useTranslation();
   const iframeRef = useRef(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState("pending"); // pending, processing, success, failed, cancelled
-  const [transactionId, setTransactionId] = useState(null);
 
   // Get Tranzila terminal name from environment variable
   const terminalName = import.meta.env.VITE_TRANZILA_TERMINAL_NAME || "terminalname";
@@ -98,36 +95,60 @@ export default function TranzilaPayment({
 
         // Handle different message types from Tranzila
         if (data.type === "payment_success" || data.status === "success" || data.Response === "000") {
-          setPaymentStatus("success");
-          setTransactionId(data.transactionId || data.TransactionId || data.RefNo || null);
+          const txId = data.transactionId || data.TransactionId || data.RefNo || null;
           setLoading(false);
           
+          // Call success callback first (for order creation)
+          // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
             onSuccess({
-              transactionId: data.transactionId || data.TransactionId || data.RefNo,
+              transactionId: txId,
               amount: amount,
               currency: currency,
               response: data,
             });
+          } else {
+            // If no callback, redirect entire page to success page
+            const params = new URLSearchParams();
+            if (txId) params.append('transactionId', txId);
+            if (amount) params.append('amount', amount.toString());
+            window.location.href = `/payment/success?${params.toString()}`;
           }
+          
         } else if (data.type === "payment_failed" || data.status === "failed" || data.Response !== "000") {
-          setPaymentStatus("failed");
-          setError(data.message || data.ErrorMessage || t("payment.failed"));
+          const errorMsg = data.message || data.ErrorMessage || t("payment.failed");
+          const txId = data.transactionId || data.TransactionId || data.RefNo || null;
           setLoading(false);
           
+          // Call error callback
           if (onError) {
             onError({
-              error: data.message || data.ErrorMessage || "Payment failed",
+              error: errorMsg,
               response: data,
             });
           }
+          
+          // Redirect entire page to failed page with parameters
+          const params = new URLSearchParams();
+          params.append('error', errorMsg);
+          if (txId) params.append('transactionId', txId);
+          if (amount) params.append('amount', amount.toString());
+          window.location.href = `/payment/failed?${params.toString()}`;
+          
         } else if (data.type === "payment_cancelled" || data.status === "cancelled") {
-          setPaymentStatus("cancelled");
           setLoading(false);
           
+          // Call cancel callback
           if (onCancel) {
             onCancel();
           }
+          
+          // Redirect entire page to failed page with cancellation message
+          const params = new URLSearchParams();
+          params.append('error', t("payment.cancelled") || "Payment was cancelled");
+          if (amount) params.append('amount', amount.toString());
+          window.location.href = `/payment/failed?${params.toString()}`;
+          
         } else if (data.type === "iframe_loaded") {
           setLoading(false);
         }
@@ -169,15 +190,18 @@ export default function TranzilaPayment({
 
   const handleIframeLoad = () => {
     setLoading(false);
-    setError(null);
   };
 
   const handleIframeError = () => {
     setLoading(false);
-    setError(t("payment.iframeError") || "Failed to load payment gateway");
     if (onError) {
       onError({ error: "Failed to load payment gateway" });
     }
+    // Redirect entire page to failed page if iframe fails to load
+    const params = new URLSearchParams();
+    params.append('error', t("payment.iframeError") || "Failed to load payment gateway");
+    if (amount) params.append('amount', amount.toString());
+    window.location.href = `/payment/failed?${params.toString()}`;
   };
 
   return (
@@ -190,59 +214,25 @@ export default function TranzilaPayment({
         </p>
       </div>
 
-      {error && paymentStatus === "failed" && (
-        <div className="tranzila-error-message">
-          <FaTimesCircle />
-          <span>{error}</span>
-        </div>
-      )}
+      <div className="tranzila-iframe-wrapper">
+        {loading && (
+          <div className="tranzila-loading-overlay">
+            <FaSpinner className="spinner" />
+            <p>{t("payment.loading") || "Loading secure payment gateway..."}</p>
+          </div>
+        )}
+        <iframe
+          ref={iframeRef}
+          src={iframeUrl}
+          className="tranzila-iframe"
+          title="Tranzila Payment Gateway"
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
+          allow="payment"
+          sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
+        />
+      </div>
 
-      {paymentStatus === "success" && (
-        <div className="tranzila-success-message">
-          <FaCheckCircle />
-          <span>{t("payment.success") || "Payment successful!"}</span>
-          {transactionId && (
-            <p className="tranzila-transaction-id">
-              {t("payment.transactionId") || "Transaction ID"}: {transactionId}
-            </p>
-          )}
-        </div>
-      )}
-
-      {paymentStatus === "cancelled" && (
-        <div className="tranzila-cancelled-message">
-          <FaTimesCircle />
-          <span>{t("payment.cancelled") || "Payment was cancelled"}</span>
-        </div>
-      )}
-
-      {paymentStatus === "pending" && (
-        <div className="tranzila-iframe-wrapper">
-          {loading && (
-            <div className="tranzila-loading-overlay">
-              <FaSpinner className="spinner" />
-              <p>{t("payment.loading") || "Loading secure payment gateway..."}</p>
-            </div>
-          )}
-          <iframe
-            ref={iframeRef}
-            src={iframeUrl}
-            className="tranzila-iframe"
-            title="Tranzila Payment Gateway"
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-            allow="payment"
-            sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
-          />
-        </div>
-      )}
-
-      {paymentStatus === "processing" && (
-        <div className="tranzila-processing">
-          <FaSpinner className="spinner" />
-          <p>{t("payment.processing") || "Processing your payment..."}</p>
-        </div>
-      )}
     </div>
   );
 }
