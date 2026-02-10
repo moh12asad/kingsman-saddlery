@@ -336,6 +336,7 @@ export default function CreateProduct(){
             />
           </div>
           <div>
+            <label className="form-label">Price</label>
             <input 
               className="input" 
               type="number" 
