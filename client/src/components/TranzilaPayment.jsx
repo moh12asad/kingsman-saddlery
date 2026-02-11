@@ -243,8 +243,39 @@ export default function TranzilaPayment({
         const iframeUrl = iframe.contentWindow.location.href;
         
         if (iframeUrl.includes('/payment/success')) {
-          // Iframe has navigated to success page - redirect entire page
-          window.location.href = iframeUrl;
+          // Iframe has navigated to success page
+          // Extract transaction details from URL
+          let txId = null;
+          let amt = null;
+          let ordId = null;
+          
+          try {
+            const urlObj = new URL(iframeUrl);
+            const params = urlObj.searchParams;
+            txId = params.get("transactionId") || params.get("RefNo") || params.get("TransactionId");
+            amt = params.get("amount");
+            ordId = params.get("orderId");
+          } catch (urlErr) {
+            // If URL parsing fails, try to extract from URL string directly
+            console.warn("[Tranzila] Failed to parse iframe URL:", urlErr);
+          }
+          
+          // Call success callback first (for order creation)
+          // The callback will handle order creation and then redirect the entire page
+          if (onSuccess) {
+            onSuccess({
+              transactionId: txId,
+              amount: amt ? parseFloat(amt) : amount,
+              currency: currency,
+              response: { url: iframeUrl },
+            });
+            // Don't redirect here - let the callback handle it after order creation
+            return;
+          } else {
+            // If no callback, redirect entire page to success page
+            window.location.href = iframeUrl;
+            return;
+          }
         } else if (iframeUrl.includes('/payment/failed')) {
           // Iframe has navigated to failed page - redirect entire page
           window.location.href = iframeUrl;
