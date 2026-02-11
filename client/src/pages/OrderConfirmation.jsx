@@ -687,9 +687,16 @@ export default function OrderConfirmation() {
       if (!paymentRes.ok || !paymentVerification.success) {
         setError(paymentVerification.error || "Payment verification failed. Please contact support.");
         setPaymentCompleted(false);
+        setShowPayment(false); // Reset payment iframe so user can retry
         setSendingEmail(false);
         return;
       }
+
+      // Extract transaction ID with fallback (use server-verified ID if available)
+      const finalTransactionId = paymentResult.transactionId || paymentVerification.transactionId;
+      
+      // Extract payment method from verification or use default
+      const actualPaymentMethod = paymentVerification.paymentMethod || "tranzila";
 
       // Step 2: Payment verified - now create order in database
       const orderRes = await fetch(`${API}/api/orders/create`, {
@@ -701,14 +708,14 @@ export default function OrderConfirmation() {
         body: JSON.stringify({
           ...orderData,
           status: "new",
-          transactionId: paymentResult.transactionId || paymentVerification.transactionId,
+          transactionId: finalTransactionId,
           metadata: {
-            paymentMethod: "credit_card",
+            paymentMethod: actualPaymentMethod,
             paymentGateway: "tranzila",
             deliveryType: deliveryType,
             deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
             totalWeight: totalWeight,
-            transactionId: paymentResult.transactionId || paymentVerification.transactionId
+            transactionId: finalTransactionId
           }
         })
       });
@@ -717,6 +724,9 @@ export default function OrderConfirmation() {
 
       if (!orderRes.ok) {
         setError(orderResult.error || "Payment succeeded but failed to create order. Please contact support.");
+        setPaymentCompleted(false);
+        setShowPayment(false); // Reset payment iframe so user can retry if needed
+        setSendingEmail(false);
         // TODO: In production, you might want to handle refund here if order creation fails after payment
         return;
       }
@@ -738,11 +748,11 @@ export default function OrderConfirmation() {
           discount: discountInfo,
           tax: tax,
           metadata: {
-            paymentMethod: "credit_card",
+            paymentMethod: actualPaymentMethod,
             deliveryType: deliveryType,
             deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
             totalWeight: totalWeight,
-            transactionId: paymentResult.transactionId
+            transactionId: finalTransactionId // Use same transaction ID as order creation
           }
         })
       });
@@ -755,20 +765,22 @@ export default function OrderConfirmation() {
       if (emailRes.ok) {
         console.log("Payment processed, order created, and email sent successfully.");
         console.log("Order ID:", orderResult.id);
-        console.log("Transaction ID:", paymentResult.transactionId);
+        console.log("Transaction ID:", finalTransactionId);
       } else {
         console.warn("Payment and order succeeded but email failed:", emailResult.error);
       }
       
       // Redirect to payment success page with order and transaction details
+      // Use finalTransactionId (server-verified) to ensure consistency with database and email records
       const params = new URLSearchParams();
-      if (paymentResult.transactionId) params.append('transactionId', paymentResult.transactionId);
+      if (finalTransactionId) params.append('transactionId', finalTransactionId);
       if (total) params.append('amount', total.toString());
       if (orderResult.id) params.append('orderId', orderResult.id);
       navigate(`/payment/success?${params.toString()}`);
     } catch (err) {
       console.error("Error proceeding to payment:", err);
       setError(err.message || "Failed to process payment");
+      setPaymentCompleted(false);
     } finally {
       setSendingEmail(false);
     }

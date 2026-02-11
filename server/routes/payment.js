@@ -588,22 +588,26 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
     console.log(`[PAYMENT] [${requestId}] Transaction ID: ${transactionId || 'not provided'}`);
     console.log(`[PAYMENT] [${requestId}] Payment Method: ${paymentMethod || 'not specified'}`);
 
-    // If transaction ID is provided from Tranzila, use it
-    // Otherwise, generate a temporary one (should not happen in production)
+    // Extract transaction ID from request or Tranzila response
+    // Transaction ID is REQUIRED - payment cannot be processed without it
     let finalTransactionId = transactionId;
     
     if (!finalTransactionId && tranzilaResponse) {
       // Extract transaction ID from Tranzila response if available
       finalTransactionId = tranzilaResponse.TransactionId || 
                           tranzilaResponse.RefNo || 
-                          tranzilaResponse.transactionId ||
-                          `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                          tranzilaResponse.transactionId;
     }
     
+    // Reject payment if no transaction ID is provided
+    // This is a security requirement - we cannot process payments without verification
     if (!finalTransactionId) {
-      // Fallback: generate transaction ID (for testing/development)
-      console.warn(`[PAYMENT] [${requestId}] No transaction ID provided, generating temporary ID`);
-      finalTransactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.error(`[PAYMENT] [${requestId}] Payment rejected: No transaction ID provided`);
+      return res.status(400).json({
+        success: false,
+        error: "Payment verification failed",
+        details: "Transaction ID is required. Payment cannot be processed without a valid transaction ID from the payment gateway."
+      });
     }
 
     // TODO: Verify payment with Tranzila API if credentials are available
@@ -649,7 +653,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
 
     const duration = Date.now() - startTime;
     console.log(`[PAYMENT] [${requestId}] Payment Process Success:`, {
-      transactionId: transactionId,
+      transactionId: finalTransactionId,
       amount: amount,
       currency: currency,
       status: "completed",

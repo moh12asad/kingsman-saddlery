@@ -31,6 +31,7 @@ export default function TranzilaPayment({
 }) {
   const { t } = useTranslation();
   const iframeRef = useRef(null);
+  const paymentDataSentRef = useRef(false); // Track if payment data has been sent to prevent duplicate calls
   const [loading, setLoading] = useState(true);
 
   // Get Tranzila terminal name from environment variable
@@ -80,6 +81,11 @@ export default function TranzilaPayment({
   }, [terminalName, amount, currency, customerEmail, customerPhone, customerName]);
   
   const iframeUrl = buildIframeUrl();
+
+  // Reset payment data sent flag when iframe URL changes (new payment)
+  useEffect(() => {
+    paymentDataSentRef.current = false;
+  }, [iframeUrl]);
 
   useEffect(() => {
     // Listen for messages from Tranzila iframe
@@ -206,9 +212,10 @@ export default function TranzilaPayment({
     };
   }, [amount, currency, onSuccess, onError, onCancel, t]);
 
-  // Send payment data to iframe when it's ready
+  // Send payment data to iframe when it's ready (only once)
   useEffect(() => {
-    if (iframeRef.current && !loading) {
+    // Only send if iframe is ready, not loading, and we haven't sent data yet
+    if (iframeRef.current && !loading && !paymentDataSentRef.current) {
       try {
         const paymentData = {
           type: "payment_data",
@@ -224,8 +231,16 @@ export default function TranzilaPayment({
           JSON.stringify(paymentData),
           "https://directng.tranzila.com"
         );
+        paymentDataSentRef.current = true; // Mark as sent to prevent duplicates
       } catch (err) {
-        console.error("[Tranzila] Error sending payment data:", err);
+        // Log error with context for debugging
+        console.error("[Tranzila] Error sending payment data to iframe:", {
+          error: err,
+          message: err.message,
+          stack: err.stack,
+          iframeReady: !!iframeRef.current,
+          loading: loading
+        });
       }
     }
   }, [amount, currency, customerName, customerEmail, customerPhone, loading]);
@@ -256,8 +271,13 @@ export default function TranzilaPayment({
             amt = params.get("amount");
             ordId = params.get("orderId");
           } catch (urlErr) {
-            // If URL parsing fails, try to extract from URL string directly
-            console.warn("[Tranzila] Failed to parse iframe URL:", urlErr);
+            // If URL parsing fails, log with context for debugging
+            console.warn("[Tranzila] Failed to parse iframe URL:", {
+              error: urlErr,
+              message: urlErr.message,
+              url: iframeUrl,
+              iframeReady: !!iframe
+            });
           }
           
           // Call success callback first (for order creation)
@@ -282,9 +302,21 @@ export default function TranzilaPayment({
         }
       }
     } catch (err) {
-      // Cross-origin error - iframe is still on Tranzila's domain
-      // This is expected and normal. The postMessage approach will handle the redirect.
-      // Silently ignore this error
+      // Check if this is a cross-origin error (expected) or a real error
+      if (err.name === 'SecurityError' || err.message?.includes('cross-origin') || err.message?.includes('Blocked a frame')) {
+        // Cross-origin error - iframe is still on Tranzila's domain
+        // This is expected and normal. The postMessage approach will handle the redirect.
+        // Silently ignore this expected error
+      } else {
+        // This is an unexpected error - log it for debugging
+        console.error("[Tranzila] Unexpected error in handleIframeLoad:", {
+          error: err,
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+          iframeReady: !!iframeRef.current
+        });
+      }
     }
   };
 
