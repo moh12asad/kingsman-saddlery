@@ -20,6 +20,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Parse URL-encoded bodies (for Tranzila POST requests)
+// This is needed when Tranzila redirects with POST data (especially Google Pay)
+app.use(express.urlencoded({ extended: true }));
+// Parse JSON bodies (if Tranzila sends JSON)
+app.use(express.json());
+
 // Serve static files from the dist directory (CSS, JS, images, etc.)
 // Exclude index.html from static serving to prevent caching issues
 app.use(express.static(distPath, {
@@ -35,6 +41,55 @@ app.use(express.static(distPath, {
     }
   }
 }));
+
+// Handle POST requests from Tranzila for payment success/failed (especially Google Pay)
+// Tranzila sometimes redirects with POST requests instead of GET
+// We convert POST data to query parameters and redirect to GET so React Router can handle it
+app.post('/payment/success', (req, res) => {
+  try {
+    // Collect all POST data (form data or JSON)
+    const postData = { ...req.body, ...req.query };
+    
+    // Convert POST data to query string
+    const queryParams = new URLSearchParams();
+    Object.keys(postData).forEach(key => {
+      if (postData[key] !== undefined && postData[key] !== null && postData[key] !== '') {
+        queryParams.append(key, String(postData[key]));
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    // Redirect to GET route with query parameters
+    res.redirect(`/payment/success${queryString ? '?' + queryString : ''}`);
+  } catch (error) {
+    console.error('Error handling POST /payment/success:', error);
+    // Fallback: redirect to success page without parameters
+    res.redirect('/payment/success');
+  }
+});
+
+app.post('/payment/failed', (req, res) => {
+  try {
+    // Collect all POST data (form data or JSON)
+    const postData = { ...req.body, ...req.query };
+    
+    // Convert POST data to query string
+    const queryParams = new URLSearchParams();
+    Object.keys(postData).forEach(key => {
+      if (postData[key] !== undefined && postData[key] !== null && postData[key] !== '') {
+        queryParams.append(key, String(postData[key]));
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    // Redirect to GET route with query parameters
+    res.redirect(`/payment/failed${queryString ? '?' + queryString : ''}`);
+  } catch (error) {
+    console.error('Error handling POST /payment/failed:', error);
+    // Fallback: redirect to failed page without parameters
+    res.redirect('/payment/failed');
+  }
+});
 
 // Explicitly handle index.html with no-cache headers BEFORE the catch-all route
 // This ensures index.html is never cached, allowing users to receive app updates
