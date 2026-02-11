@@ -104,6 +104,36 @@ export default function TranzilaPayment({
           // Iframe has navigated to success page
           setLoading(false);
           
+          // CRITICAL: Only proceed if we have a valid transaction ID
+          // PaymentSuccess component should extract it from URL (TranzilaTK, RefNo, etc.)
+          if (!data.transactionId) {
+            console.warn("[Tranzila] payment_success_redirect: No transaction ID in message. URL:", data.url);
+            // Try to extract from URL if provided
+            if (data.url) {
+              try {
+                const urlObj = new URL(data.url);
+                const params = urlObj.searchParams;
+                const txId = params.get("transactionId") || 
+                           params.get("RefNo") || 
+                           params.get("TransactionId") ||
+                           params.get("TranzilaTK");
+                if (txId) {
+                  console.log("[Tranzila] Extracted transaction ID from URL:", txId);
+                  data.transactionId = txId;
+                } else {
+                  console.error("[Tranzila] Could not extract transaction ID from URL:", data.url);
+                  return;
+                }
+              } catch (urlErr) {
+                console.error("[Tranzila] Failed to parse URL:", urlErr);
+                return;
+              }
+            } else {
+              console.error("[Tranzila] No transaction ID and no URL provided");
+              return;
+            }
+          }
+          
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
@@ -146,6 +176,13 @@ export default function TranzilaPayment({
           // Tranzila may send transaction ID as transactionId, TransactionId, RefNo, or TranzilaTK
           const txId = data.transactionId || data.TransactionId || data.RefNo || data.TranzilaTK || null;
           setLoading(false);
+          
+          // CRITICAL: Only call onSuccess if we have a valid transaction ID
+          // If txId is null, wait for redirect and postMessage from PaymentSuccess component instead
+          if (!txId) {
+            console.log("[Tranzila] Direct postMessage: No transaction ID found, waiting for redirect...");
+            return;
+          }
           
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
@@ -252,14 +289,23 @@ export default function TranzilaPayment({
     
     // Check if iframe has navigated to our success/failure pages
     // This is a fallback in case postMessage doesn't work
+    // NOTE: We rely primarily on postMessage from PaymentSuccess component
+    // This iframe URL check is only used as a last resort fallback
     try {
       const iframe = iframeRef.current;
       if (iframe && iframe.contentWindow) {
         // Try to access iframe's location (only works if same-origin)
         // Since Tranzila redirects to our domain, this should work after redirect
-        const iframeUrl = iframe.contentWindow.location.href;
+        let iframeUrl = null;
+        try {
+          iframeUrl = iframe.contentWindow.location.href;
+        } catch (crossOriginErr) {
+          // Cross-origin error - iframe is still on Tranzila's domain
+          // This is expected and normal. We'll wait for postMessage instead.
+          return;
+        }
         
-        if (iframeUrl.includes('/payment/success')) {
+        if (iframeUrl && iframeUrl.includes('/payment/success')) {
           // Iframe has navigated to success page
           // Extract transaction details from URL
           let txId = null;
@@ -284,11 +330,21 @@ export default function TranzilaPayment({
               url: iframeUrl,
               iframeReady: !!iframe
             });
+            // Don't proceed if we can't parse the URL
+            return;
+          }
+          
+          // CRITICAL: Only call onSuccess if we have a valid transaction ID
+          // If txId is null, wait for postMessage from PaymentSuccess component instead
+          if (!txId) {
+            console.log("[Tranzila] Iframe URL check: No transaction ID found, waiting for postMessage...");
+            return;
           }
           
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
+            console.log("[Tranzila] Iframe URL check: Found transaction ID:", txId);
             onSuccess({
               transactionId: txId,
               amount: amt ? parseFloat(amt) : amount,
@@ -302,7 +358,7 @@ export default function TranzilaPayment({
             window.location.href = iframeUrl;
             return;
           }
-        } else if (iframeUrl.includes('/payment/failed')) {
+        } else if (iframeUrl && iframeUrl.includes('/payment/failed')) {
           // Iframe has navigated to failed page - redirect entire page
           window.location.href = iframeUrl;
         }
