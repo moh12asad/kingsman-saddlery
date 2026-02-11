@@ -76,6 +76,11 @@ export default function TranzilaPayment({
       params.append('contact', customerName);
     }
     
+    // Enable Apple Pay, Google Pay, and other digital wallets
+    // According to Tranzila documentation, wallet=1 enables all supported digital wallets in the iframe
+    // This includes Apple Pay, Google Pay, and other wallet payment methods
+    params.append('wallet', '1');
+    
     const queryString = params.toString();
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   }, [terminalName, amount, currency, customerEmail, customerPhone, customerName]);
