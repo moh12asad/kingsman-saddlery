@@ -649,6 +649,7 @@
       "brands": "Brands",
       "users": "Users",
       "contactSubmissions": "Contact Submissions",
+      "failedOrders": "Failed Orders",
       "bulkEmail": "Bulk Email",
       "settings": "Settings"
     },
@@ -891,6 +892,41 @@
         "close": "Close"
       }
     },
+    "failedOrders": {
+      "title": "Failed Orders",
+      "subtitle": "Orders where payment succeeded but order creation failed",
+      "loading": "Loading failed orders...",
+      "noOrders": "No failed orders found.",
+      "order": "Order",
+      "transactionId": "Transaction ID",
+      "date": "Date",
+      "customer": "Customer",
+      "email": "Email",
+      "amount": "Amount",
+      "issue": "Issue",
+      "items": "Items",
+      "moreItems": "more items",
+      "noComment": "No comment provided",
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "commentPlaceholder": "Add or update comment about this failed order...",
+      "markResolved": "Mark as Resolved",
+      "markRefunded": "Mark as Refunded",
+      "filterByStatus": "Filter by Status",
+      "search": "Search",
+      "searchPlaceholder": "Search by transaction ID, email, or name...",
+      "status": {
+        "all": "All",
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "refunded": "Refunded"
+      },
+      "total": "Total Failed Orders",
+      "pending": "Pending",
+      "totalAmount": "Total Amount"
+    },
     "bulkEmail": {
       "title": "Send Bulk Email",
       "description": "Send promotional emails, updates, and offers to all users who have signed up for email notifications.",
@@ -1024,6 +1060,44 @@
       "phoneExists": "An account with this phone number already exists. Please sign in instead.",
       "failed": "Something went wrong. Please try again."
     }
+  },
+  "payment": {
+    "securePayment": "Secure Payment",
+    "amount": "Amount",
+    "loading": "Loading secure payment gateway...",
+    "processing": "Processing your payment...",
+    "success": "Payment successful!",
+    "failed": "Payment failed",
+    "cancelled": "Payment was cancelled",
+    "transactionId": "Transaction ID",
+    "iframeError": "Failed to load payment gateway"
+  },
+  "paymentSuccess": {
+    "title": "Payment Successful!",
+    "message": "Thank you for your purchase. Your payment has been processed successfully.",
+    "transactionId": "Transaction ID",
+    "amount": "Amount Paid",
+    "orderCreated": "Your order has been created and you will receive a confirmation email shortly.",
+    "orderNumber": "Order Number",
+    "viewOrder": "View Order",
+    "viewOrders": "View My Orders",
+    "continueShopping": "Continue Shopping",
+    "footer": "If you have any questions about your order, please contact our support team."
+  },
+  "paymentFailed": {
+    "title": "Payment Failed",
+    "message": "Unfortunately, your payment could not be processed. Please try again.",
+    "transactionId": "Transaction ID",
+    "amount": "Amount",
+    "commonReasons": "Common reasons for payment failure:",
+    "reason1": "Insufficient funds",
+    "reason2": "Incorrect card details",
+    "reason3": "Card expired or blocked",
+    "reason4": "Network or technical issues",
+    "tryAgain": "Try Again",
+    "backToCart": "Back to Cart",
+    "continueShopping": "Continue Shopping",
+    "footer": "If you continue to experience issues, please contact our support team or try a different payment method."
   }
 }
 

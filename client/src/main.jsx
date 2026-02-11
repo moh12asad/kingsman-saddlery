@@ -19,6 +19,8 @@ import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import Orders from "./pages/Orders.jsx";
 import OrderDetail from "./pages/OrderDetail.jsx";
 import SubCategories from "./pages/SubCategories.jsx";
+import PaymentSuccess from "./pages/PaymentSuccess.jsx";
+import PaymentFailed from "./pages/PaymentFailed.jsx";
 // ✅ Add this line to load Tailwind
 import "./styles/index.css";
 // Generic CSS additions
@@ -51,6 +53,7 @@ import EditProduct from "./pages/Admin/EditProduct.jsx";
 import EditUser from "./pages/Admin/EditUser.jsx";
 import EditCategory from "./pages/Admin/EditCategory.jsx";
 import ContactSubmissions from "./pages/Admin/ContactSubmissions.jsx";
+import FailedOrders from "./pages/Admin/FailedOrders.jsx";
 import BulkEmail from "./pages/Admin/BulkEmail.jsx";
 import OrdersManagementLayout from "./pages/Admin/OrdersManagement/index.jsx";
 import OrdersDashboard from "./pages/Admin/OrdersManagement/Dashboard.jsx";
@@ -93,6 +96,8 @@ const router = createBrowserRouter([
       { path: "complete-profile", element: <CompleteProfile /> },
       { path: "orders", element: <Orders /> },
       { path: "orders/:id", element: <OrderDetail /> },
+      { path: "payment/success", element: <PaymentSuccess /> },
+      { path: "payment/failed", element: <PaymentFailed /> },
       { path: "about", element: <AboutUs /> },
       { path: "contact", element: <ContactUs /> },
       { path: "shipping", element: <ShippingReturns /> },
@@ -127,6 +132,7 @@ const router = createBrowserRouter([
           { path: "brands/create", element: <CreateBrand /> },
           { path: "brands/edit/:id", element: <EditBrand /> },
           { path: "contact-submissions", element: <ContactSubmissions /> },
+          { path: "failed-orders", element: <FailedOrders /> },
           { path: "bulk-email", element: <BulkEmail /> },
           { path: "settings", element: <AdminSettings /> },
           // Orders Management with sidebar
