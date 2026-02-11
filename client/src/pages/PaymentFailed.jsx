@@ -18,8 +18,12 @@ export default function PaymentFailed() {
   useEffect(() => {
     // Get parameters from URL (Tranzila redirects with these)
     const error = searchParams.get("error") || searchParams.get("ErrorMessage") || searchParams.get("message");
-    const txId = searchParams.get("transactionId") || searchParams.get("RefNo");
-    const amt = searchParams.get("amount");
+    // Tranzila sends transaction ID as TranzilaTK, RefNo, TransactionId, or transactionId
+    const txId = searchParams.get("transactionId") || 
+                 searchParams.get("RefNo") || 
+                 searchParams.get("TransactionId") ||
+                 searchParams.get("TranzilaTK");
+    const amt = searchParams.get("amount") || searchParams.get("sum");
 
     if (error) setErrorMessage(error);
     if (txId) setTransactionId(txId);

@@ -143,7 +143,8 @@ export default function TranzilaPayment({
 
         // Handle different message types from Tranzila
         if (data.type === "payment_success" || data.status === "success" || data.Response === "000") {
-          const txId = data.transactionId || data.TransactionId || data.RefNo || null;
+          // Tranzila may send transaction ID as transactionId, TransactionId, RefNo, or TranzilaTK
+          const txId = data.transactionId || data.TransactionId || data.RefNo || data.TranzilaTK || null;
           setLoading(false);
           
           // Call success callback first (for order creation)
@@ -165,7 +166,8 @@ export default function TranzilaPayment({
           
         } else if (data.type === "payment_failed" || data.status === "failed" || data.Response !== "000") {
           const errorMsg = data.message || data.ErrorMessage || t("payment.failed");
-          const txId = data.transactionId || data.TransactionId || data.RefNo || null;
+          // Tranzila may send transaction ID as transactionId, TransactionId, RefNo, or TranzilaTK
+          const txId = data.transactionId || data.TransactionId || data.RefNo || data.TranzilaTK || null;
           setLoading(false);
           
           // Call error callback
@@ -267,8 +269,12 @@ export default function TranzilaPayment({
           try {
             const urlObj = new URL(iframeUrl);
             const params = urlObj.searchParams;
-            txId = params.get("transactionId") || params.get("RefNo") || params.get("TransactionId");
-            amt = params.get("amount");
+            // Tranzila sends transaction ID as TranzilaTK, RefNo, TransactionId, or transactionId
+            txId = params.get("transactionId") || 
+                   params.get("RefNo") || 
+                   params.get("TransactionId") ||
+                   params.get("TranzilaTK");
+            amt = params.get("amount") || params.get("sum");
             ordId = params.get("orderId");
           } catch (urlErr) {
             // If URL parsing fails, log with context for debugging

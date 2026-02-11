@@ -17,8 +17,12 @@ export default function PaymentSuccess() {
 
   useEffect(() => {
     // Get parameters from URL (Tranzila redirects with these)
-    const txId = searchParams.get("transactionId") || searchParams.get("RefNo") || searchParams.get("TransactionId");
-    const amt = searchParams.get("amount");
+    // Tranzila sends transaction ID as TranzilaTK, RefNo, TransactionId, or transactionId
+    const txId = searchParams.get("transactionId") || 
+                 searchParams.get("RefNo") || 
+                 searchParams.get("TransactionId") ||
+                 searchParams.get("TranzilaTK");
+    const amt = searchParams.get("amount") || searchParams.get("sum");
     const ordId = searchParams.get("orderId");
 
     if (txId) setTransactionId(txId);

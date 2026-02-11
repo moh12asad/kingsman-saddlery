@@ -594,9 +594,11 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
     
     if (!finalTransactionId && tranzilaResponse) {
       // Extract transaction ID from Tranzila response if available
+      // Tranzila may send transaction ID as TransactionId, RefNo, transactionId, or TranzilaTK
       finalTransactionId = tranzilaResponse.TransactionId || 
                           tranzilaResponse.RefNo || 
-                          tranzilaResponse.transactionId;
+                          tranzilaResponse.transactionId ||
+                          tranzilaResponse.TranzilaTK;
     }
     
     // Reject payment if no transaction ID is provided
