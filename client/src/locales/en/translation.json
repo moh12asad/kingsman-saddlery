@@ -649,6 +649,7 @@
       "brands": "Brands",
       "users": "Users",
       "contactSubmissions": "Contact Submissions",
+      "failedOrders": "Failed Orders",
       "bulkEmail": "Bulk Email",
       "settings": "Settings"
     },
@@ -890,6 +891,41 @@
         "deleteSubmission": "Delete Submission",
         "close": "Close"
       }
+    },
+    "failedOrders": {
+      "title": "Failed Orders",
+      "subtitle": "Orders where payment succeeded but order creation failed",
+      "loading": "Loading failed orders...",
+      "noOrders": "No failed orders found.",
+      "order": "Order",
+      "transactionId": "Transaction ID",
+      "date": "Date",
+      "customer": "Customer",
+      "email": "Email",
+      "amount": "Amount",
+      "issue": "Issue",
+      "items": "Items",
+      "moreItems": "more items",
+      "noComment": "No comment provided",
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "commentPlaceholder": "Add or update comment about this failed order...",
+      "markResolved": "Mark as Resolved",
+      "markRefunded": "Mark as Refunded",
+      "filterByStatus": "Filter by Status",
+      "search": "Search",
+      "searchPlaceholder": "Search by transaction ID, email, or name...",
+      "status": {
+        "all": "All",
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "refunded": "Refunded"
+      },
+      "total": "Total Failed Orders",
+      "pending": "Pending",
+      "totalAmount": "Total Amount"
     },
     "bulkEmail": {
       "title": "Send Bulk Email",

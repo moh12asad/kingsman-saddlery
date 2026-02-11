@@ -723,11 +723,44 @@ export default function OrderConfirmation() {
       const orderResult = await orderRes.json();
 
       if (!orderRes.ok) {
-        setError(orderResult.error || "Payment succeeded but failed to create order. Please contact support.");
-        setPaymentCompleted(false);
-        setShowPayment(false); // Reset payment iframe so user can retry if needed
+        // Log failed order to database
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: finalTransactionId,
+              orderData: {
+                ...orderData,
+                metadata: {
+                  paymentMethod: actualPaymentMethod,
+                  paymentGateway: "tranzila",
+                  deliveryType: deliveryType,
+                  deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+                  totalWeight: totalWeight,
+                  transactionId: finalTransactionId
+                }
+              },
+              error: orderResult.error || "Order creation failed",
+              errorDetails: orderResult.details || orderResult
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+
+        setError(
+          `Payment succeeded but failed to create order. Transaction ID: ${finalTransactionId}. ` +
+          `Please contact support with this transaction ID.`
+        );
+        // CRITICAL: Keep paymentCompleted as true to prevent duplicate charges
+        // Payment already succeeded - user should NOT be able to retry payment
+        // Only hide the payment iframe, but keep paymentCompleted true
+        setShowPayment(false); // Hide payment iframe
         setSendingEmail(false);
-        // TODO: In production, you might want to handle refund here if order creation fails after payment
         return;
       }
 

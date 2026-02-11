@@ -557,6 +557,7 @@
       "brands": "מותגים",
       "users": "משתמשים",
       "contactSubmissions": "פניות יצירת קשר",
+      "failedOrders": "הזמנות שנכשלו",
       "bulkEmail": "דואר אלקטרוני המוני",
       "settings": "הגדרות"
     },
@@ -798,6 +799,41 @@
         "deleteSubmission": "מחק פנייה",
         "close": "סגור"
       }
+    },
+    "failedOrders": {
+      "title": "הזמנות שנכשלו",
+      "subtitle": "הזמנות שבהן התשלום הצליח אך יצירת ההזמנה נכשלה",
+      "loading": "טוען הזמנות שנכשלו...",
+      "noOrders": "לא נמצאו הזמנות שנכשלו.",
+      "order": "הזמנה",
+      "transactionId": "מספר עסקה",
+      "date": "תאריך",
+      "customer": "לקוח",
+      "email": "אימייל",
+      "amount": "סכום",
+      "issue": "בעיה",
+      "items": "פריטים",
+      "moreItems": "פריטים נוספים",
+      "noComment": "לא צוין הערה",
+      "edit": "ערוך",
+      "save": "שמור",
+      "saving": "שומר...",
+      "cancel": "בטל",
+      "commentPlaceholder": "הוסף או עדכן הערה על הזמנה שנכשלה זו...",
+      "markResolved": "סמן כפתור",
+      "markRefunded": "סמן כמוחזר",
+      "filterByStatus": "סנן לפי סטטוס",
+      "search": "חיפוש",
+      "searchPlaceholder": "חפש לפי מספר עסקה, אימייל או שם...",
+      "status": {
+        "all": "הכל",
+        "pending": "ממתין",
+        "resolved": "נפתר",
+        "refunded": "הוחזר"
+      },
+      "total": "סה\"כ הזמנות שנכשלו",
+      "pending": "ממתין",
+      "totalAmount": "סכום כולל"
     },
     "bulkEmail": {
       "title": "שלח דואר אלקטרוני המוני",

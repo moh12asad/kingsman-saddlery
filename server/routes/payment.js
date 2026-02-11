@@ -610,36 +610,77 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       });
     }
 
-    // TODO: Verify payment with Tranzila API if credentials are available
-    // This would involve making an API call to Tranzila to verify the transaction
-    // For now, we trust the iframe response (in production, implement proper verification)
+    // SECURITY: Validate Tranzila response structure and success indicators
+    let verificationStatus = "unverified";
+    let verificationWarning = null;
     
-    // Example verification (commented out - implement when Tranzila API credentials are available):
-    /*
-    if (process.env.TRANZILA_API_KEY && process.env.TRANZILA_TERMINAL_ID) {
-      try {
-        const verificationResponse = await verifyTranzilaTransaction(
-          finalTransactionId,
-          amount,
-          process.env.TRANZILA_API_KEY,
-          process.env.TRANZILA_TERMINAL_ID
-        );
-        
-        if (!verificationResponse.success) {
-          console.error(`[PAYMENT] [${requestId}] Tranzila verification failed:`, verificationResponse);
-          return res.status(400).json({
-            success: false,
-            error: "Payment verification failed",
-            details: "Transaction could not be verified with payment gateway"
-          });
-        }
-      } catch (verifyError) {
-        console.error(`[PAYMENT] [${requestId}] Error verifying with Tranzila:`, verifyError);
-        // In production, you might want to fail here or implement retry logic
-        // For now, we continue but log the error
+    if (tranzilaResponse) {
+      // Validate Tranzila response structure
+      const responseCode = tranzilaResponse.Response || tranzilaResponse.response || null;
+      const responseStatus = tranzilaResponse.status || null;
+      const responseType = tranzilaResponse.type || null;
+      
+      // Check for success indicators
+      const isSuccess = 
+        responseCode === "000" || 
+        responseStatus === "success" || 
+        responseType === "payment_success";
+      
+      // Check for failure indicators
+      const isFailure = 
+        (responseCode && responseCode !== "000" && responseCode !== null) ||
+        responseStatus === "failed" ||
+        responseType === "payment_failed" ||
+        tranzilaResponse.ErrorMessage ||
+        tranzilaResponse.error;
+      
+      if (isFailure) {
+        console.error(`[PAYMENT] [${requestId}] [SECURITY] Payment rejected: Tranzila response indicates failure`, {
+          responseCode,
+          responseStatus,
+          responseType,
+          errorMessage: tranzilaResponse.ErrorMessage || tranzilaResponse.error
+        });
+        return res.status(400).json({
+          success: false,
+          error: "Payment verification failed",
+          details: tranzilaResponse.ErrorMessage || tranzilaResponse.error || "Payment gateway reported transaction failure"
+        });
       }
+      
+      if (isSuccess) {
+        verificationStatus = "response_validated";
+        console.log(`[PAYMENT] [${requestId}] Tranzila response validated: Success indicators present`);
+      } else {
+        // Ambiguous response - log warning but don't reject (for backward compatibility)
+        verificationStatus = "response_ambiguous";
+        verificationWarning = "Tranzila response structure validated but success indicators not clearly present";
+        console.warn(`[PAYMENT] [${requestId}] [SECURITY WARNING] ${verificationWarning}`, {
+          responseCode,
+          responseStatus,
+          responseType,
+          tranzilaResponse: Object.keys(tranzilaResponse)
+        });
+      }
+    } else {
+      // No Tranzila response provided - this is a security risk
+      verificationStatus = "no_response_provided";
+      verificationWarning = "No Tranzila response provided - payment accepted based on transaction ID only";
+      console.warn(`[PAYMENT] [${requestId}] [SECURITY WARNING] ${verificationWarning}`);
     }
-    */
+
+    // TODO: Implement full API verification when Tranzila API credentials are available
+    // This would involve making an API call to Tranzila to verify the transaction server-side
+    // For now, we validate the response structure but cannot verify with Tranzila's API
+    if (process.env.TRANZILA_API_KEY && process.env.TRANZILA_TERMINAL_ID) {
+      // API verification would go here
+      // const apiVerification = await verifyTranzilaTransaction(finalTransactionId, amount, ...);
+      verificationWarning = "API verification not implemented - using response validation only";
+      console.warn(`[PAYMENT] [${requestId}] [SECURITY] ${verificationWarning}`);
+    } else {
+      verificationWarning = "Tranzila API credentials not configured - using response validation only";
+      console.warn(`[PAYMENT] [${requestId}] [SECURITY] ${verificationWarning}`);
+    }
 
     const paymentResult = {
       success: true,
@@ -648,7 +689,9 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       currency: currency,
       status: "completed",
       message: "Payment verified successfully",
-      paymentGateway: paymentMethod === "tranzila" ? "tranzila" : "unknown"
+      paymentGateway: paymentMethod === "tranzila" ? "tranzila" : "unknown",
+      verificationStatus: verificationStatus,
+      verificationWarning: verificationWarning
     };
 
     const duration = Date.now() - startTime;

@@ -951,6 +951,259 @@ router.get("/archived", requireRole("ADMIN"), async (_req, res) => {
   }
 });
 
+// Log failed order (when payment succeeds but order creation fails)
+// SECURITY: Uses verifyFirebaseToken to allow users to log their own failures
+// but includes strict validation to prevent abuse
+router.post("/failed", verifyFirebaseToken, async (req, res) => {
+  const requestId = `FAILED-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  try {
+    const { uid, email, displayName } = req.user || {};
+    
+    if (!uid) {
+      console.error(`[FAILED_ORDER] [${requestId}] Unauthenticated request`);
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const {
+      transactionId,
+      orderData,
+      error,
+      errorDetails
+    } = req.body;
+
+    // SECURITY: Validate required fields
+    if (!transactionId || typeof transactionId !== 'string' || transactionId.trim().length === 0) {
+      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Invalid transaction ID from user ${uid}`);
+      return res.status(400).json({ error: "Valid transaction ID is required" });
+    }
+
+    // SECURITY: Validate transaction ID format (basic validation - should be non-empty string)
+    const trimmedTransactionId = transactionId.trim();
+    if (trimmedTransactionId.length < 3 || trimmedTransactionId.length > 100) {
+      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Suspicious transaction ID length from user ${uid}: ${trimmedTransactionId.length}`);
+      return res.status(400).json({ error: "Invalid transaction ID format" });
+    }
+
+    if (!orderData || typeof orderData !== 'object') {
+      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Invalid order data from user ${uid}`);
+      return res.status(400).json({ error: "Valid order data is required" });
+    }
+
+    // SECURITY: Validate order data structure
+    if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Invalid items array from user ${uid}`);
+      return res.status(400).json({ error: "Order must contain at least one item" });
+    }
+
+    // SECURITY: Validate amount is a positive number
+    const amount = parseFloat(orderData.total) || 0;
+    if (isNaN(amount) || amount <= 0) {
+      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Invalid amount from user ${uid}: ${orderData.total}`);
+      return res.status(400).json({ error: "Valid order total is required" });
+    }
+
+    // SECURITY: Verify user identity matches order data (if provided)
+    const orderEmail = orderData.customerEmail || null;
+    if (orderEmail && email && orderEmail.toLowerCase() !== email.toLowerCase()) {
+      console.warn(`[FAILED_ORDER] [${requestId}] [SECURITY] Email mismatch: user ${uid} (${email}) vs order email (${orderEmail})`);
+      // Don't reject, but log for security monitoring
+    }
+
+    // SECURITY: Check for duplicate transaction IDs (prevent spam)
+    const existingFailedOrder = await db.collection("failed_orders")
+      .where("transactionId", "==", trimmedTransactionId)
+      .limit(1)
+      .get();
+
+    if (!existingFailedOrder.empty) {
+      const existingDoc = existingFailedOrder.docs[0];
+      const existingData = existingDoc.data();
+      
+      // If same user, allow update (might be retry)
+      if (existingData.userId === uid) {
+        console.log(`[FAILED_ORDER] [${requestId}] Duplicate transaction ID from same user ${uid}, updating existing record`);
+        // Update existing record instead of creating duplicate
+        await db.collection("failed_orders").doc(existingDoc.id).update({
+          comment: error || errorDetails || existingData.comment || "Order creation failed after successful payment",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        return res.status(200).json({
+          id: existingDoc.id,
+          message: "Failed order updated successfully",
+          transactionId: trimmedTransactionId
+        });
+      } else {
+        // Different user with same transaction ID - potential security issue
+        console.error(`[FAILED_ORDER] [${requestId}] [SECURITY ALERT] Duplicate transaction ID from different user! Transaction: ${trimmedTransactionId}, User: ${uid}, Original User: ${existingData.userId}`);
+        return res.status(409).json({ 
+          error: "Transaction ID already exists",
+          details: "This transaction has already been logged. Please contact support if you believe this is an error."
+        });
+      }
+    }
+
+    // SECURITY: Rate limiting check - prevent spam (check last 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const recentFailedOrders = await db.collection("failed_orders")
+      .where("userId", "==", uid)
+      .where("createdAt", ">", admin.firestore.Timestamp.fromDate(fiveMinutesAgo))
+      .get();
+
+    if (recentFailedOrders.size >= 5) {
+      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Rate limit exceeded for user ${uid}: ${recentFailedOrders.size} failed orders in last 5 minutes`);
+      return res.status(429).json({ 
+        error: "Too many requests",
+        details: "You have submitted too many failed order reports. Please wait a few minutes or contact support."
+      });
+    }
+
+    // Create failed order document
+    const failedOrderDoc = {
+      transactionId: trimmedTransactionId,
+      userId: uid,
+      userEmail: email || orderEmail || null,
+      userName: displayName || orderData.customerName || "Unknown",
+      amount: amount,
+      currency: "ILS",
+      orderData: {
+        items: orderData.items || [],
+        shippingAddress: orderData.shippingAddress || null,
+        phone: orderData.phone || null,
+        notes: orderData.notes || "",
+        subtotal: orderData.subtotal || 0,
+        subtotalBeforeDiscount: orderData.subtotalBeforeDiscount || 0,
+        tax: orderData.tax || 0,
+        total: amount,
+        deliveryType: orderData.metadata?.deliveryType || null,
+        deliveryZone: orderData.metadata?.deliveryZone || null,
+        metadata: orderData.metadata || {}
+      },
+      comment: error || errorDetails || "Order creation failed after successful payment",
+      status: "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docRef = await db.collection("failed_orders").add(failedOrderDoc);
+
+    console.log(`[FAILED_ORDER] [${requestId}] Logged failed order: ${docRef.id} for transaction: ${trimmedTransactionId}, user: ${uid}`);
+
+    res.status(201).json({
+      id: docRef.id,
+      message: "Failed order logged successfully",
+      transactionId: trimmedTransactionId
+    });
+  } catch (error) {
+    console.error(`[FAILED_ORDER] [${requestId}] Error:`, error);
+    res.status(500).json({ error: "Failed to log failed order", details: error.message });
+  }
+});
+
+// Get all failed orders (admin only)
+router.get("/failed", requireRole("ADMIN", "STAFF"), async (req, res) => {
+  try {
+    const { status, limit = 50 } = req.query;
+    
+    let query = db.collection("failed_orders").orderBy("createdAt", "desc");
+    
+    if (status) {
+      query = query.where("status", "==", status);
+    }
+    
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+    
+    const snap = await query.get();
+    
+    const failedOrders = snap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        transactionId: data.transactionId,
+        userId: data.userId,
+        userEmail: data.userEmail,
+        userName: data.userName,
+        amount: data.amount,
+        currency: data.currency,
+        orderData: data.orderData,
+        comment: data.comment,
+        status: data.status,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+      };
+    });
+
+    res.json({ failedOrders, count: failedOrders.length });
+  } catch (error) {
+    console.error("orders.failed.get error", error);
+    res.status(500).json({ error: "Failed to fetch failed orders", details: error.message });
+  }
+});
+
+// Get single failed order by ID (admin only)
+router.get("/failed/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const doc = await db.collection("failed_orders").doc(id).get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Failed order not found" });
+    }
+    
+    const data = doc.data();
+    const failedOrder = {
+      id: doc.id,
+      transactionId: data.transactionId,
+      userId: data.userId,
+      userEmail: data.userEmail,
+      userName: data.userName,
+      amount: data.amount,
+      currency: data.currency,
+      orderData: data.orderData,
+      comment: data.comment,
+      status: data.status,
+      createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt
+    };
+
+    res.json({ failedOrder });
+  } catch (error) {
+    console.error("orders.failed.getById error", error);
+    res.status(500).json({ error: "Failed to fetch failed order", details: error.message });
+  }
+});
+
+// Update failed order status/comment (admin only)
+router.patch("/failed/:id", requireRole("ADMIN", "STAFF"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, comment } = req.body;
+    
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+    
+    if (comment !== undefined) {
+      updateData.comment = comment;
+    }
+    
+    await db.collection("failed_orders").doc(id).update(updateData);
+    
+    res.json({ message: "Failed order updated successfully" });
+  } catch (error) {
+    console.error("orders.failed.update error", error);
+    res.status(500).json({ error: "Failed to update failed order", details: error.message });
+  }
+});
+
 export default router;
 
 
