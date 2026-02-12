@@ -17,6 +17,7 @@ export default function AdminProducts(){
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   async function load(){
     // Fetch with all=true to get full translation objects for admin display
@@ -153,6 +154,33 @@ export default function AdminProducts(){
       setError(err.message || t('admin.products.failedToDelete'));
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function updateProductStatus(id, status) {
+    setUpdatingStatusId(id);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const updates = {
+        available: true,
+        outOfStock: status === 'outOfStock'
+      };
+      
+      const res = await fetch(`${API}/api/products/${id}`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify(updates)
+      });
+      
+      if (!res.ok) throw new Error("Failed to update status");
+      await load();
+    } catch (err) {
+      setError(err.message || t('admin.products.failedToUpdateStatus'));
+    } finally {
+      setUpdatingStatusId(null);
     }
   }
 
@@ -297,9 +325,29 @@ export default function AdminProducts(){
                     <td className="text-sm text-gray-600">{p.sku || "-"}</td>
                     <td className="text-sm text-gray-600">{(p.weight || 0).toFixed(2)}</td>
                     <td>
-                      <span className={p.available ? "badge badge-success" : "badge badge-danger"}>
-                        {p.available ? t('admin.products.available') : t('admin.products.unavailable')}
-                      </span>
+                      <div className="flex flex-col gap-2">
+                        <span className={p.available ? (p.outOfStock ? "badge badge-warning" : "badge badge-success") : "badge badge-danger"}>
+                          {p.outOfStock ? (t('admin.createProduct.outOfStock') || "Out of Stock") : (p.available ? t('admin.products.available') : t('admin.products.unavailable'))}
+                        </span>
+                        <div className="flex gap-1 flex-wrap">
+                          <button
+                            className={`btn btn-xs ${!p.outOfStock && p.available ? 'btn-success' : ''}`}
+                            onClick={() => updateProductStatus(p.id, 'available')}
+                            disabled={updatingStatusId === p.id || (!p.outOfStock && p.available)}
+                            title={t('admin.products.setAvailable') || "Set as Available"}
+                          >
+                            {updatingStatusId === p.id ? "..." : (t('admin.products.available') || "Available")}
+                          </button>
+                          <button
+                            className={`btn btn-xs ${p.outOfStock ? 'btn-warning' : ''}`}
+                            onClick={() => updateProductStatus(p.id, 'outOfStock')}
+                            disabled={updatingStatusId === p.id || p.outOfStock}
+                            title={t('admin.createProduct.outOfStock') || "Set as Out of Stock"}
+                          >
+                            {updatingStatusId === p.id ? "..." : (t('admin.createProduct.outOfStock') || "OutOfStock")}
+                          </button>
+                        </div>
+                      </div>
                     </td>
                     <td>
                       {p.sale ? (
