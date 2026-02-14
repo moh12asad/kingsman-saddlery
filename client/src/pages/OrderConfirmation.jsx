@@ -206,20 +206,10 @@ export default function OrderConfirmation() {
   useEffect(() => {
     if (!user || !isLoaded || cartItems.length === 0) return;
     
-    // Skip calculation if delivery is selected but no zone has been chosen yet
-    // This prevents incorrect totals (with 0 delivery cost) from being calculated and displayed
-    if (deliveryType === "delivery" && !deliveryZone) {
-      // Reset calculated values so UI shows that calculation is pending
-      setCalculatedDeliveryCost(null);
-      setCalculatedTax(null);
-      setCalculatedTotal(null);
-      setCalculatingDiscount(false); // Ensure loading state is cleared
-      setDiscountCalculationError(null); // Clear any previous errors
-      return;
-    }
-    
-    // For pickup or delivery with zone selected, proceed with calculation
-    // Reset calculated values to trigger recalculation when dependencies change
+    // Always proceed with calculation to get discount info immediately
+    // Discount calculation doesn't depend on delivery zone - it's based on subtotal only
+    // If delivery zone is not selected, we'll calculate with deliveryCost = 0 (pickup estimate)
+    // This allows discount message to appear immediately while total may be pending
     setCalculatedDeliveryCost(null);
     setCalculatedTax(null);
     setCalculatedTotal(null);

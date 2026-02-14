@@ -18,12 +18,18 @@ router.get("/subscribers", async (req, res) => {
       .where("emailConsent", "==", true)
       .get();
 
-    // Count only users with valid email addresses
+    // Count only users with valid email addresses and collect user list
     let count = 0;
+    const users = [];
     usersSnapshot.forEach((doc) => {
       const userData = doc.data();
       if (userData.email && userData.email.trim()) {
         count++;
+        users.push({
+          uid: doc.id,
+          email: userData.email.trim(),
+          displayName: userData.displayName || "Customer",
+        });
       }
     });
 
@@ -48,6 +54,7 @@ router.get("/subscribers", async (req, res) => {
       totalUsers,
       usersWithoutConsent,
       usersWithoutEmail,
+      users, // Include the list of users who will receive emails
       message: `${count} users will receive emails. ${usersWithoutConsent} users have emailConsent=false or undefined, ${usersWithoutEmail} users have no email address.`
     });
   } catch (error) {
