@@ -58,6 +58,14 @@ import BulkEmail from "./pages/Admin/BulkEmail.jsx";
 import OrdersManagementLayout from "./pages/Admin/OrdersManagement/index.jsx";
 import OrdersDashboard from "./pages/Admin/OrdersManagement/Dashboard.jsx";
 import AdminOrderDetail from "./pages/Admin/OrdersManagement/OrderDetail.jsx";
+import ReportsLayout from "./pages/Admin/Reports/index.jsx";
+import SalesOverview from "./pages/Admin/Reports/SalesOverview.jsx";
+import BestSellers from "./pages/Admin/Reports/BestSellers.jsx";
+import RevenueByPeriod from "./pages/Admin/Reports/RevenueByPeriod.jsx";
+import OrderStatus from "./pages/Admin/Reports/OrderStatus.jsx";
+import ProductsByCategory from "./pages/Admin/Reports/ProductsByCategory.jsx";
+import PaymentMethod from "./pages/Admin/Reports/PaymentMethod.jsx";
+import GeographicSales from "./pages/Admin/Reports/GeographicSales.jsx";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import AboutUs from "./pages/AboutUs.jsx";
 import ContactUs from "./pages/ContactUs.jsx";
@@ -135,6 +143,20 @@ const router = createBrowserRouter([
           { path: "failed-orders", element: <FailedOrders /> },
           { path: "bulk-email", element: <BulkEmail /> },
           { path: "settings", element: <AdminSettings /> },
+          // Reports
+          {
+            path: "reports",
+            element: <ReportsLayout />,
+            children: [
+              { path: "sales-overview", element: <SalesOverview /> },
+              { path: "best-sellers", element: <BestSellers /> },
+              { path: "revenue-by-period", element: <RevenueByPeriod /> },
+              { path: "order-status", element: <OrderStatus /> },
+              { path: "products-by-category", element: <ProductsByCategory /> },
+              { path: "payment-method", element: <PaymentMethod /> },
+              { path: "geographic-sales", element: <GeographicSales /> },
+            ],
+          },
           // Orders Management with sidebar
           {
             path: "orders",

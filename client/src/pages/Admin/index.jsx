@@ -29,6 +29,7 @@ export default function AdminLayout(){
             <NavLink to="contact-submissions" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.contactSubmissions')}</NavLink>
             <NavLink to="failed-orders" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.failedOrders')}</NavLink>
             <NavLink to="bulk-email" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.bulkEmail')}</NavLink>
+            <NavLink to="reports" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.reports')}</NavLink>
             <NavLink to="settings" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.settings')}</NavLink>
           </nav>
         </aside>
