@@ -16,6 +16,8 @@ export default function BulkEmail() {
   const [subscriberCount, setSubscriberCount] = useState(null);
   const [subscriberInfo, setSubscriberInfo] = useState(null);
   const [loadingCount, setLoadingCount] = useState(false);
+  const [subscribers, setSubscribers] = useState([]);
+  const [showUserList, setShowUserList] = useState(false);
 
   // Load subscriber count
   async function loadSubscriberCount() {
@@ -41,6 +43,13 @@ export default function BulkEmail() {
       // Store additional info for display
       if (data.totalUsers !== undefined) {
         setSubscriberInfo(data);
+      }
+      
+      // Store the list of subscribers
+      if (data.users && Array.isArray(data.users)) {
+        setSubscribers(data.users);
+      } else {
+        setSubscribers([]);
       }
     } catch (err) {
       console.error("Error loading subscriber count:", err);
@@ -135,10 +144,43 @@ export default function BulkEmail() {
         ) : subscriberCount !== null ? (
           <div className="mb-4 space-y-2">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-900">
-                {t("admin.bulkEmail.subscriberCount", { count: subscriberCount })}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-blue-900">
+                  {t("admin.bulkEmail.subscriberCount", { count: subscriberCount })}
+                </p>
+                {subscribers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUserList(!showUserList)}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {showUserList ? "Hide" : "Show"} Recipients List
+                  </button>
+                )}
+              </div>
             </div>
+            {showUserList && subscribers.length > 0 && (
+              <div className="p-3 bg-white border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Recipients ({subscribers.length}):
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  size={Math.min(10, subscribers.length)}
+                  multiple
+                  style={{ minHeight: "200px" }}
+                >
+                  {subscribers.map((user) => (
+                    <option key={user.uid} value={user.uid}>
+                      {user.displayName} ({user.email})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  {subscribers.length} user{subscribers.length !== 1 ? "s" : ""} will receive this email
+                </p>
+              </div>
+            )}
             {subscriberInfo && subscriberInfo.totalUsers && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-800">
