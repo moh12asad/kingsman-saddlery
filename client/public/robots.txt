@@ -1,0 +1,16 @@
+# robots.txt for Kingsman Saddlery
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /api
+Disallow: /profile
+Disallow: /orders
+Disallow: /cart
+
+# Sitemap location
+Sitemap: https://kingsmansaddlery.com/sitemap.xml
+
