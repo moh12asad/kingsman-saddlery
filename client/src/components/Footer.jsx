@@ -5,6 +5,12 @@ import { FaTiktok, FaFacebook, FaInstagram, FaEnvelope, FaMapMarkerAlt, FaPhone,
 import { getStoreInfo, formatAddress, formatWorkingHours, getWhatsAppLink } from "../utils/storeInfo";
 import { getTranslated } from "../utils/translations";
 import WazeIcon from "./icons/WazeIcon";
+import VisaIcon from "./icons/VisaIcon";
+import MasterCardIcon from "./icons/MasterCardIcon";
+import IsracardIcon from "./icons/IsracardIcon";
+import AmexIcon from "./icons/AmexIcon";
+import DinersClubIcon from "./icons/DinersClubIcon";
+import DiscoverIcon from "./icons/DiscoverIcon";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -423,9 +429,24 @@ export default function Footer() {
             <div className="footer-payment-icons">
               <span className="footer-payment-text">{t("footer.weAccept")}</span>
               <div className="footer-payment-logos">
-                <span className="footer-payment-logo">VISA</span>
-                <span className="footer-payment-logo">MasterCard</span>
-                <span className="footer-payment-logo">PayPal</span>
+                <span className="footer-payment-logo" aria-label="Visa">
+                  <VisaIcon size={50} />
+                </span>
+                <span className="footer-payment-logo" aria-label="MasterCard">
+                  <MasterCardIcon size={50} />
+                </span>
+                <span className="footer-payment-logo" aria-label="Isracard">
+                  <IsracardIcon size={50} />
+                </span>
+                <span className="footer-payment-logo" aria-label="American Express">
+                  <AmexIcon size={50} />
+                </span>
+                <span className="footer-payment-logo" aria-label="Diners Club">
+                  <DinersClubIcon size={50} />
+                </span>
+                <span className="footer-payment-logo" aria-label="Discover">
+                  <DiscoverIcon size={50} />
+                </span>
               </div>
             </div>
           </div>
