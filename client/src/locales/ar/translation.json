@@ -538,6 +538,31 @@
       "failedToProcessPayment": "فشلت معالجة الدفع",
       "unableToCalculateDiscountRefresh": "غير قادر على حساب الخصم. يرجى تحديث الصفحة."
     },
+    "coupon": {
+      "title": "هل لديك كود خصم؟",
+      "placeholder": "أدخل كود الخصم",
+      "apply": "تطبيق",
+      "validating": "جاري التحقق...",
+      "applied": "تم تطبيق الكوبون",
+      "remove": "إزالة",
+      "off": "خصم",
+      "discount": "خصم الكوبون",
+      "enterCode": "يرجى إدخال كود الخصم",
+      "mustSignIn": "يجب تسجيل الدخول لاستخدام كود الخصم",
+      "invalid": "كود الخصم غير صالح أو منتهي الصلاحية",
+      "error": "خطأ في التحقق من كود الخصم",
+      "errors": {
+        "invalidCode": "كود الخصم غير صالح",
+        "notFound": "كود الخصم غير موجود",
+        "expired": "كود الخصم منتهي الصلاحية",
+        "alreadyUsed": "تم استخدام كود الخصم مسبقاً",
+        "notValidForAccount": "كود الخصم هذا غير صالح لحسابك",
+        "requiresCustomerId": "يتطلب كود الخصم هذا تحديد معرف العميل",
+        "validationFailed": "فشل التحقق من كود الخصم",
+        "alreadyUsedShort": "تم استخدام الكوبون مسبقاً",
+        "notFoundShort": "الكوبون غير موجود"
+      }
+    },
     "success": {
       "orderCreated": "الطلب #",
       "createdAndPaid": "تم إنشاؤه ودفعه بنجاح! تم إرسال بريد التأكيد إلى",

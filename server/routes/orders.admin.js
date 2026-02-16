@@ -827,9 +827,10 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     let couponId = null;
     
     if (couponCode && typeof couponCode === "string" && couponCode.trim() !== "") {
-      // For admin orders, validate coupon but don't require customerId match if not provided
+      // SECURITY: For admin orders, if coupon is user-specific, require customerId
+      // This prevents admins from bypassing user restrictions on promotional coupons
       const couponUserId = customerId && customerId.trim() !== "" ? customerId : null;
-      const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), couponUserId);
+      const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), couponUserId, true);
       if (couponValidation.valid) {
         discountPercentage = couponValidation.percentage;
         discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));

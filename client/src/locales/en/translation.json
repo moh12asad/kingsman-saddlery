@@ -641,7 +641,18 @@
       "enterCode": "Please enter a coupon code",
       "mustSignIn": "You must be signed in to use a coupon",
       "invalid": "Invalid or expired coupon code",
-      "error": "Error validating coupon code"
+      "error": "Error validating coupon code",
+      "errors": {
+        "invalidCode": "Invalid coupon code",
+        "notFound": "Coupon code not found",
+        "expired": "Coupon code has expired",
+        "alreadyUsed": "Coupon code has already been used",
+        "notValidForAccount": "This coupon code is not valid for your account",
+        "requiresCustomerId": "This coupon code requires a customer ID to be specified",
+        "validationFailed": "Failed to validate coupon",
+        "alreadyUsedShort": "Coupon already used",
+        "notFoundShort": "Coupon not found"
+      }
     },
     "success": {
       "orderCreated": "Order #",

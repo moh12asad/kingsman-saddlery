@@ -104,7 +104,10 @@ export default function OrderConfirmation() {
 
   // Calculate total with discount - defined before useEffect to avoid initialization error
   // couponOverride: optional coupon to use instead of appliedCoupon state (for immediate updates)
-  const calculateTotalWithDiscount = useCallback(async (couponOverride = null) => {
+  // - undefined: use appliedCoupon from state
+  // - null: explicitly no coupon (used when removing coupon)
+  // - object: explicit coupon to use
+  const calculateTotalWithDiscount = useCallback(async (couponOverride = undefined) => {
     // Generate a unique request ID for this calculation
     const requestId = Symbol();
     currentRequestRef.current = requestId;
@@ -113,8 +116,8 @@ export default function OrderConfirmation() {
     const requestDeliveryType = deliveryType;
     const requestDeliveryZone = deliveryZone;
     
-    // Use couponOverride if provided, otherwise fall back to appliedCoupon state
-    const couponToUse = couponOverride !== null ? couponOverride : appliedCoupon;
+    // Use couponOverride if explicitly provided (even if null), otherwise fall back to appliedCoupon state
+    const couponToUse = couponOverride !== undefined ? couponOverride : appliedCoupon;
     
     try {
       setCalculatingDiscount(true);
@@ -185,7 +188,11 @@ export default function OrderConfirmation() {
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        const errorMessage = errorData.error || "Failed to calculate discount";
+        const serverError = errorData.error || "Failed to calculate discount";
+        // Check if it's a coupon-related error and translate it
+        const errorMessage = serverError.includes("coupon") || serverError.includes("Coupon") 
+          ? getCouponErrorMessage(serverError) 
+          : serverError;
         console.error("Discount calculation failed:", errorMessage);
         // Only update state if this is still the current request
         if (currentRequestRef.current === requestId) {
@@ -273,6 +280,25 @@ export default function OrderConfirmation() {
     }
   };
 
+  // Map server error messages to translation keys
+  const getCouponErrorMessage = (serverError) => {
+    if (!serverError) return t("orderConfirmation.coupon.invalid");
+    
+    const errorMap = {
+      "Invalid coupon code": "orderConfirmation.coupon.errors.invalidCode",
+      "Coupon code not found": "orderConfirmation.coupon.errors.notFound",
+      "Coupon code has expired": "orderConfirmation.coupon.errors.expired",
+      "Coupon code has already been used": "orderConfirmation.coupon.errors.alreadyUsed",
+      "This coupon code is not valid for your account": "orderConfirmation.coupon.errors.notValidForAccount",
+      "This coupon code requires a customer ID to be specified": "orderConfirmation.coupon.errors.requiresCustomerId",
+      "Failed to validate coupon": "orderConfirmation.coupon.errors.validationFailed",
+      "Coupon already used": "orderConfirmation.coupon.errors.alreadyUsedShort",
+      "Coupon not found": "orderConfirmation.coupon.errors.notFoundShort",
+    };
+    
+    return errorMap[serverError] ? t(errorMap[serverError]) : serverError;
+  };
+
   // Handle coupon code validation and application
   async function handleApplyCoupon() {
     if (!couponCode.trim()) {
@@ -303,7 +329,7 @@ export default function OrderConfirmation() {
         // Trigger recalculation with coupon - pass coupon directly to avoid race condition
         calculateTotalWithDiscount(data.coupon);
       } else {
-        setCouponError(data.error || t("orderConfirmation.coupon.invalid"));
+        setCouponError(getCouponErrorMessage(data.error) || t("orderConfirmation.coupon.invalid"));
         setAppliedCoupon(null);
       }
     } catch (err) {

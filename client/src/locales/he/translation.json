@@ -470,6 +470,7 @@
     "paymentMessage": "אינטגרציית תשלום תתוקן עם Tranzilla.",
     "paymentGatewayComingSoon": "שער תשלום בקרוב",
     "backToCart": "חזור לעגלה",
+    "backToHome": "חזור לבית",
     "processing": "מעבד...",
     "calculatingDiscount": "מחשב הנחה...",
     "calculatingDiscountMessage": "מחשב הנחה...",
@@ -536,6 +537,31 @@
       "paymentSucceededOrderFailed": "התשלום הצליח אבל יצירת ההזמנה נכשלה. אנא פנה לתמיכה.",
       "failedToProcessPayment": "עיבוד התשלום נכשל",
       "unableToCalculateDiscountRefresh": "לא ניתן לחשב הנחה. אנא רענן את הדף."
+    },
+    "coupon": {
+      "title": "יש לך קוד קופון?",
+      "placeholder": "הכנס קוד קופון",
+      "apply": "החל",
+      "validating": "בודק...",
+      "applied": "קופון הוחל",
+      "remove": "הסר",
+      "off": "הנחה",
+      "discount": "הנחת קופון",
+      "enterCode": "אנא הכנס קוד קופון",
+      "mustSignIn": "עליך להתחבר כדי להשתמש בקופון",
+      "invalid": "קוד קופון לא תקין או שפג תוקפו",
+      "error": "שגיאה באימות קוד הקופון",
+      "errors": {
+        "invalidCode": "קוד קופון לא תקין",
+        "notFound": "קוד קופון לא נמצא",
+        "expired": "קוד הקופון פג תוקף",
+        "alreadyUsed": "קוד הקופון כבר שומש",
+        "notValidForAccount": "קוד קופון זה לא תקף לחשבון שלך",
+        "requiresCustomerId": "קוד קופון זה דורש ציון מזהה לקוח",
+        "validationFailed": "נכשל באימות קוד הקופון",
+        "alreadyUsedShort": "הקופון כבר שומש",
+        "notFoundShort": "הקופון לא נמצא"
+      }
     },
     "success": {
       "orderCreated": "הזמנה #",
