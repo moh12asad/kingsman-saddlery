@@ -988,6 +988,49 @@
       "success": {
         "saved": "تم حفظ الإعدادات بنجاح!"
       }
+    },
+    "coupons": {
+      "title": "رموز القسيمة",
+      "createCoupon": "إنشاء قسيمة",
+      "editCoupon": "تعديل قسيمة",
+      "loading": "جاري تحميل القسائم...",
+      "noCoupons": "لم يتم العثور على رموز القسيمة.",
+      "code": "الرمز",
+      "percentage": "النسبة المئوية",
+      "user": "المستخدم",
+      "expiresAt": "تنتهي في",
+      "statusLabel": "الحالة",
+      "actions": "الإجراءات",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "update": "تحديث",
+      "create": "إنشاء",
+      "cancel": "إلغاء",
+      "optional": "اختياري",
+      "codePlaceholder": "اتركه فارغاً للإنشاء التلقائي",
+      "codeHint": "اتركه فارغاً لإنشاء رمز فريد تلقائياً",
+      "percentageHint": "أدخل نسبة الخصم (1-100)",
+      "userPlaceholder": "ابحث بالاسم أو البريد الإلكتروني...",
+      "allUsers": "جميع المستخدمين",
+      "noUsersFound": "لم يتم العثور على مستخدمين",
+      "status": {
+        "active": "نشط",
+        "expired": "منتهي الصلاحية",
+        "used": "مستخدم"
+      },
+      "success": {
+        "created": "تم إنشاء القسيمة بنجاح!",
+        "updated": "تم تحديث القسيمة بنجاح!",
+        "deleted": "تم حذف القسيمة بنجاح!"
+      },
+      "errors": {
+        "failedToLoad": "فشل تحميل القسائم",
+        "failedToSave": "فشل حفظ القسيمة",
+        "failedToDelete": "فشل حذف القسيمة",
+        "invalidPercentage": "يجب أن تكون النسبة المئوية بين 1 و 100",
+        "expirationRequired": "تاريخ انتهاء الصلاحية مطلوب"
+      },
+      "confirmDelete": "هل أنت متأكد أنك تريد حذف هذه القسيمة؟"
     }
   },
   "aboutUs": {

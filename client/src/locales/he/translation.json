@@ -988,6 +988,49 @@
       "success": {
         "saved": "ההגדרות נשמרו בהצלחה!"
       }
+    },
+    "coupons": {
+      "title": "קודי קופון",
+      "createCoupon": "צור קופון",
+      "editCoupon": "ערוך קופון",
+      "loading": "טוען קופונים...",
+      "noCoupons": "לא נמצאו קודי קופון.",
+      "code": "קוד",
+      "percentage": "אחוז",
+      "user": "משתמש",
+      "expiresAt": "פג תוקף ב",
+      "statusLabel": "סטטוס",
+      "actions": "פעולות",
+      "edit": "ערוך",
+      "delete": "מחק",
+      "update": "עדכן",
+      "create": "צור",
+      "cancel": "ביטול",
+      "optional": "אופציונלי",
+      "codePlaceholder": "השאר ריק ליצירה אוטומטית",
+      "codeHint": "השאר ריק ליצירת קוד ייחודי אוטומטית",
+      "percentageHint": "הכנס אחוז הנחה (1-100)",
+      "userPlaceholder": "חפש לפי שם או אימייל...",
+      "allUsers": "כל המשתמשים",
+      "noUsersFound": "לא נמצאו משתמשים",
+      "status": {
+        "active": "פעיל",
+        "expired": "פג תוקף",
+        "used": "שימש"
+      },
+      "success": {
+        "created": "הקופון נוצר בהצלחה!",
+        "updated": "הקופון עודכן בהצלחה!",
+        "deleted": "הקופון נמחק בהצלחה!"
+      },
+      "errors": {
+        "failedToLoad": "נכשל בטעינת הקופונים",
+        "failedToSave": "נכשל בשמירת הקופון",
+        "failedToDelete": "נכשל במחיקת הקופון",
+        "invalidPercentage": "האחוז חייב להיות בין 1 ל-100",
+        "expirationRequired": "תאריך תפוגה נדרש"
+      },
+      "confirmDelete": "האם אתה בטוח שברצונך למחוק את הקופון הזה?"
     }
   },
   "aboutUs": {
