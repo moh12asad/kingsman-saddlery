@@ -55,6 +55,7 @@ import EditCategory from "./pages/Admin/EditCategory.jsx";
 import ContactSubmissions from "./pages/Admin/ContactSubmissions.jsx";
 import FailedOrders from "./pages/Admin/FailedOrders.jsx";
 import BulkEmail from "./pages/Admin/BulkEmail.jsx";
+import AdminCoupons from "./pages/Admin/Coupons.jsx";
 import OrdersManagementLayout from "./pages/Admin/OrdersManagement/index.jsx";
 import OrdersDashboard from "./pages/Admin/OrdersManagement/Dashboard.jsx";
 import AdminOrderDetail from "./pages/Admin/OrdersManagement/OrderDetail.jsx";
@@ -142,6 +143,7 @@ const router = createBrowserRouter([
           { path: "contact-submissions", element: <ContactSubmissions /> },
           { path: "failed-orders", element: <FailedOrders /> },
           { path: "bulk-email", element: <BulkEmail /> },
+          { path: "coupons", element: <AdminCoupons /> },
           { path: "settings", element: <AdminSettings /> },
           // Reports
           {

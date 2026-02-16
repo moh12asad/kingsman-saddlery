@@ -629,6 +629,20 @@
       "failedToProcessPayment": "Failed to process payment",
       "unableToCalculateDiscountRefresh": "Unable to calculate discount. Please refresh the page."
     },
+    "coupon": {
+      "title": "Have a Coupon Code?",
+      "placeholder": "Enter coupon code",
+      "apply": "Apply",
+      "validating": "Validating...",
+      "applied": "Coupon Applied",
+      "remove": "Remove",
+      "off": "OFF",
+      "discount": "Coupon Discount",
+      "enterCode": "Please enter a coupon code",
+      "mustSignIn": "You must be signed in to use a coupon",
+      "invalid": "Invalid or expired coupon code",
+      "error": "Error validating coupon code"
+    },
     "success": {
       "orderCreated": "Order #",
       "createdAndPaid": "created and paid successfully! Confirmation email sent to",
@@ -651,6 +665,7 @@
       "contactSubmissions": "Contact Submissions",
       "failedOrders": "Failed Orders",
       "bulkEmail": "Bulk Email",
+      "coupons": "Coupons",
       "reports": "Reports",
       "settings": "Settings"
     },
@@ -1054,6 +1069,48 @@
       "success": {
         "saved": "Settings saved successfully!"
       }
+    },
+    "coupons": {
+      "title": "Coupon Codes",
+      "createCoupon": "Create Coupon",
+      "editCoupon": "Edit Coupon",
+      "loading": "Loading coupons...",
+      "noCoupons": "No coupon codes found.",
+      "code": "Code",
+      "percentage": "Percentage",
+      "user": "User",
+      "expiresAt": "Expires At",
+      "status": "Status",
+      "actions": "Actions",
+      "edit": "Edit",
+      "delete": "Delete",
+      "update": "Update",
+      "create": "Create",
+      "cancel": "Cancel",
+      "optional": "Optional",
+      "codePlaceholder": "Leave empty to auto-generate",
+      "codeHint": "Leave empty to auto-generate a unique code",
+      "percentageHint": "Enter discount percentage (1-100)",
+      "userPlaceholder": "Search by name or email...",
+      "allUsers": "All Users",
+      "status": {
+        "active": "Active",
+        "expired": "Expired",
+        "used": "Used"
+      },
+      "success": {
+        "created": "Coupon created successfully!",
+        "updated": "Coupon updated successfully!",
+        "deleted": "Coupon deleted successfully!"
+      },
+      "errors": {
+        "failedToLoad": "Failed to load coupons",
+        "failedToSave": "Failed to save coupon",
+        "failedToDelete": "Failed to delete coupon",
+        "invalidPercentage": "Percentage must be between 1 and 100",
+        "expirationRequired": "Expiration date is required"
+      },
+      "confirmDelete": "Are you sure you want to delete this coupon?"
     }
   },
   "aboutUs": {

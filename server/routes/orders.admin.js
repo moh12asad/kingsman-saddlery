@@ -3,6 +3,7 @@ import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
 import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../utils/discount.js";
+import { validateAndGetCouponDiscount, markCouponAsUsed } from "./coupons.admin.js";
 
 const db = admin.firestore();
 const router = Router();
@@ -77,6 +78,7 @@ router.post("/create", async (req, res) => {
       tax,
       total,
       transactionId,
+      couponCode,
       metadata = {},
     } = req.body;
 
@@ -282,15 +284,38 @@ router.post("/create", async (req, res) => {
       ? roundTo2Decimals(subtotal)
       : computedSubtotal;
     
-    // SECURITY: Check discount eligibility server-side (never trust client)
-    const discountCheck = await checkNewUserDiscountEligibility(uid);
+    // SECURITY: Check coupon code first (takes precedence over new user discount)
     let discountAmount = 0;
     let discountPercentage = 0;
+    let discountType = null;
+    let discountReason = null;
+    let couponId = null;
     
-    if (discountCheck.eligible) {
-      discountPercentage = discountCheck.discountPercentage;
-      discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
-      console.log(`Applied ${discountPercentage}% new user discount for user ${uid}: ${discountAmount} ILS off`);
+    if (couponCode && typeof couponCode === "string" && couponCode.trim() !== "") {
+      const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), uid);
+      if (couponValidation.valid) {
+        discountPercentage = couponValidation.percentage;
+        discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
+        discountType = "coupon";
+        discountReason = `Coupon code: ${couponCode.toUpperCase()}`;
+        couponId = couponValidation.couponId;
+        console.log(`Applied ${discountPercentage}% coupon discount for user ${uid}: ${discountAmount} ILS off`);
+      } else {
+        return res.status(400).json({ 
+          error: "Invalid coupon code", 
+          details: couponValidation.error || "Coupon code validation failed" 
+        });
+      }
+    } else {
+      // Check new user discount eligibility if no coupon code
+      const discountCheck = await checkNewUserDiscountEligibility(uid);
+      if (discountCheck.eligible) {
+        discountPercentage = discountCheck.discountPercentage;
+        discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
+        discountType = "new_user";
+        discountReason = discountCheck.reason || "New user discount (first 3 months)";
+        console.log(`Applied ${discountPercentage}% new user discount for user ${uid}: ${discountAmount} ILS off`);
+      }
     }
     
     // Apply discount to subtotal (discount applies to product prices, before tax and delivery)
@@ -406,9 +431,10 @@ router.post("/create", async (req, res) => {
       discount: discountAmount > 0 ? {
         amount: discountAmount,
         percentage: discountPercentage,
-        type: "new_user",
-        eligible: discountCheck.eligible,
-        reason: discountCheck.reason || "New user discount (first 3 months)"
+        type: discountType,
+        reason: discountReason,
+        couponCode: discountType === "coupon" ? couponCode?.toUpperCase() : null,
+        couponId: couponId || null,
       } : null,
       tax: orderTax,
       total: orderTotal,
@@ -427,6 +453,15 @@ router.post("/create", async (req, res) => {
     }
 
     const docRef = await db.collection("orders").add(orderDoc);
+
+    // Mark coupon as used if it was applied
+    if (couponCode && discountType === "coupon" && couponId) {
+      const markResult = await markCouponAsUsed(couponCode.trim());
+      if (!markResult.success) {
+        console.error(`Failed to mark coupon as used: ${markResult.error}`);
+        // Don't fail the order creation, but log the error
+      }
+    }
 
     res.status(201).json({ 
       id: docRef.id,
@@ -589,6 +624,7 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       subtotal,
       tax,
       total,
+      couponCode,
       metadata = {},
     } = req.body;
 
@@ -784,16 +820,41 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     );
     const orderSubtotalBeforeDiscount = typeof subtotal === "number" ? subtotal : computedSubtotal;
     
-    // SECURITY: Check discount eligibility server-side if customerId is provided
+    // SECURITY: Check coupon code first (takes precedence over new user discount)
     let discountAmount = 0;
     let discountPercentage = 0;
     let discountInfo = null;
+    let couponId = null;
     
-    if (customerId && typeof customerId === "string" && customerId.trim() !== "") {
+    if (couponCode && typeof couponCode === "string" && couponCode.trim() !== "") {
+      // For admin orders, validate coupon but don't require customerId match if not provided
+      const couponUserId = customerId && customerId.trim() !== "" ? customerId : null;
+      const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), couponUserId);
+      if (couponValidation.valid) {
+        discountPercentage = couponValidation.percentage;
+        discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
+        discountInfo = {
+          amount: discountAmount,
+          percentage: discountPercentage,
+          type: "coupon",
+          reason: `Coupon code: ${couponCode.toUpperCase()}`,
+          couponCode: couponCode.toUpperCase(),
+          couponId: couponValidation.couponId,
+        };
+        couponId = couponValidation.couponId;
+        console.log(`Applied ${discountPercentage}% coupon discount: ${discountAmount} ILS off`);
+      } else {
+        return res.status(400).json({ 
+          error: "Invalid coupon code", 
+          details: couponValidation.error || "Coupon code validation failed" 
+        });
+      }
+    } else if (customerId && typeof customerId === "string" && customerId.trim() !== "") {
+      // Check new user discount eligibility if no coupon code
       const discountCheck = await checkNewUserDiscountEligibility(customerId);
       if (discountCheck.eligible) {
         discountPercentage = discountCheck.discountPercentage;
-        discountAmount = calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage);
+        discountAmount = roundTo2Decimals(calculateDiscountAmount(orderSubtotalBeforeDiscount, discountPercentage));
         discountInfo = {
           amount: discountAmount,
           percentage: discountPercentage,
@@ -827,6 +888,15 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    // Mark coupon as used if it was applied
+    if (couponCode && discountInfo?.type === "coupon" && couponId) {
+      const markResult = await markCouponAsUsed(couponCode.trim());
+      if (!markResult.success) {
+        console.error(`Failed to mark coupon as used: ${markResult.error}`);
+        // Don't fail the order creation, but log the error
+      }
+    }
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {

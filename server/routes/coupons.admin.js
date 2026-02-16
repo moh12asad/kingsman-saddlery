@@ -1,0 +1,386 @@
+import { Router } from "express";
+import admin from "firebase-admin";
+import { requireRole } from "../middlewares/roles.js";
+import { verifyFirebaseToken } from "../middlewares/auth.js";
+
+const db = admin.firestore();
+const router = Router();
+
+router.use(verifyFirebaseToken);
+
+// Generate a unique coupon code
+function generateCouponCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Exclude confusing chars like 0, O, I, 1
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// Get all coupon codes (ADMIN only)
+router.get("/", requireRole("ADMIN"), async (_req, res) => {
+  try {
+    const snap = await db
+      .collection("coupons")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const coupons = snap.docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt?.toDate?.() ?? null;
+      const expiresAt = data.expiresAt?.toDate?.() ?? null;
+      const usedAt = data.usedAt?.toDate?.() ?? null;
+      
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: createdAt ? createdAt.toISOString() : null,
+        expiresAt: expiresAt ? expiresAt.toISOString() : null,
+        usedAt: usedAt ? usedAt.toISOString() : null,
+      };
+    });
+
+    res.json({ coupons });
+  } catch (error) {
+    console.error("coupons.list error", error);
+    res.status(500).json({ error: "Failed to fetch coupons", details: error.message });
+  }
+});
+
+// Get a single coupon by code (for validation)
+router.get("/validate/:code", verifyFirebaseToken, async (req, res) => {
+  try {
+    const { code } = req.params;
+    const { uid } = req.user;
+
+    if (!code || typeof code !== "string") {
+      return res.status(400).json({ error: "Invalid coupon code" });
+    }
+
+    const couponSnap = await db
+      .collection("coupons")
+      .where("code", "==", code.toUpperCase())
+      .limit(1)
+      .get();
+
+    if (couponSnap.empty) {
+      return res.status(404).json({ error: "Coupon code not found" });
+    }
+
+    const couponDoc = couponSnap.docs[0];
+    const couponData = couponDoc.data();
+    const expiresAt = couponData.expiresAt?.toDate?.() ?? null;
+    const usedAt = couponData.usedAt?.toDate?.() ?? null;
+
+    // Check if coupon is expired
+    if (expiresAt && new Date() > new Date(expiresAt)) {
+      return res.status(400).json({ error: "Coupon code has expired" });
+    }
+
+    // Check if coupon is already used
+    if (couponData.used || usedAt) {
+      return res.status(400).json({ error: "Coupon code has already been used" });
+    }
+
+    // Check if coupon is assigned to a specific user
+    if (couponData.userId && couponData.userId !== uid) {
+      return res.status(403).json({ error: "This coupon code is not valid for your account" });
+    }
+
+    const coupon = {
+      id: couponDoc.id,
+      code: couponData.code,
+      percentage: couponData.percentage,
+      userId: couponData.userId || null,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+      used: couponData.used || false,
+    };
+
+    res.json({ coupon, valid: true });
+  } catch (error) {
+    console.error("coupons.validate error", error);
+    res.status(500).json({ error: "Failed to validate coupon", details: error.message });
+  }
+});
+
+// Create a new coupon code (ADMIN only)
+router.post("/", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const { userId, percentage, expiresAt, code } = req.body;
+
+    // Validate percentage
+    if (typeof percentage !== "number" || percentage <= 0 || percentage > 100) {
+      return res.status(400).json({ error: "Percentage must be between 1 and 100" });
+    }
+
+    // Validate expiration date
+    if (!expiresAt) {
+      return res.status(400).json({ error: "Expiration date is required" });
+    }
+
+    const expirationDate = new Date(expiresAt);
+    if (isNaN(expirationDate.getTime())) {
+      return res.status(400).json({ error: "Invalid expiration date" });
+    }
+
+    if (expirationDate <= new Date()) {
+      return res.status(400).json({ error: "Expiration date must be in the future" });
+    }
+
+    // Validate userId if provided
+    if (userId && typeof userId === "string" && userId.trim() !== "") {
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        return res.status(400).json({ error: "User not found" });
+      }
+    }
+
+    // Generate or use provided code
+    let couponCode = code;
+    if (!couponCode || typeof couponCode !== "string" || couponCode.trim() === "") {
+      // Generate unique code
+      let attempts = 0;
+      let isUnique = false;
+      while (!isUnique && attempts < 10) {
+        couponCode = generateCouponCode();
+        const existingCoupon = await db
+          .collection("coupons")
+          .where("code", "==", couponCode)
+          .limit(1)
+          .get();
+        
+        if (existingCoupon.empty) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      if (!isUnique) {
+        return res.status(500).json({ error: "Failed to generate unique coupon code" });
+      }
+    } else {
+      // Check if provided code is unique
+      couponCode = couponCode.toUpperCase().trim();
+      const existingCoupon = await db
+        .collection("coupons")
+        .where("code", "==", couponCode)
+        .limit(1)
+        .get();
+      
+      if (!existingCoupon.empty) {
+        return res.status(400).json({ error: "Coupon code already exists" });
+      }
+    }
+
+    // Create coupon document
+    const couponDoc = {
+      code: couponCode,
+      percentage: Number(percentage),
+      userId: userId && userId.trim() !== "" ? userId.trim() : null,
+      expiresAt: admin.firestore.Timestamp.fromDate(expirationDate),
+      used: false,
+      usedAt: null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: req.user.uid,
+    };
+
+    const docRef = await db.collection("coupons").add(couponDoc);
+
+    const createdCoupon = await docRef.get();
+    const createdData = createdCoupon.data();
+    const createdAt = createdData.createdAt?.toDate?.() ?? null;
+    const expiresAtDate = createdData.expiresAt?.toDate?.() ?? null;
+
+    res.status(201).json({
+      id: docRef.id,
+      code: createdData.code,
+      percentage: createdData.percentage,
+      userId: createdData.userId || null,
+      expiresAt: expiresAtDate ? expiresAtDate.toISOString() : null,
+      used: createdData.used || false,
+      createdAt: createdAt ? createdAt.toISOString() : null,
+    });
+  } catch (error) {
+    console.error("coupons.create error", error);
+    res.status(500).json({ error: "Failed to create coupon", details: error.message });
+  }
+});
+
+// Update a coupon code (ADMIN only)
+router.patch("/:id", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { percentage, expiresAt, code } = req.body;
+
+    const couponRef = db.collection("coupons").doc(id);
+    const couponDoc = await couponRef.get();
+
+    if (!couponDoc.exists) {
+      return res.status(404).json({ error: "Coupon not found" });
+    }
+
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (percentage !== undefined) {
+      if (typeof percentage !== "number" || percentage <= 0 || percentage > 100) {
+        return res.status(400).json({ error: "Percentage must be between 1 and 100" });
+      }
+      updateData.percentage = percentage;
+    }
+
+    if (expiresAt !== undefined) {
+      const expirationDate = new Date(expiresAt);
+      if (isNaN(expirationDate.getTime())) {
+        return res.status(400).json({ error: "Invalid expiration date" });
+      }
+      updateData.expiresAt = admin.firestore.Timestamp.fromDate(expirationDate);
+    }
+
+    if (code !== undefined) {
+      const newCode = code.toUpperCase().trim();
+      // Check if code is unique (excluding current coupon)
+      const existingCoupon = await db
+        .collection("coupons")
+        .where("code", "==", newCode)
+        .limit(1)
+        .get();
+      
+      if (!existingCoupon.empty && existingCoupon.docs[0].id !== id) {
+        return res.status(400).json({ error: "Coupon code already exists" });
+      }
+      updateData.code = newCode;
+    }
+
+    await couponRef.set(updateData, { merge: true });
+
+    const updatedCoupon = await couponRef.get();
+    const updatedData = updatedCoupon.data();
+    const expiresAtDate = updatedData.expiresAt?.toDate?.() ?? null;
+
+    res.json({
+      id: updatedCoupon.id,
+      code: updatedData.code,
+      percentage: updatedData.percentage,
+      userId: updatedData.userId || null,
+      expiresAt: expiresAtDate ? expiresAtDate.toISOString() : null,
+      used: updatedData.used || false,
+    });
+  } catch (error) {
+    console.error("coupons.update error", error);
+    res.status(500).json({ error: "Failed to update coupon", details: error.message });
+  }
+});
+
+// Delete a coupon code (ADMIN only)
+router.delete("/:id", requireRole("ADMIN"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const couponRef = db.collection("coupons").doc(id);
+    const couponDoc = await couponRef.get();
+
+    if (!couponDoc.exists) {
+      return res.status(404).json({ error: "Coupon not found" });
+    }
+
+    await couponRef.delete();
+
+    res.json({ message: "Coupon deleted successfully" });
+  } catch (error) {
+    console.error("coupons.delete error", error);
+    res.status(500).json({ error: "Failed to delete coupon", details: error.message });
+  }
+});
+
+// Mark coupon as used (called when order is created)
+export async function markCouponAsUsed(couponCode) {
+  try {
+    if (!couponCode || typeof couponCode !== "string") {
+      return { success: false, error: "Invalid coupon code" };
+    }
+
+    const couponSnap = await db
+      .collection("coupons")
+      .where("code", "==", couponCode.toUpperCase())
+      .limit(1)
+      .get();
+
+    if (couponSnap.empty) {
+      return { success: false, error: "Coupon not found" };
+    }
+
+    const couponDoc = couponSnap.docs[0];
+    const couponData = couponDoc.data();
+
+    // Check if already used
+    if (couponData.used || couponData.usedAt) {
+      return { success: false, error: "Coupon already used" };
+    }
+
+    // Mark as used
+    await couponDoc.ref.set({
+      used: true,
+      usedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    return { success: true };
+  } catch (error) {
+    console.error("markCouponAsUsed error", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Validate and get coupon discount (for order creation)
+export async function validateAndGetCouponDiscount(couponCode, userId) {
+  try {
+    if (!couponCode || typeof couponCode !== "string") {
+      return { valid: false, error: "Invalid coupon code" };
+    }
+
+    const couponSnap = await db
+      .collection("coupons")
+      .where("code", "==", couponCode.toUpperCase())
+      .limit(1)
+      .get();
+
+    if (couponSnap.empty) {
+      return { valid: false, error: "Coupon code not found" };
+    }
+
+    const couponDoc = couponSnap.docs[0];
+    const couponData = couponDoc.data();
+    const expiresAt = couponData.expiresAt?.toDate?.() ?? null;
+    const usedAt = couponData.usedAt?.toDate?.() ?? null;
+
+    // Check if expired
+    if (expiresAt && new Date() > new Date(expiresAt)) {
+      return { valid: false, error: "Coupon code has expired" };
+    }
+
+    // Check if already used
+    if (couponData.used || usedAt) {
+      return { valid: false, error: "Coupon code has already been used" };
+    }
+
+    // Check if assigned to specific user
+    if (couponData.userId && couponData.userId !== userId) {
+      return { valid: false, error: "This coupon code is not valid for your account" };
+    }
+
+    return {
+      valid: true,
+      percentage: couponData.percentage,
+      couponId: couponDoc.id,
+    };
+  } catch (error) {
+    console.error("validateAndGetCouponDiscount error", error);
+    return { valid: false, error: error.message };
+  }
+}
+
+export default router;
+

@@ -56,6 +56,10 @@ export default function OrderConfirmation() {
   const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState(null); // Store calculated delivery cost from server
   const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
   const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
+  const [couponCode, setCouponCode] = useState(""); // Coupon code input
+  const [couponError, setCouponError] = useState(""); // Coupon validation error
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // Applied coupon info
+  const [validatingCoupon, setValidatingCoupon] = useState(false); // Validating coupon
   const [saleProducts, setSaleProducts] = useState([]); // Products on sale
   const [loadingSaleProducts, setLoadingSaleProducts] = useState(false); // Loading state for sale products
   const saleProductsScrollRef = useRef(null); // Ref for sale products carousel scroll
@@ -153,7 +157,8 @@ export default function OrderConfirmation() {
           tax: subtotal * 0.18, // Tax on subtotal (will be recalculated server-side)
           deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will recalculate)
           deliveryZone: requestDeliveryType === "delivery" ? requestDeliveryZone : null,
-          totalWeight: totalWeight
+          totalWeight: totalWeight,
+          couponCode: appliedCoupon ? appliedCoupon.code : null // Include coupon code if applied
         })
       });
 
@@ -195,7 +200,7 @@ export default function OrderConfirmation() {
         setCalculatingDiscount(false);
       }
     }
-  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight, cartItems]);
+  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight, cartItems, appliedCoupon]);
 
   useEffect(() => {
     if (!user) return;
@@ -215,7 +220,7 @@ export default function OrderConfirmation() {
     setCalculatedTotal(null);
     setDiscountCalculationError(null); // Clear any previous errors
     calculateTotalWithDiscount();
-  }, [user, cartItems, deliveryType, deliveryZone, isLoaded, calculateTotalWithDiscount]);
+  }, [user, cartItems, deliveryType, deliveryZone, isLoaded, appliedCoupon, calculateTotalWithDiscount]);
 
   useEffect(() => {
     // Redirect to cart if cart is empty
@@ -263,6 +268,56 @@ export default function OrderConfirmation() {
       });
     }
   };
+
+  // Handle coupon code validation and application
+  async function handleApplyCoupon() {
+    if (!couponCode.trim()) {
+      setCouponError(t("orderConfirmation.coupon.enterCode"));
+      return;
+    }
+
+    setValidatingCoupon(true);
+    setCouponError("");
+
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        setCouponError(t("orderConfirmation.coupon.mustSignIn"));
+        setValidatingCoupon(false);
+        return;
+      }
+
+      const res = await fetch(`${API}/api/coupons/validate/${couponCode.trim()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.valid) {
+        setAppliedCoupon(data.coupon);
+        setCouponError("");
+        // Trigger recalculation with coupon
+        calculateTotalWithDiscount();
+      } else {
+        setCouponError(data.error || t("orderConfirmation.coupon.invalid"));
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      console.error("Error validating coupon:", err);
+      setCouponError(t("orderConfirmation.coupon.error"));
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+    // Trigger recalculation without coupon
+    calculateTotalWithDiscount();
+  }
 
   async function loadUserProfile() {
     try {
@@ -699,6 +754,7 @@ export default function OrderConfirmation() {
           ...orderData,
           status: "new",
           transactionId: finalTransactionId,
+          couponCode: appliedCoupon ? appliedCoupon.code : null,
           metadata: {
             paymentMethod: actualPaymentMethod,
             paymentGateway: "tranzila",
@@ -996,6 +1052,53 @@ export default function OrderConfirmation() {
                     <span className="text-sm font-semibold">{getTotalWeight().toFixed(2)} kg</span>
                   </div>
                 </div>
+                {/* Coupon Code Section */}
+                <div className="margin-top-md padding-top-md border-top">
+                  <h3 className="text-sm font-semibold margin-bottom-sm">{t("orderConfirmation.coupon.title")}</h3>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between padding-sm bg-green-50 border border-green-200 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-green-800">
+                          {t("orderConfirmation.coupon.applied")}: {appliedCoupon.code}
+                        </span>
+                        <span className="badge badge-success text-xs">
+                          {appliedCoupon.percentage}% {t("orderConfirmation.coupon.off")}
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        {t("orderConfirmation.coupon.remove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponError("");
+                        }}
+                        placeholder={t("orderConfirmation.coupon.placeholder")}
+                        className="input flex-1"
+                        disabled={validatingCoupon}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={validatingCoupon || !couponCode.trim()}
+                        className="btn btn-secondary"
+                      >
+                        {validatingCoupon ? t("orderConfirmation.coupon.validating") : t("orderConfirmation.coupon.apply")}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <p className="text-sm text-red-600 margin-top-xs">{couponError}</p>
+                  )}
+                </div>
+
                 <div className="margin-top-md padding-top-md border-top space-y-2">
                   {calculatingDiscount ? (
                     <div className="flex justify-center items-center padding-y-md">
@@ -1023,7 +1126,9 @@ export default function OrderConfirmation() {
                       {discountInfo && (
                         <div className="flex justify-between items-center order-confirmation-discount-text">
                           <span className="text-sm font-semibold">
-                            {t("orderConfirmation.newUserDiscountMessage")} ({discountInfo.percentage}%):
+                            {discountInfo.type === "coupon" 
+                              ? `${t("orderConfirmation.coupon.discount")} (${discountInfo.couponCode || ""}) - ${discountInfo.percentage}%:`
+                              : `${t("orderConfirmation.newUserDiscountMessage")} (${discountInfo.percentage}%):`}
                           </span>
                           <span className="text-sm font-semibold">
                             -{formatPrice(discountInfo.amount)}
