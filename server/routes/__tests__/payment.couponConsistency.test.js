@@ -75,27 +75,9 @@ vi.mock('../../middlewares/auth.js', () => ({
 import { checkNewUserDiscountEligibility } from '../../utils/discount.js';
 import { validateAndGetCouponDiscount } from '../coupons.admin.js';
 
-describe('Server Payment Endpoints - Coupon Consistency', () => {
-  beforeEach(() => {
-    // Reset all mocks
-    vi.clearAllMocks();
-    
-    // Default mock implementations
-    validateAndGetCouponDiscount.mockResolvedValue({
-      valid: false,
-      error: 'Coupon not found',
-    });
-    
-    checkNewUserDiscountEligibility.mockResolvedValue({
-      eligible: false,
-      discountPercentage: 0,
-      reason: 'Not eligible',
-    });
-  });
-
-  describe('Discount Logic Consistency', () => {
-    // Simulate the exact discount logic from both endpoints
-    const calculateDiscountCalculateTotal = async (subtotal, couponCode, uid, hasNewUserDiscount) => {
+// Helper functions to simulate the exact discount logic from both endpoints
+// These are defined outside the describe block so they can be used in all test suites
+const calculateDiscountCalculateTotal = async (subtotal, couponCode, uid, hasNewUserDiscount) => {
       let discountAmount = 0;
       let discountPercentage = 0;
       let discountType = null;
@@ -132,7 +114,7 @@ describe('Server Payment Endpoints - Coupon Consistency', () => {
       };
     };
 
-    const calculateDiscountProcess = async (subtotal, couponCode, uid, hasNewUserDiscount) => {
+const calculateDiscountProcess = async (subtotal, couponCode, uid, hasNewUserDiscount) => {
       // This should be IDENTICAL to calculate-total logic
       let discountAmount = 0;
       let discountPercentage = 0;
@@ -170,6 +152,25 @@ describe('Server Payment Endpoints - Coupon Consistency', () => {
       };
     };
 
+describe('Server Payment Endpoints - Coupon Consistency', () => {
+  beforeEach(() => {
+    // Reset all mocks
+    vi.clearAllMocks();
+    
+    // Default mock implementations
+    validateAndGetCouponDiscount.mockResolvedValue({
+      valid: false,
+      error: 'Coupon not found',
+    });
+    
+    checkNewUserDiscountEligibility.mockResolvedValue({
+      eligible: false,
+      discountPercentage: 0,
+      reason: 'Not eligible',
+    });
+  });
+
+  describe('Discount Logic Consistency', () => {
     it('should apply same coupon discount in both endpoints', async () => {
       const subtotal = 22;
       const couponCode = 'TEST90';
@@ -300,7 +301,8 @@ describe('Server Payment Endpoints - Coupon Consistency', () => {
 
   describe('Coupon Code Validation', () => {
     const isValidCouponCode = (couponCode) => {
-      return couponCode && typeof couponCode === "string" && couponCode.trim() !== "";
+      // Explicitly return boolean to handle edge cases like empty string
+      return !!(couponCode && typeof couponCode === "string" && couponCode.trim() !== "");
     };
 
     it('should validate coupon code format correctly', () => {
