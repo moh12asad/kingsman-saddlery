@@ -2,6 +2,7 @@ import { Router } from "express";
 import admin from "firebase-admin";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
 import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../utils/discount.js";
+import { validateAndGetCouponDiscount } from "./coupons.admin.js";
 
 const db = admin.firestore();
 const router = Router();
@@ -38,6 +39,7 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
       deliveryCost = 0,
       deliveryZone = null,
       totalWeight = 0,
+      couponCode = null,
     } = req.body;
 
     console.log(`[PAYMENT] [${requestId}] Input Data:`, {
@@ -190,33 +192,57 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
       totalWeight: validatedWeight
     });
 
-    // SECURITY: Check discount eligibility server-side (never trust client)
-    console.log(`[PAYMENT] [${requestId}] Checking discount eligibility for user ${uid}...`);
-    const discountCheck = await checkNewUserDiscountEligibility(uid);
-    
-    console.log(`[PAYMENT] [${requestId}] Discount Eligibility:`, {
-      eligible: discountCheck.eligible,
-      percentage: discountCheck.percentage || 0,
-      reason: discountCheck.reason || "N/A",
-      accountCreationDate: discountCheck.accountCreationDate || "N/A",
-      monthsSinceCreation: discountCheck.monthsSinceCreation ? discountCheck.monthsSinceCreation.toFixed(2) : "N/A"
-    });
-    
+    // SECURITY: Check coupon code first (takes precedence over new user discount)
     let discountAmount = 0;
+    let discountPercentage = 0;
+    let discountType = null;
+    let discountReason = null;
     
-    if (discountCheck.eligible && discountCheck.discountPercentage > 0) {
-      discountAmount = calculateDiscountAmount(validatedSubtotal, discountCheck.discountPercentage);
-      // Ensure discount doesn't exceed subtotal (safety check)
-      discountAmount = Math.min(discountAmount, validatedSubtotal);
-      // Round discount to 2 decimal places
-      discountAmount = roundTo2Decimals(discountAmount);
-      console.log(`[PAYMENT] [${requestId}] Discount Applied:`, {
-        percentage: discountCheck.discountPercentage,
-        amount: discountAmount,
-        subtotalBeforeDiscount: validatedSubtotal
-      });
+    if (couponCode && typeof couponCode === "string" && couponCode.trim() !== "") {
+      const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), uid);
+      if (couponValidation.valid) {
+        discountPercentage = couponValidation.percentage;
+        discountAmount = roundTo2Decimals(calculateDiscountAmount(validatedSubtotal, discountPercentage));
+        discountType = "coupon";
+        discountReason = `Coupon code: ${couponCode.toUpperCase()}`;
+        console.log(`[PAYMENT] [${requestId}] Coupon Discount Applied:`, {
+          code: couponCode.toUpperCase(),
+          percentage: discountPercentage,
+          amount: discountAmount,
+          subtotalBeforeDiscount: validatedSubtotal
+        });
+      } else {
+        return res.status(400).json({ 
+          error: "Invalid coupon code", 
+          details: couponValidation.error || "Coupon code validation failed" 
+        });
+      }
     } else {
-      console.log(`[PAYMENT] [${requestId}] No discount applied: ${discountCheck.reason || "Not eligible"}`);
+      // Check new user discount eligibility if no coupon code
+      console.log(`[PAYMENT] [${requestId}] Checking discount eligibility for user ${uid}...`);
+      const discountCheck = await checkNewUserDiscountEligibility(uid);
+      
+      console.log(`[PAYMENT] [${requestId}] Discount Eligibility:`, {
+        eligible: discountCheck.eligible,
+        percentage: discountCheck.percentage || 0,
+        reason: discountCheck.reason || "N/A",
+        accountCreationDate: discountCheck.accountCreationDate || "N/A",
+        monthsSinceCreation: discountCheck.monthsSinceCreation ? discountCheck.monthsSinceCreation.toFixed(2) : "N/A"
+      });
+      
+      if (discountCheck.eligible && discountCheck.discountPercentage > 0) {
+        discountPercentage = discountCheck.discountPercentage;
+        discountAmount = roundTo2Decimals(calculateDiscountAmount(validatedSubtotal, discountPercentage));
+        discountType = "new_user";
+        discountReason = discountCheck.reason || "New user discount (first 3 months)";
+        console.log(`[PAYMENT] [${requestId}] Discount Applied:`, {
+          percentage: discountPercentage,
+          amount: discountAmount,
+          subtotalBeforeDiscount: validatedSubtotal
+        });
+      } else {
+        console.log(`[PAYMENT] [${requestId}] No discount applied: ${discountCheck.reason || "Not eligible"}`);
+      }
     }
 
     // Calculate final total: (Subtotal - Discount) + Delivery, then apply tax on total
@@ -280,10 +306,12 @@ router.post("/calculate-total", verifyFirebaseToken, async (req, res) => {
     const responseData = {
       subtotal: finalSubtotal,
       subtotalBeforeDiscount: validatedSubtotal,
-      discount: discountCheck.eligible && discountAmount > 0 ? {
+      discount: discountAmount > 0 ? {
         amount: discountAmount,
-        percentage: discountCheck.discountPercentage,
-        type: "new_user"
+        percentage: discountPercentage,
+        type: discountType,
+        reason: discountReason,
+        couponCode: discountType === "coupon" ? couponCode?.toUpperCase() : null,
       } : null,
       tax: calculatedTax,
       deliveryCost: roundedDeliveryCost,
@@ -336,6 +364,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       deliveryCost = 0,
       deliveryZone = null,
       totalWeight = 0,
+      couponCode = null, // CRITICAL: Extract coupon code to ensure same discount is applied
       // Add other payment-related fields as needed
       // NOTE: Card details are NOT logged for security
     } = req.body;
@@ -455,25 +484,52 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
     }
 
     // SECURITY: Recalculate expected total with discount using server-calculated subtotal
+    // CRITICAL FIX: Check coupon code first (same logic as /api/payment/calculate-total)
+    // This ensures both endpoints use the same discount, preventing amount mismatches
     if (validatedSubtotal > 0) {
       console.log(`[PAYMENT] [${requestId}] Recalculating expected total with discount...`);
       
-      const discountCheck = await checkNewUserDiscountEligibility(uid);
-      
-      console.log(`[PAYMENT] [${requestId}] Discount Check Result:`, {
-        eligible: discountCheck.eligible,
-        percentage: discountCheck.discountPercentage || 0,
-        reason: discountCheck.reason || "N/A"
-      });
-      
       let discountAmount = 0;
+      let discountPercentage = 0;
       
-      if (discountCheck.eligible) {
-        // SECURITY: Use server-calculated subtotal, not client-provided subtotal
-        discountAmount = calculateDiscountAmount(validatedSubtotal, discountCheck.discountPercentage);
-        // Round discount to 2 decimal places
-        discountAmount = roundTo2Decimals(discountAmount);
-        console.log(`[PAYMENT] [${requestId}] Discount calculated: ${discountAmount} ILS (${discountCheck.discountPercentage}% of ${validatedSubtotal})`);
+      // SECURITY: Check coupon code first (takes precedence over new user discount)
+      // This matches the logic in /api/payment/calculate-total to ensure consistency
+      if (couponCode && typeof couponCode === "string" && couponCode.trim() !== "") {
+        console.log(`[PAYMENT] [${requestId}] Checking coupon code: ${couponCode.trim()}`);
+        const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), uid);
+        
+        if (couponValidation.valid) {
+          discountPercentage = couponValidation.percentage;
+          discountAmount = roundTo2Decimals(calculateDiscountAmount(validatedSubtotal, discountPercentage));
+          console.log(`[PAYMENT] [${requestId}] Coupon Discount Applied:`, {
+            code: couponCode.toUpperCase(),
+            percentage: discountPercentage,
+            amount: discountAmount,
+            subtotalBeforeDiscount: validatedSubtotal
+          });
+        } else {
+          console.warn(`[PAYMENT] [${requestId}] Invalid coupon code: ${couponCode.trim()}, error: ${couponValidation.error}`);
+          // Don't reject payment if coupon is invalid - just log warning and continue without discount
+          // This prevents payment failures due to invalid/expired coupons
+        }
+      } else {
+        // Check new user discount eligibility if no coupon code
+        const discountCheck = await checkNewUserDiscountEligibility(uid);
+        
+        console.log(`[PAYMENT] [${requestId}] Discount Check Result:`, {
+          eligible: discountCheck.eligible,
+          percentage: discountCheck.discountPercentage || 0,
+          reason: discountCheck.reason || "N/A"
+        });
+        
+        if (discountCheck.eligible) {
+          discountPercentage = discountCheck.discountPercentage;
+          // SECURITY: Use server-calculated subtotal, not client-provided subtotal
+          discountAmount = calculateDiscountAmount(validatedSubtotal, discountPercentage);
+          // Round discount to 2 decimal places
+          discountAmount = roundTo2Decimals(discountAmount);
+          console.log(`[PAYMENT] [${requestId}] New User Discount calculated: ${discountAmount} ILS (${discountPercentage}% of ${validatedSubtotal})`);
+        }
       }
 
       const finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));

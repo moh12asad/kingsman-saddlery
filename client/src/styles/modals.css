@@ -20,5 +20,12 @@
   padding: 1.5rem;
 }
 
+.coupon-modal {
+  max-width: 24rem; /* max-w-sm equivalent */
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  width: 50% !important; 
+}
 
 

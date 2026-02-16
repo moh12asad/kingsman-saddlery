@@ -25,6 +25,16 @@ export default function PaymentFailed() {
                  searchParams.get("TranzilaTK");
     const amt = searchParams.get("amount") || searchParams.get("sum");
 
+    // Log payment failure when PaymentFailed page is loaded
+    console.log("[PaymentFailed] Payment failed - user redirected to payment failed page");
+    console.log("[PaymentFailed] Payment failure details:", {
+      error: error || "N/A",
+      transactionId: txId || "N/A",
+      amount: amt || "N/A",
+      url: window.location.href,
+      isInIframe: window.self !== window.top
+    });
+
     if (error) setErrorMessage(error);
     if (txId) setTransactionId(txId);
     if (amt) setAmount(parseFloat(amt));

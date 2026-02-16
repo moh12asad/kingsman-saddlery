@@ -56,6 +56,10 @@ export default function OrderConfirmation() {
   const [calculatedDeliveryCost, setCalculatedDeliveryCost] = useState(null); // Store calculated delivery cost from server
   const [calculatingDiscount, setCalculatingDiscount] = useState(false); // Track if discount calculation is in progress
   const [discountCalculationError, setDiscountCalculationError] = useState(null); // Track discount calculation errors
+  const [couponCode, setCouponCode] = useState(""); // Coupon code input
+  const [couponError, setCouponError] = useState(""); // Coupon validation error
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // Applied coupon info
+  const [validatingCoupon, setValidatingCoupon] = useState(false); // Validating coupon
   const [saleProducts, setSaleProducts] = useState([]); // Products on sale
   const [loadingSaleProducts, setLoadingSaleProducts] = useState(false); // Loading state for sale products
   const saleProductsScrollRef = useRef(null); // Ref for sale products carousel scroll
@@ -99,7 +103,11 @@ export default function OrderConfirmation() {
   const currentRequestRef = useRef(null);
 
   // Calculate total with discount - defined before useEffect to avoid initialization error
-  const calculateTotalWithDiscount = useCallback(async () => {
+  // couponOverride: optional coupon to use instead of appliedCoupon state (for immediate updates)
+  // - undefined: use appliedCoupon from state
+  // - null: explicitly no coupon (used when removing coupon)
+  // - object: explicit coupon to use
+  const calculateTotalWithDiscount = useCallback(async (couponOverride = undefined) => {
     // Generate a unique request ID for this calculation
     const requestId = Symbol();
     currentRequestRef.current = requestId;
@@ -107,6 +115,9 @@ export default function OrderConfirmation() {
     // Capture the deliveryType and deliveryZone at the start of this request
     const requestDeliveryType = deliveryType;
     const requestDeliveryZone = deliveryZone;
+    
+    // Use couponOverride if explicitly provided (even if null), otherwise fall back to appliedCoupon state
+    const couponToUse = couponOverride !== undefined ? couponOverride : appliedCoupon;
     
     try {
       setCalculatingDiscount(true);
@@ -153,7 +164,8 @@ export default function OrderConfirmation() {
           tax: subtotal * 0.18, // Tax on subtotal (will be recalculated server-side)
           deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will recalculate)
           deliveryZone: requestDeliveryType === "delivery" ? requestDeliveryZone : null,
-          totalWeight: totalWeight
+          totalWeight: totalWeight,
+          couponCode: couponToUse ? couponToUse.code : null // Include coupon code if applied
         })
       });
 
@@ -176,7 +188,11 @@ export default function OrderConfirmation() {
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        const errorMessage = errorData.error || "Failed to calculate discount";
+        const serverError = errorData.error || "Failed to calculate discount";
+        // Check if it's a coupon-related error and translate it
+        const errorMessage = serverError.includes("coupon") || serverError.includes("Coupon") 
+          ? getCouponErrorMessage(serverError) 
+          : serverError;
         console.error("Discount calculation failed:", errorMessage);
         // Only update state if this is still the current request
         if (currentRequestRef.current === requestId) {
@@ -195,7 +211,7 @@ export default function OrderConfirmation() {
         setCalculatingDiscount(false);
       }
     }
-  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight, cartItems]);
+  }, [deliveryType, deliveryZone, getTotalPrice, getTotalWeight, cartItems, appliedCoupon]);
 
   useEffect(() => {
     if (!user) return;
@@ -215,7 +231,7 @@ export default function OrderConfirmation() {
     setCalculatedTotal(null);
     setDiscountCalculationError(null); // Clear any previous errors
     calculateTotalWithDiscount();
-  }, [user, cartItems, deliveryType, deliveryZone, isLoaded, calculateTotalWithDiscount]);
+  }, [user, cartItems, deliveryType, deliveryZone, isLoaded, appliedCoupon, calculateTotalWithDiscount]);
 
   useEffect(() => {
     // Redirect to cart if cart is empty
@@ -263,6 +279,75 @@ export default function OrderConfirmation() {
       });
     }
   };
+
+  // Map server error messages to translation keys
+  const getCouponErrorMessage = (serverError) => {
+    if (!serverError) return t("orderConfirmation.coupon.invalid");
+    
+    const errorMap = {
+      "Invalid coupon code": "orderConfirmation.coupon.errors.invalidCode",
+      "Coupon code not found": "orderConfirmation.coupon.errors.notFound",
+      "Coupon code has expired": "orderConfirmation.coupon.errors.expired",
+      "Coupon code has already been used": "orderConfirmation.coupon.errors.alreadyUsed",
+      "This coupon code is not valid for your account": "orderConfirmation.coupon.errors.notValidForAccount",
+      "This coupon code requires a customer ID to be specified": "orderConfirmation.coupon.errors.requiresCustomerId",
+      "Failed to validate coupon": "orderConfirmation.coupon.errors.validationFailed",
+      "Coupon already used": "orderConfirmation.coupon.errors.alreadyUsedShort",
+      "Coupon not found": "orderConfirmation.coupon.errors.notFoundShort",
+    };
+    
+    return errorMap[serverError] ? t(errorMap[serverError]) : serverError;
+  };
+
+  // Handle coupon code validation and application
+  async function handleApplyCoupon() {
+    if (!couponCode.trim()) {
+      setCouponError(t("orderConfirmation.coupon.enterCode"));
+      return;
+    }
+
+    setValidatingCoupon(true);
+    setCouponError("");
+
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        setCouponError(t("orderConfirmation.coupon.mustSignIn"));
+        setValidatingCoupon(false);
+        return;
+      }
+
+      const res = await fetch(`${API}/api/coupons/validate/${couponCode.trim()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.valid) {
+        setAppliedCoupon(data.coupon);
+        setCouponError("");
+        // Trigger recalculation with coupon - pass coupon directly to avoid race condition
+        calculateTotalWithDiscount(data.coupon);
+      } else {
+        setCouponError(getCouponErrorMessage(data.error) || t("orderConfirmation.coupon.invalid"));
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      console.error("Error validating coupon:", err);
+      setCouponError(t("orderConfirmation.coupon.error"));
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+    // Trigger recalculation without coupon - pass null explicitly to avoid race condition
+    calculateTotalWithDiscount(null);
+  }
 
   async function loadUserProfile() {
     try {
@@ -603,6 +688,25 @@ export default function OrderConfirmation() {
       return;
     }
 
+    // CRITICAL FIX: Validate total is reasonable before allowing payment
+    // This prevents payment with stale or incorrect amounts
+    if (!total || total <= 0 || !isFinite(total)) {
+      setError("Invalid order total. Please refresh the page and try again.");
+      return;
+    }
+
+    // Validate total is not suspiciously low (less than 1 ILS is likely an error)
+    if (total < 1) {
+      setError("Order total is too low. Please refresh the page and try again.");
+      return;
+    }
+
+    // Validate total is not suspiciously high (more than 100,000 ILS is likely an error)
+    if (total > 100000) {
+      setError("Order total is too high. Please refresh the page and try again.");
+      return;
+    }
+
     if (!hasCompleteAddress || !hasDeliveryZone || !profileData.phone) {
       setError("Please complete all required information before proceeding to payment.");
       return;
@@ -627,6 +731,117 @@ export default function OrderConfirmation() {
         return;
       }
 
+      // CRITICAL FIX: ALWAYS recalculate total right before payment verification to ensure fresh value
+      // This prevents using stale total values that cause amount mismatches
+      // Even if total looks valid, it might be stale from a previous calculation
+      let freshTotal = total;
+      try {
+        const recalcToken = await auth.currentUser?.getIdToken();
+        const items = cartItems.map(item => ({
+          productId: item.id || item.productId || "",
+          id: item.id || item.productId || "",
+          name: item.name || "",
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          weight: item.weight || 0
+        }));
+
+        // CRITICAL: Use the exact same coupon code that will be sent to payment verification
+        // This ensures both endpoints calculate with the same discount
+        const couponCodeForRecalc = appliedCoupon ? appliedCoupon.code : null;
+        
+        console.log("[Payment] Recalculating total before verification with:", {
+          itemsCount: items.length,
+          subtotal: subtotal,
+          couponCode: couponCodeForRecalc || "none",
+          deliveryZone: deliveryType === "delivery" ? deliveryZone : null
+        });
+
+        const recalcRes = await fetch(`${API}/api/payment/calculate-total`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${recalcToken}`
+          },
+          body: JSON.stringify({
+            items,
+            subtotal: subtotal,
+            tax: tax,
+            deliveryCost: deliveryCost,
+            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+            totalWeight: totalWeight,
+            couponCode: couponCodeForRecalc // Use same coupon code that will be sent to payment verification
+          })
+        });
+
+        if (recalcRes.ok) {
+          const recalcData = await recalcRes.json();
+          freshTotal = recalcData.total;
+          console.log("[Payment] Recalculated total before verification:", {
+            oldTotal: total,
+            newTotal: freshTotal,
+            difference: total ? Math.abs(freshTotal - total) : 0,
+            couponCode: couponCodeForRecalc || "none",
+            discount: recalcData.discount
+          });
+          
+          // If recalculated total differs significantly from current total, log warning
+          if (total && Math.abs(freshTotal - total) > 0.01) {
+            console.warn("[Payment] ⚠️ Total mismatch detected! Old:", total, "New:", freshTotal, "Difference:", Math.abs(freshTotal - total));
+            console.warn("[Payment] This suggests a discount or calculation change. Using fresh total:", freshTotal);
+          }
+        } else {
+          const errorData = await recalcRes.json().catch(() => ({}));
+          console.warn("[Payment] Recalculation failed:", errorData.error || "Unknown error", "Using existing total:", total);
+        }
+      } catch (recalcError) {
+        console.error("[Payment] Failed to recalculate total:", recalcError);
+        // Continue with existing total if recalculation fails, but log warning
+        if (total && total > 0) {
+          console.warn("[Payment] Using existing total without recalculation:", total);
+        }
+      }
+
+      // Validate total is reasonable before proceeding
+      if (!freshTotal || freshTotal <= 0 || !isFinite(freshTotal)) {
+        const errorMsg = "Invalid order total. Please refresh the page and try again.";
+        setError(errorMsg);
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        
+        // Log failed order with invalid total
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: paymentResult?.transactionId || `INVALID-TOTAL-${Date.now()}`,
+              orderData: {
+                items: cartItems.map(item => ({
+                  id: item.id,
+                  productId: item.id || item.productId || "",
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                })),
+                total: freshTotal,
+                subtotal: subtotal,
+                tax: tax,
+              },
+              error: "Invalid order total before payment verification",
+              errorDetails: { total: freshTotal, calculatedTotal: total }
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+        return;
+      }
+
       // Prepare order data
       const orderData = {
         customerName: profileData.displayName || user?.displayName || "Customer",
@@ -644,7 +859,7 @@ export default function OrderConfirmation() {
           selectedColor: item.selectedColor || null,
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
-        total: total,
+        total: freshTotal, // Use fresh total
         subtotal: subtotalAfterDiscount,
         subtotalBeforeDiscount: subtotal,
         tax: tax,
@@ -652,30 +867,143 @@ export default function OrderConfirmation() {
       };
 
       // Step 1: Verify payment with server (Tranzila callback verification)
-      const paymentRes = await fetch(`${API}/api/payment/process`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          amount: total,
-          currency: "ILS",
-          subtotal: subtotal,
-          tax: tax,
-          deliveryCost: deliveryCost,
-          deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
-          totalWeight: totalWeight,
-          transactionId: paymentResult.transactionId,
-          paymentMethod: "tranzila",
-          tranzilaResponse: paymentResult.response
-        })
-      });
+      // CRITICAL: Send items array and coupon code so server can recalculate with same parameters
+      // This ensures server calculation matches client calculation (prevents amount mismatches)
+      const itemsForVerification = cartItems.map(item => ({
+        productId: item.id || item.productId || "",
+        id: item.id || item.productId || "",
+        name: item.name || "",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        weight: item.weight || 0
+      }));
 
-      const paymentVerification = await paymentRes.json();
+      let paymentRes;
+      try {
+        paymentRes = await fetch(`${API}/api/payment/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            amount: freshTotal, // Use fresh total instead of potentially stale total
+            currency: "ILS",
+            items: itemsForVerification, // CRITICAL: Send items so server can recalculate with same parameters
+            subtotal: subtotal,
+            tax: tax,
+            deliveryCost: deliveryCost,
+            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+            totalWeight: totalWeight,
+            couponCode: appliedCoupon ? appliedCoupon.code : null, // CRITICAL: Send coupon code so server uses same discount
+            transactionId: paymentResult.transactionId,
+            paymentMethod: "tranzila",
+            tranzilaResponse: paymentResult.response
+          })
+        });
+      } catch (fetchError) {
+        // Network error - log failed order immediately
+        console.error("[Payment] Payment verification request failed:", fetchError);
+        
+        const transactionId = paymentResult?.transactionId || `NETWORK-ERROR-${Date.now()}`;
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: "Payment verification request failed - network error",
+              errorDetails: {
+                error: fetchError.message,
+                type: fetchError.name,
+                amount: freshTotal
+              }
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+        
+        setError(`Payment succeeded but verification failed due to network error. Transaction ID: ${transactionId}. Please contact support.`);
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
+
+      // Parse payment verification response with error handling
+      let paymentVerification;
+      try {
+        paymentVerification = await paymentRes.json();
+      } catch (jsonError) {
+        // Response is not JSON - log failed order immediately
+        console.error("[Payment] Failed to parse payment verification response:", jsonError);
+        
+        const transactionId = paymentResult?.transactionId || `JSON-ERROR-${Date.now()}`;
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: "Payment verification failed - invalid response from server",
+              errorDetails: {
+                status: paymentRes.status,
+                statusText: paymentRes.statusText,
+                jsonError: jsonError.message,
+                amount: freshTotal
+              }
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+        
+        setError(`Payment succeeded but verification failed. Transaction ID: ${transactionId}. Please contact support.`);
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
       if (!paymentRes.ok || !paymentVerification.success) {
-        setError(paymentVerification.error || "Payment verification failed. Please contact support.");
+        // CRITICAL FIX: Log failed order when payment verification fails
+        const transactionId = paymentResult?.transactionId || paymentVerification?.transactionId || `VERIFY-FAIL-${Date.now()}`;
+        try {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: paymentVerification.error || "Payment verification failed",
+              errorDetails: paymentVerification.details || paymentVerification.expectedTotal || paymentVerification
+            })
+          });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
+          } else {
+            const logResult = await logRes.json().catch(() => ({}));
+            console.log("[Payment] Failed order logged successfully:", logResult.id);
+          }
+        } catch (logError) {
+          console.error("[Payment] Failed to log failed order - network error:", logError);
+        }
+        
+        setError(paymentVerification.error || `Payment verification failed. Transaction ID: ${transactionId}. Please contact support.`);
         setPaymentCompleted(false);
         setShowPayment(false); // Reset payment iframe so user can retry
         setSendingEmail(false);
@@ -683,39 +1011,131 @@ export default function OrderConfirmation() {
       }
 
       // Extract transaction ID with fallback (use server-verified ID if available)
-      const finalTransactionId = paymentResult.transactionId || paymentVerification.transactionId;
+      // CRITICAL: Use server-verified amount if available to prevent amount mismatches
+      const finalTransactionId = paymentResult.transactionId || paymentVerification.transactionId || `UNKNOWN-${Date.now()}`;
+      const verifiedAmount = paymentVerification.expectedTotal || paymentVerification.amount || freshTotal;
+      
+      // Update orderData with verified amount
+      orderData.total = verifiedAmount;
       
       // Extract payment method from verification or use default
       const actualPaymentMethod = paymentVerification.paymentMethod || "tranzila";
 
       // Step 2: Payment verified - now create order in database
-      const orderRes = await fetch(`${API}/api/orders/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...orderData,
-          status: "new",
-          transactionId: finalTransactionId,
-          metadata: {
-            paymentMethod: actualPaymentMethod,
-            paymentGateway: "tranzila",
-            deliveryType: deliveryType,
-            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
-            totalWeight: totalWeight,
-            transactionId: finalTransactionId
+      let orderRes;
+      try {
+        orderRes = await fetch(`${API}/api/orders/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            ...orderData,
+            status: "new",
+            transactionId: finalTransactionId,
+            couponCode: appliedCoupon ? appliedCoupon.code : null,
+            metadata: {
+              paymentMethod: actualPaymentMethod,
+              paymentGateway: "tranzila",
+              deliveryType: deliveryType,
+              deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+              totalWeight: totalWeight,
+              transactionId: finalTransactionId
+            }
+          })
+        });
+      } catch (fetchError) {
+        // Network error - log failed order immediately
+        console.error("[Payment] Order creation request failed:", fetchError);
+        
+        try {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: finalTransactionId,
+              orderData: orderData,
+              error: "Order creation request failed - network error",
+              errorDetails: {
+                error: fetchError.message,
+                type: fetchError.name,
+                amount: verifiedAmount
+              }
+            })
+          });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
           }
-        })
-      });
+        } catch (logError) {
+          console.error("[Payment] Failed to log failed order - network error:", logError);
+        }
+        
+        setError(
+          `Payment succeeded but order creation failed due to network error. Transaction ID: ${finalTransactionId}. ` +
+          `Please contact support with this transaction ID.`
+        );
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
-      const orderResult = await orderRes.json();
+      // Parse order creation response with error handling
+      let orderResult;
+      try {
+        orderResult = await orderRes.json();
+      } catch (jsonError) {
+        // Response is not JSON - log failed order immediately
+        console.error("[Payment] Failed to parse order creation response:", jsonError);
+        
+        try {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: finalTransactionId,
+              orderData: orderData,
+              error: "Order creation failed - invalid response from server",
+              errorDetails: {
+                status: orderRes.status,
+                statusText: orderRes.statusText,
+                jsonError: jsonError.message,
+                amount: verifiedAmount
+              }
+            })
+          });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
+          }
+        } catch (logError) {
+          console.error("[Payment] Failed to log failed order - network error:", logError);
+        }
+        
+        setError(
+          `Payment succeeded but order creation failed. Transaction ID: ${finalTransactionId}. ` +
+          `Please contact support with this transaction ID.`
+        );
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
       if (!orderRes.ok) {
         // Log failed order to database
         try {
-          await fetch(`${API}/api/orders/failed`, {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -738,8 +1158,16 @@ export default function OrderConfirmation() {
               errorDetails: orderResult.details || orderResult
             })
           });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
+          } else {
+            const logResult = await logRes.json().catch(() => ({}));
+            console.log("[Payment] Failed order logged successfully:", logResult.id);
+          }
         } catch (logError) {
-          console.error("Failed to log failed order:", logError);
+          console.error("[Payment] Failed to log failed order - network error:", logError);
         }
 
         setError(
@@ -794,16 +1222,64 @@ export default function OrderConfirmation() {
       }
       
       // Redirect to payment success page with order and transaction details
-      // Use finalTransactionId (server-verified) to ensure consistency with database and email records
+      // Use finalTransactionId and verifiedAmount (server-verified) to ensure consistency with database and email records
       const params = new URLSearchParams();
       if (finalTransactionId) params.append('transactionId', finalTransactionId);
-      if (total) params.append('amount', total.toString());
+      if (verifiedAmount) params.append('amount', verifiedAmount.toString());
       if (orderResult.id) params.append('orderId', orderResult.id);
       navigate(`/payment/success?${params.toString()}`);
     } catch (err) {
-      console.error("Error proceeding to payment:", err);
-      setError(err.message || "Failed to process payment");
+      console.error("[Payment] Unexpected error in handlePaymentSuccess:", err);
+      
+      // CRITICAL FIX: Log failed order even for unexpected errors
+      try {
+        const token = await auth.currentUser?.getIdToken().catch(() => null);
+        if (token) {
+          const transactionId = paymentResult?.transactionId || `ERROR-${Date.now()}`;
+          const orderData = {
+            customerName: profileData.displayName || user?.displayName || "Customer",
+            customerEmail: profileData.email || user?.email,
+            phone: profileData.phone || "",
+            items: cartItems.map(item => ({
+              id: item.id,
+              productId: item.id || item.productId || "",
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            total: total || 0,
+            subtotal: subtotalAfterDiscount || subtotal,
+            subtotalBeforeDiscount: subtotal,
+            tax: tax || 0,
+          };
+          
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: "Unexpected error during payment processing",
+              errorDetails: {
+                error: err.message,
+                type: err.name,
+                stack: err.stack
+              }
+            })
+          }).catch(logError => {
+            console.error("[Payment] Failed to log failed order in catch block:", logError);
+          });
+        }
+      } catch (logError) {
+        console.error("[Payment] Failed to log failed order:", logError);
+      }
+      
+      setError(err.message || "Failed to process payment. Please contact support with your transaction details.");
       setPaymentCompleted(false);
+      setShowPayment(false);
     } finally {
       setSendingEmail(false);
     }
@@ -996,6 +1472,53 @@ export default function OrderConfirmation() {
                     <span className="text-sm font-semibold">{getTotalWeight().toFixed(2)} kg</span>
                   </div>
                 </div>
+                {/* Coupon Code Section */}
+                <div className="margin-top-md padding-top-md border-top">
+                  <h3 className="text-sm font-semibold margin-bottom-sm">{t("orderConfirmation.coupon.title")}</h3>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between padding-sm bg-green-50 border border-green-200 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-green-800">
+                          {t("orderConfirmation.coupon.applied")}: {appliedCoupon.code}
+                        </span>
+                        <span className="badge badge-success text-xs">
+                          {appliedCoupon.percentage}% {t("orderConfirmation.coupon.off")}
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-sm text-red-600 hover:text-red-800 underline"
+                      >
+                        {t("orderConfirmation.coupon.remove")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponError("");
+                        }}
+                        placeholder={t("orderConfirmation.coupon.placeholder")}
+                        className="input flex-1"
+                        disabled={validatingCoupon}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={validatingCoupon || !couponCode.trim()}
+                        className="btn btn-secondary"
+                      >
+                        {validatingCoupon ? t("orderConfirmation.coupon.validating") : t("orderConfirmation.coupon.apply")}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <p className="text-sm text-red-600 margin-top-xs">{couponError}</p>
+                  )}
+                </div>
+
                 <div className="margin-top-md padding-top-md border-top space-y-2">
                   {calculatingDiscount ? (
                     <div className="flex justify-center items-center padding-y-md">
@@ -1023,7 +1546,9 @@ export default function OrderConfirmation() {
                       {discountInfo && (
                         <div className="flex justify-between items-center order-confirmation-discount-text">
                           <span className="text-sm font-semibold">
-                            {t("orderConfirmation.newUserDiscountMessage")} ({discountInfo.percentage}%):
+                            {discountInfo.type === "coupon" 
+                              ? `${t("orderConfirmation.coupon.discount")} (${discountInfo.couponCode || ""}) - ${discountInfo.percentage}%:`
+                              : `${t("orderConfirmation.newUserDiscountMessage")} (${discountInfo.percentage}%):`}
                           </span>
                           <span className="text-sm font-semibold">
                             -{formatPrice(discountInfo.amount)}
