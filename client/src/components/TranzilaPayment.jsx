@@ -168,6 +168,13 @@ export default function TranzilaPayment({
         if (data.type === "payment_failed_redirect") {
           // Iframe has navigated to failed page - redirect entire page
           setLoading(false);
+          console.log("[Tranzila] Payment failed - Tranzila redirected to failed URL:", data.url || "N/A");
+          console.log("[Tranzila] Payment failure details:", {
+            error: data.error || "N/A",
+            transactionId: data.transactionId || "N/A",
+            amount: data.amount || amount,
+            url: data.url || "N/A"
+          });
           const params = new URLSearchParams();
           if (data.error) params.append('error', data.error);
           if (data.transactionId) params.append('transactionId', data.transactionId);
@@ -213,6 +220,15 @@ export default function TranzilaPayment({
           // Tranzila may send transaction ID as transactionId, TransactionId, RefNo, or TranzilaTK
           const txId = data.transactionId || data.TransactionId || data.RefNo || data.TranzilaTK || null;
           setLoading(false);
+          
+          console.log("[Tranzila] Payment failed - received failure message from Tranzila");
+          console.log("[Tranzila] Payment failure details:", {
+            error: errorMsg,
+            transactionId: txId || "N/A",
+            amount: amount,
+            response: data.Response || "N/A",
+            status: data.status || "N/A"
+          });
           
           // Call error callback
           if (onError) {
@@ -367,6 +383,8 @@ export default function TranzilaPayment({
           }
         } else if (iframeUrl && iframeUrl.includes('/payment/failed')) {
           // Iframe has navigated to failed page - redirect entire page
+          console.log("[Tranzila] Payment failed - Tranzila redirected to URL containing 'failed':", iframeUrl);
+          console.log("[Tranzila] Payment failure detected via iframe URL check");
           window.location.href = iframeUrl;
         }
       }
