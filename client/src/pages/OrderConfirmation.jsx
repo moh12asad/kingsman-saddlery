@@ -103,7 +103,8 @@ export default function OrderConfirmation() {
   const currentRequestRef = useRef(null);
 
   // Calculate total with discount - defined before useEffect to avoid initialization error
-  const calculateTotalWithDiscount = useCallback(async () => {
+  // couponOverride: optional coupon to use instead of appliedCoupon state (for immediate updates)
+  const calculateTotalWithDiscount = useCallback(async (couponOverride = null) => {
     // Generate a unique request ID for this calculation
     const requestId = Symbol();
     currentRequestRef.current = requestId;
@@ -111,6 +112,9 @@ export default function OrderConfirmation() {
     // Capture the deliveryType and deliveryZone at the start of this request
     const requestDeliveryType = deliveryType;
     const requestDeliveryZone = deliveryZone;
+    
+    // Use couponOverride if provided, otherwise fall back to appliedCoupon state
+    const couponToUse = couponOverride !== null ? couponOverride : appliedCoupon;
     
     try {
       setCalculatingDiscount(true);
@@ -158,7 +162,7 @@ export default function OrderConfirmation() {
           deliveryCost: requestDeliveryCost, // Delivery cost based on zone and weight (server will recalculate)
           deliveryZone: requestDeliveryType === "delivery" ? requestDeliveryZone : null,
           totalWeight: totalWeight,
-          couponCode: appliedCoupon ? appliedCoupon.code : null // Include coupon code if applied
+          couponCode: couponToUse ? couponToUse.code : null // Include coupon code if applied
         })
       });
 
@@ -296,8 +300,8 @@ export default function OrderConfirmation() {
       if (res.ok && data.valid) {
         setAppliedCoupon(data.coupon);
         setCouponError("");
-        // Trigger recalculation with coupon
-        calculateTotalWithDiscount();
+        // Trigger recalculation with coupon - pass coupon directly to avoid race condition
+        calculateTotalWithDiscount(data.coupon);
       } else {
         setCouponError(data.error || t("orderConfirmation.coupon.invalid"));
         setAppliedCoupon(null);
@@ -315,8 +319,8 @@ export default function OrderConfirmation() {
     setAppliedCoupon(null);
     setCouponCode("");
     setCouponError("");
-    // Trigger recalculation without coupon
-    calculateTotalWithDiscount();
+    // Trigger recalculation without coupon - pass null explicitly to avoid race condition
+    calculateTotalWithDiscount(null);
   }
 
   async function loadUserProfile() {
