@@ -688,6 +688,25 @@ export default function OrderConfirmation() {
       return;
     }
 
+    // CRITICAL FIX: Validate total is reasonable before allowing payment
+    // This prevents payment with stale or incorrect amounts
+    if (!total || total <= 0 || !isFinite(total)) {
+      setError("Invalid order total. Please refresh the page and try again.");
+      return;
+    }
+
+    // Validate total is not suspiciously low (less than 1 ILS is likely an error)
+    if (total < 1) {
+      setError("Order total is too low. Please refresh the page and try again.");
+      return;
+    }
+
+    // Validate total is not suspiciously high (more than 100,000 ILS is likely an error)
+    if (total > 100000) {
+      setError("Order total is too high. Please refresh the page and try again.");
+      return;
+    }
+
     if (!hasCompleteAddress || !hasDeliveryZone || !profileData.phone) {
       setError("Please complete all required information before proceeding to payment.");
       return;
@@ -712,6 +731,90 @@ export default function OrderConfirmation() {
         return;
       }
 
+      // CRITICAL FIX: Recalculate total right before payment verification to ensure fresh value
+      // This prevents using stale total values that cause amount mismatches
+      let freshTotal = total;
+      if (!freshTotal || freshTotal <= 0) {
+        // If total is invalid, recalculate it
+        try {
+          const recalcToken = await auth.currentUser?.getIdToken();
+          const items = cartItems.map(item => ({
+            productId: item.id || item.productId || "",
+            id: item.id || item.productId || "",
+            name: item.name || "",
+            price: item.price || 0,
+            quantity: item.quantity || 1,
+            weight: item.weight || 0
+          }));
+
+          const recalcRes = await fetch(`${API}/api/payment/calculate-total`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${recalcToken}`
+            },
+            body: JSON.stringify({
+              items,
+              subtotal: subtotal,
+              tax: tax,
+              deliveryCost: deliveryCost,
+              deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+              totalWeight: totalWeight,
+              couponCode: appliedCoupon ? appliedCoupon.code : null
+            })
+          });
+
+          if (recalcRes.ok) {
+            const recalcData = await recalcRes.json();
+            freshTotal = recalcData.total;
+            console.log("[Payment] Recalculated total before verification:", freshTotal);
+          }
+        } catch (recalcError) {
+          console.error("[Payment] Failed to recalculate total:", recalcError);
+          // Continue with existing total if recalculation fails
+        }
+      }
+
+      // Validate total is reasonable before proceeding
+      if (!freshTotal || freshTotal <= 0 || !isFinite(freshTotal)) {
+        const errorMsg = "Invalid order total. Please refresh the page and try again.";
+        setError(errorMsg);
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        
+        // Log failed order with invalid total
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: paymentResult?.transactionId || `INVALID-TOTAL-${Date.now()}`,
+              orderData: {
+                items: cartItems.map(item => ({
+                  id: item.id,
+                  productId: item.id || item.productId || "",
+                  name: item.name,
+                  quantity: item.quantity,
+                  price: item.price,
+                })),
+                total: freshTotal,
+                subtotal: subtotal,
+                tax: tax,
+              },
+              error: "Invalid order total before payment verification",
+              errorDetails: { total: freshTotal, calculatedTotal: total }
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+        return;
+      }
+
       // Prepare order data
       const orderData = {
         customerName: profileData.displayName || user?.displayName || "Customer",
@@ -729,7 +832,7 @@ export default function OrderConfirmation() {
           selectedColor: item.selectedColor || null,
         })),
         shippingAddress: deliveryType === "delivery" ? currentAddress : null,
-        total: total,
+        total: freshTotal, // Use fresh total
         subtotal: subtotalAfterDiscount,
         subtotalBeforeDiscount: subtotal,
         tax: tax,
@@ -737,30 +840,130 @@ export default function OrderConfirmation() {
       };
 
       // Step 1: Verify payment with server (Tranzila callback verification)
-      const paymentRes = await fetch(`${API}/api/payment/process`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          amount: total,
-          currency: "ILS",
-          subtotal: subtotal,
-          tax: tax,
-          deliveryCost: deliveryCost,
-          deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
-          totalWeight: totalWeight,
-          transactionId: paymentResult.transactionId,
-          paymentMethod: "tranzila",
-          tranzilaResponse: paymentResult.response
-        })
-      });
+      let paymentRes;
+      try {
+        paymentRes = await fetch(`${API}/api/payment/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            amount: freshTotal, // Use fresh total instead of potentially stale total
+            currency: "ILS",
+            subtotal: subtotal,
+            tax: tax,
+            deliveryCost: deliveryCost,
+            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+            totalWeight: totalWeight,
+            transactionId: paymentResult.transactionId,
+            paymentMethod: "tranzila",
+            tranzilaResponse: paymentResult.response
+          })
+        });
+      } catch (fetchError) {
+        // Network error - log failed order immediately
+        console.error("[Payment] Payment verification request failed:", fetchError);
+        
+        const transactionId = paymentResult?.transactionId || `NETWORK-ERROR-${Date.now()}`;
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: "Payment verification request failed - network error",
+              errorDetails: {
+                error: fetchError.message,
+                type: fetchError.name,
+                amount: freshTotal
+              }
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+        
+        setError(`Payment succeeded but verification failed due to network error. Transaction ID: ${transactionId}. Please contact support.`);
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
-      const paymentVerification = await paymentRes.json();
+      // Parse payment verification response with error handling
+      let paymentVerification;
+      try {
+        paymentVerification = await paymentRes.json();
+      } catch (jsonError) {
+        // Response is not JSON - log failed order immediately
+        console.error("[Payment] Failed to parse payment verification response:", jsonError);
+        
+        const transactionId = paymentResult?.transactionId || `JSON-ERROR-${Date.now()}`;
+        try {
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: "Payment verification failed - invalid response from server",
+              errorDetails: {
+                status: paymentRes.status,
+                statusText: paymentRes.statusText,
+                jsonError: jsonError.message,
+                amount: freshTotal
+              }
+            })
+          });
+        } catch (logError) {
+          console.error("Failed to log failed order:", logError);
+        }
+        
+        setError(`Payment succeeded but verification failed. Transaction ID: ${transactionId}. Please contact support.`);
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
       if (!paymentRes.ok || !paymentVerification.success) {
-        setError(paymentVerification.error || "Payment verification failed. Please contact support.");
+        // CRITICAL FIX: Log failed order when payment verification fails
+        const transactionId = paymentResult?.transactionId || paymentVerification?.transactionId || `VERIFY-FAIL-${Date.now()}`;
+        try {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: paymentVerification.error || "Payment verification failed",
+              errorDetails: paymentVerification.details || paymentVerification.expectedTotal || paymentVerification
+            })
+          });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
+          } else {
+            const logResult = await logRes.json().catch(() => ({}));
+            console.log("[Payment] Failed order logged successfully:", logResult.id);
+          }
+        } catch (logError) {
+          console.error("[Payment] Failed to log failed order - network error:", logError);
+        }
+        
+        setError(paymentVerification.error || `Payment verification failed. Transaction ID: ${transactionId}. Please contact support.`);
         setPaymentCompleted(false);
         setShowPayment(false); // Reset payment iframe so user can retry
         setSendingEmail(false);
@@ -768,40 +971,131 @@ export default function OrderConfirmation() {
       }
 
       // Extract transaction ID with fallback (use server-verified ID if available)
-      const finalTransactionId = paymentResult.transactionId || paymentVerification.transactionId;
+      // CRITICAL: Use server-verified amount if available to prevent amount mismatches
+      const finalTransactionId = paymentResult.transactionId || paymentVerification.transactionId || `UNKNOWN-${Date.now()}`;
+      const verifiedAmount = paymentVerification.expectedTotal || paymentVerification.amount || freshTotal;
+      
+      // Update orderData with verified amount
+      orderData.total = verifiedAmount;
       
       // Extract payment method from verification or use default
       const actualPaymentMethod = paymentVerification.paymentMethod || "tranzila";
 
       // Step 2: Payment verified - now create order in database
-      const orderRes = await fetch(`${API}/api/orders/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...orderData,
-          status: "new",
-          transactionId: finalTransactionId,
-          couponCode: appliedCoupon ? appliedCoupon.code : null,
-          metadata: {
-            paymentMethod: actualPaymentMethod,
-            paymentGateway: "tranzila",
-            deliveryType: deliveryType,
-            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
-            totalWeight: totalWeight,
-            transactionId: finalTransactionId
+      let orderRes;
+      try {
+        orderRes = await fetch(`${API}/api/orders/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            ...orderData,
+            status: "new",
+            transactionId: finalTransactionId,
+            couponCode: appliedCoupon ? appliedCoupon.code : null,
+            metadata: {
+              paymentMethod: actualPaymentMethod,
+              paymentGateway: "tranzila",
+              deliveryType: deliveryType,
+              deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+              totalWeight: totalWeight,
+              transactionId: finalTransactionId
+            }
+          })
+        });
+      } catch (fetchError) {
+        // Network error - log failed order immediately
+        console.error("[Payment] Order creation request failed:", fetchError);
+        
+        try {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: finalTransactionId,
+              orderData: orderData,
+              error: "Order creation request failed - network error",
+              errorDetails: {
+                error: fetchError.message,
+                type: fetchError.name,
+                amount: verifiedAmount
+              }
+            })
+          });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
           }
-        })
-      });
+        } catch (logError) {
+          console.error("[Payment] Failed to log failed order - network error:", logError);
+        }
+        
+        setError(
+          `Payment succeeded but order creation failed due to network error. Transaction ID: ${finalTransactionId}. ` +
+          `Please contact support with this transaction ID.`
+        );
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
-      const orderResult = await orderRes.json();
+      // Parse order creation response with error handling
+      let orderResult;
+      try {
+        orderResult = await orderRes.json();
+      } catch (jsonError) {
+        // Response is not JSON - log failed order immediately
+        console.error("[Payment] Failed to parse order creation response:", jsonError);
+        
+        try {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: finalTransactionId,
+              orderData: orderData,
+              error: "Order creation failed - invalid response from server",
+              errorDetails: {
+                status: orderRes.status,
+                statusText: orderRes.statusText,
+                jsonError: jsonError.message,
+                amount: verifiedAmount
+              }
+            })
+          });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
+          }
+        } catch (logError) {
+          console.error("[Payment] Failed to log failed order - network error:", logError);
+        }
+        
+        setError(
+          `Payment succeeded but order creation failed. Transaction ID: ${finalTransactionId}. ` +
+          `Please contact support with this transaction ID.`
+        );
+        setPaymentCompleted(false);
+        setShowPayment(false);
+        setSendingEmail(false);
+        return;
+      }
 
       if (!orderRes.ok) {
         // Log failed order to database
         try {
-          await fetch(`${API}/api/orders/failed`, {
+          const logRes = await fetch(`${API}/api/orders/failed`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -824,8 +1118,16 @@ export default function OrderConfirmation() {
               errorDetails: orderResult.details || orderResult
             })
           });
+          
+          if (!logRes.ok) {
+            const logErrorData = await logRes.json().catch(() => ({}));
+            console.error("[Payment] Failed to log failed order - server error:", logRes.status, logErrorData);
+          } else {
+            const logResult = await logRes.json().catch(() => ({}));
+            console.log("[Payment] Failed order logged successfully:", logResult.id);
+          }
         } catch (logError) {
-          console.error("Failed to log failed order:", logError);
+          console.error("[Payment] Failed to log failed order - network error:", logError);
         }
 
         setError(
@@ -880,16 +1182,64 @@ export default function OrderConfirmation() {
       }
       
       // Redirect to payment success page with order and transaction details
-      // Use finalTransactionId (server-verified) to ensure consistency with database and email records
+      // Use finalTransactionId and verifiedAmount (server-verified) to ensure consistency with database and email records
       const params = new URLSearchParams();
       if (finalTransactionId) params.append('transactionId', finalTransactionId);
-      if (total) params.append('amount', total.toString());
+      if (verifiedAmount) params.append('amount', verifiedAmount.toString());
       if (orderResult.id) params.append('orderId', orderResult.id);
       navigate(`/payment/success?${params.toString()}`);
     } catch (err) {
-      console.error("Error proceeding to payment:", err);
-      setError(err.message || "Failed to process payment");
+      console.error("[Payment] Unexpected error in handlePaymentSuccess:", err);
+      
+      // CRITICAL FIX: Log failed order even for unexpected errors
+      try {
+        const token = await auth.currentUser?.getIdToken().catch(() => null);
+        if (token) {
+          const transactionId = paymentResult?.transactionId || `ERROR-${Date.now()}`;
+          const orderData = {
+            customerName: profileData.displayName || user?.displayName || "Customer",
+            customerEmail: profileData.email || user?.email,
+            phone: profileData.phone || "",
+            items: cartItems.map(item => ({
+              id: item.id,
+              productId: item.id || item.productId || "",
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            total: total || 0,
+            subtotal: subtotalAfterDiscount || subtotal,
+            subtotalBeforeDiscount: subtotal,
+            tax: tax || 0,
+          };
+          
+          await fetch(`${API}/api/orders/failed`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              orderData: orderData,
+              error: "Unexpected error during payment processing",
+              errorDetails: {
+                error: err.message,
+                type: err.name,
+                stack: err.stack
+              }
+            })
+          }).catch(logError => {
+            console.error("[Payment] Failed to log failed order in catch block:", logError);
+          });
+        }
+      } catch (logError) {
+        console.error("[Payment] Failed to log failed order:", logError);
+      }
+      
+      setError(err.message || "Failed to process payment. Please contact support with your transaction details.");
       setPaymentCompleted(false);
+      setShowPayment(false);
     } finally {
       setSendingEmail(false);
     }
