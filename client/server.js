@@ -42,11 +42,6 @@ app.use(express.static(distPath, {
   }
 }));
 
-// Health check endpoint for Railway and other deployment platforms
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 // Handle POST requests from Tranzila for payment success/failed (especially Google Pay)
 // Tranzila sometimes redirects with POST requests instead of GET
 // We convert POST data to query parameters and redirect to GET so React Router can handle it
