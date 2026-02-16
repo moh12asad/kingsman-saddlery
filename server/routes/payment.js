@@ -364,6 +364,7 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
       deliveryCost = 0,
       deliveryZone = null,
       totalWeight = 0,
+      couponCode = null, // CRITICAL: Extract coupon code to ensure same discount is applied
       // Add other payment-related fields as needed
       // NOTE: Card details are NOT logged for security
     } = req.body;
@@ -483,25 +484,52 @@ router.post("/process", verifyFirebaseToken, async (req, res) => {
     }
 
     // SECURITY: Recalculate expected total with discount using server-calculated subtotal
+    // CRITICAL FIX: Check coupon code first (same logic as /api/payment/calculate-total)
+    // This ensures both endpoints use the same discount, preventing amount mismatches
     if (validatedSubtotal > 0) {
       console.log(`[PAYMENT] [${requestId}] Recalculating expected total with discount...`);
       
-      const discountCheck = await checkNewUserDiscountEligibility(uid);
-      
-      console.log(`[PAYMENT] [${requestId}] Discount Check Result:`, {
-        eligible: discountCheck.eligible,
-        percentage: discountCheck.discountPercentage || 0,
-        reason: discountCheck.reason || "N/A"
-      });
-      
       let discountAmount = 0;
+      let discountPercentage = 0;
       
-      if (discountCheck.eligible) {
-        // SECURITY: Use server-calculated subtotal, not client-provided subtotal
-        discountAmount = calculateDiscountAmount(validatedSubtotal, discountCheck.discountPercentage);
-        // Round discount to 2 decimal places
-        discountAmount = roundTo2Decimals(discountAmount);
-        console.log(`[PAYMENT] [${requestId}] Discount calculated: ${discountAmount} ILS (${discountCheck.discountPercentage}% of ${validatedSubtotal})`);
+      // SECURITY: Check coupon code first (takes precedence over new user discount)
+      // This matches the logic in /api/payment/calculate-total to ensure consistency
+      if (couponCode && typeof couponCode === "string" && couponCode.trim() !== "") {
+        console.log(`[PAYMENT] [${requestId}] Checking coupon code: ${couponCode.trim()}`);
+        const couponValidation = await validateAndGetCouponDiscount(couponCode.trim(), uid);
+        
+        if (couponValidation.valid) {
+          discountPercentage = couponValidation.percentage;
+          discountAmount = roundTo2Decimals(calculateDiscountAmount(validatedSubtotal, discountPercentage));
+          console.log(`[PAYMENT] [${requestId}] Coupon Discount Applied:`, {
+            code: couponCode.toUpperCase(),
+            percentage: discountPercentage,
+            amount: discountAmount,
+            subtotalBeforeDiscount: validatedSubtotal
+          });
+        } else {
+          console.warn(`[PAYMENT] [${requestId}] Invalid coupon code: ${couponCode.trim()}, error: ${couponValidation.error}`);
+          // Don't reject payment if coupon is invalid - just log warning and continue without discount
+          // This prevents payment failures due to invalid/expired coupons
+        }
+      } else {
+        // Check new user discount eligibility if no coupon code
+        const discountCheck = await checkNewUserDiscountEligibility(uid);
+        
+        console.log(`[PAYMENT] [${requestId}] Discount Check Result:`, {
+          eligible: discountCheck.eligible,
+          percentage: discountCheck.discountPercentage || 0,
+          reason: discountCheck.reason || "N/A"
+        });
+        
+        if (discountCheck.eligible) {
+          discountPercentage = discountCheck.discountPercentage;
+          // SECURITY: Use server-calculated subtotal, not client-provided subtotal
+          discountAmount = calculateDiscountAmount(validatedSubtotal, discountPercentage);
+          // Round discount to 2 decimal places
+          discountAmount = roundTo2Decimals(discountAmount);
+          console.log(`[PAYMENT] [${requestId}] New User Discount calculated: ${discountAmount} ILS (${discountPercentage}% of ${validatedSubtotal})`);
+        }
       }
 
       const finalSubtotal = roundTo2Decimals(Math.max(0, validatedSubtotal - discountAmount));

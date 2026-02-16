@@ -731,47 +731,74 @@ export default function OrderConfirmation() {
         return;
       }
 
-      // CRITICAL FIX: Recalculate total right before payment verification to ensure fresh value
+      // CRITICAL FIX: ALWAYS recalculate total right before payment verification to ensure fresh value
       // This prevents using stale total values that cause amount mismatches
+      // Even if total looks valid, it might be stale from a previous calculation
       let freshTotal = total;
-      if (!freshTotal || freshTotal <= 0) {
-        // If total is invalid, recalculate it
-        try {
-          const recalcToken = await auth.currentUser?.getIdToken();
-          const items = cartItems.map(item => ({
-            productId: item.id || item.productId || "",
-            id: item.id || item.productId || "",
-            name: item.name || "",
-            price: item.price || 0,
-            quantity: item.quantity || 1,
-            weight: item.weight || 0
-          }));
+      try {
+        const recalcToken = await auth.currentUser?.getIdToken();
+        const items = cartItems.map(item => ({
+          productId: item.id || item.productId || "",
+          id: item.id || item.productId || "",
+          name: item.name || "",
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          weight: item.weight || 0
+        }));
 
-          const recalcRes = await fetch(`${API}/api/payment/calculate-total`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${recalcToken}`
-            },
-            body: JSON.stringify({
-              items,
-              subtotal: subtotal,
-              tax: tax,
-              deliveryCost: deliveryCost,
-              deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
-              totalWeight: totalWeight,
-              couponCode: appliedCoupon ? appliedCoupon.code : null
-            })
+        // CRITICAL: Use the exact same coupon code that will be sent to payment verification
+        // This ensures both endpoints calculate with the same discount
+        const couponCodeForRecalc = appliedCoupon ? appliedCoupon.code : null;
+        
+        console.log("[Payment] Recalculating total before verification with:", {
+          itemsCount: items.length,
+          subtotal: subtotal,
+          couponCode: couponCodeForRecalc || "none",
+          deliveryZone: deliveryType === "delivery" ? deliveryZone : null
+        });
+
+        const recalcRes = await fetch(`${API}/api/payment/calculate-total`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${recalcToken}`
+          },
+          body: JSON.stringify({
+            items,
+            subtotal: subtotal,
+            tax: tax,
+            deliveryCost: deliveryCost,
+            deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
+            totalWeight: totalWeight,
+            couponCode: couponCodeForRecalc // Use same coupon code that will be sent to payment verification
+          })
+        });
+
+        if (recalcRes.ok) {
+          const recalcData = await recalcRes.json();
+          freshTotal = recalcData.total;
+          console.log("[Payment] Recalculated total before verification:", {
+            oldTotal: total,
+            newTotal: freshTotal,
+            difference: total ? Math.abs(freshTotal - total) : 0,
+            couponCode: couponCodeForRecalc || "none",
+            discount: recalcData.discount
           });
-
-          if (recalcRes.ok) {
-            const recalcData = await recalcRes.json();
-            freshTotal = recalcData.total;
-            console.log("[Payment] Recalculated total before verification:", freshTotal);
+          
+          // If recalculated total differs significantly from current total, log warning
+          if (total && Math.abs(freshTotal - total) > 0.01) {
+            console.warn("[Payment] ⚠️ Total mismatch detected! Old:", total, "New:", freshTotal, "Difference:", Math.abs(freshTotal - total));
+            console.warn("[Payment] This suggests a discount or calculation change. Using fresh total:", freshTotal);
           }
-        } catch (recalcError) {
-          console.error("[Payment] Failed to recalculate total:", recalcError);
-          // Continue with existing total if recalculation fails
+        } else {
+          const errorData = await recalcRes.json().catch(() => ({}));
+          console.warn("[Payment] Recalculation failed:", errorData.error || "Unknown error", "Using existing total:", total);
+        }
+      } catch (recalcError) {
+        console.error("[Payment] Failed to recalculate total:", recalcError);
+        // Continue with existing total if recalculation fails, but log warning
+        if (total && total > 0) {
+          console.warn("[Payment] Using existing total without recalculation:", total);
         }
       }
 
@@ -840,6 +867,17 @@ export default function OrderConfirmation() {
       };
 
       // Step 1: Verify payment with server (Tranzila callback verification)
+      // CRITICAL: Send items array and coupon code so server can recalculate with same parameters
+      // This ensures server calculation matches client calculation (prevents amount mismatches)
+      const itemsForVerification = cartItems.map(item => ({
+        productId: item.id || item.productId || "",
+        id: item.id || item.productId || "",
+        name: item.name || "",
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        weight: item.weight || 0
+      }));
+
       let paymentRes;
       try {
         paymentRes = await fetch(`${API}/api/payment/process`, {
@@ -851,11 +889,13 @@ export default function OrderConfirmation() {
           body: JSON.stringify({
             amount: freshTotal, // Use fresh total instead of potentially stale total
             currency: "ILS",
+            items: itemsForVerification, // CRITICAL: Send items so server can recalculate with same parameters
             subtotal: subtotal,
             tax: tax,
             deliveryCost: deliveryCost,
             deliveryZone: deliveryType === "delivery" ? deliveryZone : null,
             totalWeight: totalWeight,
+            couponCode: appliedCoupon ? appliedCoupon.code : null, // CRITICAL: Send coupon code so server uses same discount
             transactionId: paymentResult.transactionId,
             paymentMethod: "tranzila",
             tranzilaResponse: paymentResult.response

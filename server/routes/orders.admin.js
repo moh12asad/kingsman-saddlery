@@ -1116,14 +1116,30 @@ router.post("/failed", verifyFirebaseToken, async (req, res) => {
     }
 
     // SECURITY: Rate limiting check - prevent spam (check last 5 minutes)
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const recentFailedOrders = await db.collection("failed_orders")
-      .where("userId", "==", uid)
-      .where("createdAt", ">", admin.firestore.Timestamp.fromDate(fiveMinutesAgo))
-      .get();
+    // CRITICAL FIX: Make rate limiting optional - if query fails (missing index), allow the order to be logged
+    // This ensures failed orders are always logged even if Firestore index is missing
+    let rateLimitExceeded = false;
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const recentFailedOrders = await db.collection("failed_orders")
+        .where("userId", "==", uid)
+        .where("createdAt", ">", admin.firestore.Timestamp.fromDate(fiveMinutesAgo))
+        .get();
 
-    if (recentFailedOrders.size >= 5) {
-      console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Rate limit exceeded for user ${uid}: ${recentFailedOrders.size} failed orders in last 5 minutes`);
+      if (recentFailedOrders.size >= 5) {
+        rateLimitExceeded = true;
+        console.error(`[FAILED_ORDER] [${requestId}] [SECURITY] Rate limit exceeded for user ${uid}: ${recentFailedOrders.size} failed orders in last 5 minutes`);
+      }
+    } catch (rateLimitError) {
+      // If rate limiting query fails (e.g., missing Firestore index), log warning but allow order to be logged
+      // This is critical - we don't want to prevent failed order logging due to missing index
+      console.warn(`[FAILED_ORDER] [${requestId}] Rate limiting query failed (likely missing Firestore index). Allowing order to be logged. Error:`, rateLimitError.message);
+      console.warn(`[FAILED_ORDER] [${requestId}] To fix: Create Firestore composite index on failed_orders collection with fields: userId (Ascending), createdAt (Ascending)`);
+      // Continue without rate limiting - better to log the order than to block it
+      rateLimitExceeded = false;
+    }
+
+    if (rateLimitExceeded) {
       return res.status(429).json({ 
         error: "Too many requests",
         details: "You have submitted too many failed order reports. Please wait a few minutes or contact support."

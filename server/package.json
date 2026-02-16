@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "start": "NODE_ENV=production node server.js"
+    "start": "NODE_ENV=production node server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -15,5 +18,10 @@
     "morgan": "^1.10.0",
     "nodemailer": "^6.9.8",
     "resend": "^3.2.0"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "supertest": "^6.3.3"
   }
 }
