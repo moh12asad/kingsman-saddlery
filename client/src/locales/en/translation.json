@@ -1080,7 +1080,7 @@
       "percentage": "Percentage",
       "user": "User",
       "expiresAt": "Expires At",
-      "status": "Status",
+      "statusLabel": "Status",
       "actions": "Actions",
       "edit": "Edit",
       "delete": "Delete",
@@ -1093,6 +1093,7 @@
       "percentageHint": "Enter discount percentage (1-100)",
       "userPlaceholder": "Search by name or email...",
       "allUsers": "All Users",
+      "noUsersFound": "No users found",
       "status": {
         "active": "Active",
         "expired": "Expired",

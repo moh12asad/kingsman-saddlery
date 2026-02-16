@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { auth } from "../../lib/firebase";
 
@@ -23,6 +23,23 @@ export default function AdminCoupons() {
   const [userSearch, setUserSearch] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    }
+
+    if (showUserDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showUserDropdown]);
 
   // Load coupons
   async function loadCoupons() {
@@ -278,7 +295,7 @@ export default function AdminCoupons() {
                   <th>{t("admin.coupons.percentage")}</th>
                   <th>{t("admin.coupons.user")}</th>
                   <th>{t("admin.coupons.expiresAt")}</th>
-                  <th>{t("admin.coupons.status")}</th>
+                  <th>{t("admin.coupons.statusLabel")}</th>
                   <th>{t("admin.coupons.actions")}</th>
                 </tr>
               </thead>
@@ -337,16 +354,16 @@ export default function AdminCoupons() {
       {/* Create/Edit Modal */}
       {(showCreateModal || showEditModal) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">
+          <div className="card coupon-modal">
+            <h3 className="text-lg font-bold mb-4">
               {editingCoupon
                 ? t("admin.coupons.editCoupon")
                 : t("admin.coupons.createCoupon")}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-xs font-medium mb-1">
                   {t("admin.coupons.code")}
                   <span className="text-gray-500 text-xs ml-2">
                     ({t("admin.coupons.optional")})
@@ -359,7 +376,7 @@ export default function AdminCoupons() {
                     setFormData({ ...formData, code: e.target.value })
                   }
                   placeholder={t("admin.coupons.codePlaceholder")}
-                  className="input w-full"
+                  className="input w-full border-2 border-gray-300 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-20"
                   maxLength={20}
                   disabled={!!editingCoupon}
                 />
@@ -369,7 +386,7 @@ export default function AdminCoupons() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-xs font-medium mb-1">
                   {t("admin.coupons.percentage")} *
                 </label>
                 <input
@@ -379,7 +396,7 @@ export default function AdminCoupons() {
                     setFormData({ ...formData, percentage: e.target.value })
                   }
                   placeholder="10"
-                  className="input w-full"
+                  className="input w-full border-2 border-gray-300 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-20"
                   min="1"
                   max="100"
                   step="0.1"
@@ -390,8 +407,8 @@ export default function AdminCoupons() {
                 </p>
               </div>
 
-              <div className="relative">
-                <label className="block text-sm font-medium mb-1">
+              <div className="relative" ref={userDropdownRef}>
+                <label className="block text-xs font-medium mb-1">
                   {t("admin.coupons.user")}
                   <span className="text-gray-500 text-xs ml-2">
                     ({t("admin.coupons.optional")})
@@ -409,48 +426,56 @@ export default function AdminCoupons() {
                   }}
                   onFocus={() => setShowUserDropdown(true)}
                   placeholder={t("admin.coupons.userPlaceholder")}
-                  className="input w-full"
+                  className="input w-full border-2 border-gray-300 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-20"
                 />
-                {showUserDropdown && filteredUsers.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, userId: "" });
-                        setUserSearch("");
-                        setShowUserDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b"
-                    >
-                      {t("admin.coupons.allUsers")}
-                    </button>
-                    {filteredUsers.map((user) => (
-                      <button
-                        key={user.uid}
-                        type="button"
-                        onClick={() => {
-                          setFormData({ ...formData, userId: user.uid });
-                          setUserSearch(
-                            user.displayName || user.name || user.email
-                          );
-                          setShowUserDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b last:border-b-0"
-                      >
-                        <div className="font-medium">
-                          {user.displayName || user.name || "-"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {user.email}
-                        </div>
-                      </button>
-                    ))}
+                {showUserDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredUsers.length === 0 ? (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        {t("admin.coupons.noUsersFound")}
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, userId: "" });
+                            setUserSearch("");
+                            setShowUserDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b"
+                        >
+                          {t("admin.coupons.allUsers")}
+                        </button>
+                        {filteredUsers.map((user) => (
+                          <button
+                            key={user.uid}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, userId: user.uid });
+                              setUserSearch(
+                                user.displayName || user.name || user.email
+                              );
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b last:border-b-0"
+                          >
+                            <div className="font-medium">
+                              {user.displayName || user.name || "-"}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {user.email}
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-xs font-medium mb-1">
                   {t("admin.coupons.expiresAt")} *
                 </label>
                 <input
@@ -459,13 +484,13 @@ export default function AdminCoupons() {
                   onChange={(e) =>
                     setFormData({ ...formData, expiresAt: e.target.value })
                   }
-                  className="input w-full"
+                  className="input w-full border-2 border-gray-300 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-20"
                   required
                   min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
 
-              <div className="flex gap-2 justify-end pt-4">
+              <div className="flex gap-2 justify-end pt-4 border-t">
                 <button
                   type="button"
                   onClick={() => {
@@ -479,7 +504,7 @@ export default function AdminCoupons() {
                 >
                   {t("admin.coupons.cancel")}
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-cta">
                   {editingCoupon
                     ? t("admin.coupons.update")
                     : t("admin.coupons.create")}
