@@ -29,6 +29,7 @@ export default function CompleteProfile() {
     displayName: "",
     phone: "",
     phoneCountryCode: "+972",
+    realEmail: "", // For users with Apple Private Relay emails
     address: {
       street: "",
       city: "",
@@ -57,6 +58,12 @@ export default function CompleteProfile() {
     );
     const hasPasswordProvider = user.providerData?.some(provider => provider.providerId === "password");
     return hasOAuthProvider && !hasPasswordProvider;
+  }, [user]);
+
+  // Check if user has Apple Private Relay email
+  const hasAppleRelayEmail = useMemo(() => {
+    if (!user?.email) return false;
+    return user.email.endsWith('@privaterelay.appleid.com');
   }, [user]);
 
   // Check if profile is already complete and redirect if so
@@ -111,6 +118,7 @@ export default function CompleteProfile() {
                 displayName: data.displayName || user.displayName || prev.displayName,
                 phone: phone || prev.phone,
                 phoneCountryCode: phoneCountryCode || prev.phoneCountryCode,
+                realEmail: data.realEmail || prev.realEmail, // Load real email if stored
                 address: data.address || prev.address,
                 emailConsent: data.emailConsent !== undefined ? data.emailConsent : prev.emailConsent,
                 smsConsent: data.smsConsent !== undefined ? data.smsConsent : prev.smsConsent
@@ -367,6 +375,21 @@ export default function CompleteProfile() {
       return;
     }
 
+    // Validate real email if user has Apple Private Relay email
+    if (hasAppleRelayEmail && !profileData.realEmail) {
+      setError("Please provide your real email address. This is required for order confirmations and customer service.");
+      return;
+    }
+
+    if (hasAppleRelayEmail && profileData.realEmail) {
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(profileData.realEmail.trim())) {
+        setError("Please enter a valid email address");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -386,6 +409,7 @@ export default function CompleteProfile() {
         body: JSON.stringify({
           displayName: profileData.displayName.trim(),
           phone: fullPhone,
+          realEmail: hasAppleRelayEmail ? profileData.realEmail.trim().toLowerCase() : undefined,
           address: {
             street: profileData.address.street.trim(),
             city: profileData.address.city.trim(),
@@ -543,6 +567,34 @@ export default function CompleteProfile() {
 
             {/* Profile Information Section */}
             <form onSubmit={handleSubmit} className="card padding-lg">
+              {/* Apple Private Relay Email Notice */}
+              {hasAppleRelayEmail && (
+                <div className="card card-warning padding-md margin-bottom-lg">
+                  <p className="text-warning margin-bottom-sm">
+                    <strong>📧 Email Address Required</strong>
+                  </p>
+                  <p className="text-sm text-muted margin-bottom-md">
+                    You signed in with Apple using a private relay email. To receive order confirmations and important updates, please provide your real email address below.
+                  </p>
+                  <div>
+                    <label className="text-sm font-medium margin-bottom-sm">
+                      Your Real Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      className="input"
+                      value={profileData.realEmail}
+                      onChange={e => setProfileData({ ...profileData, realEmail: e.target.value })}
+                      placeholder="your.email@example.com"
+                      required
+                    />
+                    <p className="text-xs text-muted margin-top-sm">
+                      This email will be used for order confirmations and customer service communications.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid-form margin-bottom-md">
                 <div>
                   <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">

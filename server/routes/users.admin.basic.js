@@ -86,6 +86,7 @@ router.get("/me", async (req, res) => {
     const response = {
       uid: authUser.uid,
       email: authUser.email,
+      realEmail: userData.realEmail || null, // Real email for users with Apple Private Relay
       displayName: authUser.displayName || userData.displayName || "",
       phone: userData.phone || authUser.phoneNumber || "",
       address: userData.address || {
@@ -184,7 +185,7 @@ router.get("/", async (_req, res) => {
 router.put("/me", async (req, res) => {
   try {
     const { uid } = req.user;
-    const { displayName, email, phone, address, emailConsent, smsConsent } = req.body;
+    const { displayName, email, phone, address, emailConsent, smsConsent, realEmail } = req.body;
 
     // Get existing user document to check if role is already set
     const userDoc = await db.collection("users").doc(uid).get();
@@ -200,6 +201,11 @@ router.put("/me", async (req, res) => {
     if (address !== undefined) updateData.address = address;
     if (emailConsent !== undefined) updateData.emailConsent = emailConsent;
     if (smsConsent !== undefined) updateData.smsConsent = smsConsent;
+    
+    // Store real email for users with Apple Private Relay emails
+    if (realEmail !== undefined) {
+      updateData.realEmail = realEmail.trim().toLowerCase();
+    }
 
     // Automatically assign CUSTOMER role if user doesn't have a role yet
     // Only assign CUSTOMER if they don't already have ADMIN, STAFF, or other roles

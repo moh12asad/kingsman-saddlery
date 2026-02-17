@@ -417,10 +417,29 @@ router.post("/create", async (req, res) => {
     // Always use server-calculated total for security
     const orderTotal = expectedTotal;
 
+    // Get user's real email if they have Apple Private Relay email
+    let customerEmail = email || req.body.customerEmail;
+    if (uid) {
+      try {
+        const userDoc = await db.collection("users").doc(uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          // Use real email if available (for users with Apple Private Relay)
+          if (userData.realEmail) {
+            customerEmail = userData.realEmail;
+            console.log(`[ORDER] Using real email for user ${uid}: ${customerEmail}`);
+          }
+        }
+      } catch (error) {
+        console.warn(`[ORDER] Could not fetch user real email: ${error.message}`);
+        // Continue with default email
+      }
+    }
+
     const orderDoc = {
       customerId: uid,
       customerName: displayName || req.body.customerName || "Customer",
-      customerEmail: email || req.body.customerEmail,
+      customerEmail: customerEmail,
       phone: phone || req.body.phone || "",
       items: normalizedItems,
       shippingAddress: deliveryType === "delivery" ? shippingAddress : null,
