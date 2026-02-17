@@ -15,6 +15,7 @@ import Cart from "./pages/Cart.jsx";
 import Favorites from "./pages/Favorites.jsx";
 import Profile from "./pages/Profile.jsx";
 import CompleteProfile from "./pages/CompleteProfile.jsx";
+import CreatePassword from "./pages/CreatePassword.jsx";
 import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import Orders from "./pages/Orders.jsx";
 import OrderDetail from "./pages/OrderDetail.jsx";
@@ -102,6 +103,7 @@ const router = createBrowserRouter([
       { path: "checkout", element: <OrderConfirmation /> },
       { path: "favorites", element: <Favorites /> },
       { path: "profile", element: <Profile /> },
+      { path: "create-password", element: <CreatePassword /> },
       { path: "complete-profile", element: <CompleteProfile /> },
       { path: "orders", element: <Orders /> },
       { path: "orders/:id", element: <OrderDetail /> },

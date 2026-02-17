@@ -1,14 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { auth } from "../lib/firebase";
-import { 
-  updatePassword, 
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  linkWithCredential
-} from "firebase/auth";
-import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock } from "react-icons/fa";
+import { updateProfile } from "firebase/auth";
+import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner } from "react-icons/fa";
 import AuthRoute from "../components/AuthRoute";
 import { checkProfileComplete } from "../utils/checkProfileComplete";
 
@@ -21,9 +16,6 @@ export default function CompleteProfile() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState("");
   const [checkingProfile, setCheckingProfile] = useState(true);
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [passwordCreated, setPasswordCreated] = useState(false);
   
   const [profileData, setProfileData] = useState({
     displayName: "",
@@ -39,32 +31,20 @@ export default function CompleteProfile() {
     smsConsent: false
   });
 
-  const [passwordData, setPasswordData] = useState({
-    newPassword: "",
-    confirmPassword: ""
-  });
-
-  const [showPasswords, setShowPasswords] = useState({
-    new: false,
-    confirm: false
-  });
-
-  // Check if user signed in with Google or Apple (no password provider)
-  const isOAuthUser = useMemo(() => {
-    if (!user) return false;
-    const hasOAuthProvider = user.providerData?.some(provider => 
-      provider.providerId === "google.com" || provider.providerId === "apple.com"
-    );
-    const hasPasswordProvider = user.providerData?.some(provider => provider.providerId === "password");
-    return hasOAuthProvider && !hasPasswordProvider;
-  }, [user]);
-
   // Check if profile is already complete and redirect if so
   useEffect(() => {
     if (authLoading || !user) return;
     
     (async () => {
       try {
+        // Check if user has password (required to complete profile)
+        const hasPassword = user.providerData?.some(provider => provider.providerId === "password");
+        if (!hasPassword) {
+          // User doesn't have password, redirect to create password first
+          navigate("/create-password", { replace: true });
+          return;
+        }
+
         const isComplete = await checkProfileComplete(user);
         if (isComplete) {
           navigate("/", { replace: true });
@@ -233,95 +213,8 @@ export default function CompleteProfile() {
     );
   }
 
-  // Check if user has password provider
-  const hasPassword = useMemo(() => {
-    if (!user) return false;
-    // If password was just created, consider it as having password
-    if (passwordCreated) return true;
-    return user.providerData?.some(provider => provider.providerId === "password");
-  }, [user, passwordCreated]);
-
-  // Handle password creation
-  async function handleCreatePassword() {
-    setPasswordError("");
-    setPasswordSuccess("");
-    
-    // Trim passwords for validation
-    const trimmedNewPassword = passwordData.newPassword ? passwordData.newPassword.trim() : "";
-    const trimmedConfirmPassword = passwordData.confirmPassword ? passwordData.confirmPassword.trim() : "";
-    
-    // Password requirements: 6-12 characters with at least one letter
-    if (!trimmedNewPassword) {
-      setPasswordError("Please enter a new password");
-      return;
-    }
-
-    if (trimmedNewPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters long");
-      return;
-    }
-
-    if (trimmedNewPassword.length > 12) {
-      setPasswordError("Password must be no more than 12 characters long");
-      return;
-    }
-
-    if (!/[a-zA-Z]/.test(trimmedNewPassword)) {
-      setPasswordError("Password must contain at least one letter");
-      return;
-    }
-
-    if (trimmedNewPassword !== trimmedConfirmPassword) {
-      setPasswordError("Passwords do not match");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setPasswordError("");
-
-      if (isOAuthUser) {
-        // For Google or Apple users, link email/password provider
-        const credential = EmailAuthProvider.credential(
-          user.email,
-          trimmedNewPassword
-        );
-        await linkWithCredential(user, credential);
-        setPasswordSuccess("Password created successfully! You can now sign in with email and password.");
-        setPasswordCreated(true); // Mark password as created so hasPassword updates
-        setPasswordData({ newPassword: "", confirmPassword: "" });
-        return;
-      } else {
-        // For existing password users, this shouldn't happen on complete profile page
-        setPasswordError("You already have a password. Please use the Profile page to update it.");
-        return;
-      }
-
-      setPasswordData({ newPassword: "", confirmPassword: "" });
-    } catch (err) {
-      console.error("Password creation error:", err);
-      let errorMessage = "";
-      if (err.code === "auth/weak-password") {
-        errorMessage = "Password is too weak. Please use a stronger password.";
-      } else if (err.code === "auth/requires-recent-login") {
-        errorMessage = "For security, please sign out and sign in again, then try creating your password.";
-      } else {
-        errorMessage = err.message || "Failed to create password";
-      }
-      setPasswordError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
-    
-    // Check if user has password (required to complete profile)
-    if (!hasPassword) {
-      setError("You must create a password before completing your profile. Please create a password in the section below.");
-      return;
-    }
     
     // Validation
     if (!profileData.displayName || profileData.displayName.trim() === "") {
@@ -403,7 +296,6 @@ export default function CompleteProfile() {
       }
 
       // Update Firebase Auth display name
-      const { updateProfile } = await import("firebase/auth");
       await updateProfile(user, {
         displayName: profileData.displayName.trim()
       });
@@ -448,96 +340,6 @@ export default function CompleteProfile() {
             {error && (
               <div className="card card-error padding-md margin-bottom-md">
                 <p className="text-error">{error}</p>
-              </div>
-            )}
-
-            {/* Password Section - Show first if user doesn't have password */}
-            {!hasPassword && (
-              <div className="card padding-lg margin-bottom-lg">
-                <h2 className="section-title flex-row flex-gap-sm">
-                  <FaLock />
-                  Create Password
-                </h2>
-                
-                <div className="card card-warning padding-md margin-top-md margin-bottom-md">
-                  <p className="text-warning">
-                    ⚠️ <strong>Important:</strong> You must create a password before you can complete your profile.
-                  </p>
-                </div>
-
-                {passwordError && (
-                  <div className="card card-error padding-md margin-top-md margin-bottom-md">
-                    <p className="text-error">{passwordError}</p>
-                  </div>
-                )}
-
-                {passwordSuccess && (
-                  <div className="card card-success padding-md margin-top-md margin-bottom-md">
-                    <p className="text-success">{passwordSuccess}</p>
-                  </div>
-                )}
-
-                <div className="margin-top-md">
-                  <div className="margin-bottom-sm">
-                    <label className="text-sm font-medium">
-                      Password Requirements
-                    </label>
-                    <p className="text-xs text-muted label-help-text">
-                      6-12 characters, must include at least one letter
-                    </p>
-                  </div>
-                  <div className="grid-form">
-                    <div>
-                      <label className="text-sm font-medium margin-bottom-sm">
-                        New Password
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showPasswords.new ? "text" : "password"}
-                          className="input input-with-action"
-                          value={passwordData.newPassword}
-                          onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                          placeholder="Enter new password"
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
-                          onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                        >
-                          {showPasswords.new ? "Hide" : "Show"}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium margin-bottom-sm">Confirm New Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPasswords.confirm ? "text" : "password"}
-                          className="input input-with-action"
-                          value={passwordData.confirmPassword}
-                          onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                          placeholder="Confirm new password"
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 hover:text-gray-800 transition"
-                          onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                        >
-                          {showPasswords.confirm ? "Hide" : "Show"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn-primary margin-top-md"
-                  onClick={handleCreatePassword}
-                  disabled={loading || locationLoading}
-                >
-                  {loading ? "Creating..." : "Create Password"}
-                </button>
               </div>
             )}
 
@@ -711,8 +513,7 @@ export default function CompleteProfile() {
               <button
                 type="submit"
                 className="btn-primary margin-top-md"
-                disabled={loading || locationLoading || !hasPassword}
-                title={!hasPassword ? "You must create a password first" : ""}
+                disabled={loading || locationLoading}
               >
                 {loading ? "Saving..." : "Complete Profile"}
               </button>
@@ -723,4 +524,3 @@ export default function CompleteProfile() {
     </AuthRoute>
   );
 }
-
