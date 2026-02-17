@@ -48,7 +48,18 @@ export default function SignIn() {
                 return;
             }
 
-            // For regular users, check if profile is complete
+            // For regular users, check if they have a password (for OAuth users)
+            const hasPassword = userToCheck.providerData?.some(provider => provider.providerId === "password");
+            console.log("User has password:", hasPassword);
+            
+            if (!hasPassword) {
+                // OAuth user without password - redirect to create password first
+                hasRedirected.current = true;
+                navigate("/create-password", { replace: true });
+                return;
+            }
+            
+            // User has password, check if profile is complete
             console.log("Checking profile completion...");
             const isProfileComplete = await checkProfileComplete(userToCheck);
             console.log("Profile complete:", isProfileComplete);
