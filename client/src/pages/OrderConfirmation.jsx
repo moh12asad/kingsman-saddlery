@@ -372,9 +372,11 @@ export default function OrderConfirmation() {
           latitude: null,
           longitude: null
         };
+        // Use real email if available (for users with Apple Private Relay), otherwise use regular email
+        const emailToUse = data.realEmail || data.email || user?.email || "";
         setProfileData({
           displayName: data.displayName || user?.displayName || "",
-          email: data.email || user?.email || "",
+          email: emailToUse,
           phone: data.phone || "",
           address: profileAddress
         });
