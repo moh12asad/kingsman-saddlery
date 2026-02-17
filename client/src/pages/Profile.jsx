@@ -78,7 +78,7 @@ export default function Profile() {
       if (res.ok) {
         const data = await res.json();
         const loadedData = {
-          displayName: data.displayName || user.displayName || "",
+          displayName: data.displayName || data.name || user.displayName || "",
           email: data.email || user.email || "",
           phone: data.phone || "",
           address: data.address || {

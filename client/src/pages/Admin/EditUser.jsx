@@ -157,7 +157,7 @@ export default function EditUser() {
               <input
                 className="input"
                 placeholder="User name"
-                value={user.name || ""}
+                value={user.name || user.displayName || ""}
                 onChange={e => setUser({ ...user, name: e.target.value })}
               />
             </div>
