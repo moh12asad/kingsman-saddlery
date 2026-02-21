@@ -166,6 +166,21 @@
       "failed": "Failed to send reset email."
     }
   },
+  "appleEmailRequired": {
+    "title": "We need your email address",
+    "description": "You signed in with Apple, but we need a real email address for orders and support. Apple's private relay address cannot be used.",
+    "emailLabel": "Your email",
+    "help": "Enter an email address you actually use (e.g. Gmail, Outlook). We will not accept Apple's private relay address.",
+    "submit": "Continue",
+    "submitting": "Updating...",
+    "errors": {
+      "enterEmail": "Please enter your email address",
+      "invalidEmail": "Please enter a valid email address",
+      "noRelay": "Apple's private relay address is not accepted. Please enter your real email address.",
+      "emailAlreadyInUse": "This email is already in use by another account",
+      "failed": "Failed to update email. Please try again."
+    }
+  },
   "signUp": {
     "title": "Create Your Account",
     "description": "Sign up to get started and receive 5% off on all purchases for the next 3 months!",

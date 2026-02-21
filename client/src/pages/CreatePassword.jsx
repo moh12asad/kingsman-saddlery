@@ -9,6 +9,7 @@ import {
 import { FaLock, FaSpinner } from "react-icons/fa";
 import AuthRoute from "../components/AuthRoute";
 import { checkProfileComplete } from "../utils/checkProfileComplete";
+import { isPrivateRelayEmail } from "../utils/isPrivateRelayEmail";
 
 export default function CreatePassword() {
   const { user, loading: authLoading } = useAuth();
@@ -64,6 +65,13 @@ export default function CreatePassword() {
         if (!isOAuthUser) {
           // Not an OAuth user without password - shouldn't be here
           navigate("/", { replace: true });
+          return;
+        }
+
+        // Apple users with private relay email must provide real email first
+        const isApple = user.providerData?.some((p) => p.providerId === "apple.com");
+        if (isApple && isPrivateRelayEmail(user.email)) {
+          navigate("/apple-email-required", { replace: true });
           return;
         }
         

@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import GuestRoute from "../components/GuestRoute";
 import { FaUser, FaPhone, FaMapMarkerAlt, FaLocationArrow, FaSpinner, FaLock, FaEnvelope, FaApple } from "react-icons/fa";
+import { isPrivateRelayEmail } from "../utils/isPrivateRelayEmail";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -417,9 +418,14 @@ export default function SignUp() {
     }
   }
 
-  // If already signed in, redirect
+  // If already signed in, redirect (Apple users with relay email must provide real email first)
   useEffect(() => {
     if (!authLoading && user) {
+      const isApple = user.providerData?.some((p) => p.providerId === "apple.com");
+      if (isApple && isPrivateRelayEmail(user.email)) {
+        navigate("/apple-email-required", { replace: true });
+        return;
+      }
       navigate("/", { replace: true });
     }
   }, [user, authLoading, navigate]);

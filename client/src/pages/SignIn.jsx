@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext"; // assumes you expose user + loading
 import { resolveRole } from "../utils/resolveRole";
 import { checkProfileComplete } from "../utils/checkProfileComplete";
+import { isPrivateRelayEmail } from "../utils/isPrivateRelayEmail";
 
 export default function SignIn() {
     const [email, setEmail] = useState("");
@@ -53,6 +54,13 @@ export default function SignIn() {
             console.log("User has password:", hasPassword);
             
             if (!hasPassword) {
+                // Apple users with private relay email must provide a real email first
+                const isApple = userToCheck.providerData?.some(p => p.providerId === "apple.com");
+                if (isApple && isPrivateRelayEmail(userToCheck.email)) {
+                    hasRedirected.current = true;
+                    navigate("/apple-email-required", { replace: true });
+                    return;
+                }
                 // OAuth user without password - redirect to create password first
                 hasRedirected.current = true;
                 navigate("/create-password", { replace: true });

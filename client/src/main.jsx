@@ -16,6 +16,7 @@ import Favorites from "./pages/Favorites.jsx";
 import Profile from "./pages/Profile.jsx";
 import CompleteProfile from "./pages/CompleteProfile.jsx";
 import CreatePassword from "./pages/CreatePassword.jsx";
+import AppleEmailRequired from "./pages/AppleEmailRequired.jsx";
 import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import Orders from "./pages/Orders.jsx";
 import OrderDetail from "./pages/OrderDetail.jsx";
@@ -104,6 +105,7 @@ const router = createBrowserRouter([
       { path: "favorites", element: <Favorites /> },
       { path: "profile", element: <Profile /> },
       { path: "create-password", element: <CreatePassword /> },
+      { path: "apple-email-required", element: <AppleEmailRequired /> },
       { path: "complete-profile", element: <CompleteProfile /> },
       { path: "orders", element: <Orders /> },
       { path: "orders/:id", element: <OrderDetail /> },
