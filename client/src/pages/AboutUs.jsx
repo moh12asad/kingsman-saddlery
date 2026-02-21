@@ -14,10 +14,23 @@ export default function AboutUs() {
               {t("aboutUs.welcome")}
             </p>
             <p className="page-text">
+              {t("aboutUs.owner")}
+            </p>
+            <p className="page-text">
               {t("aboutUs.dedication")}
             </p>
             <p className="page-text">
               {t("aboutUs.commitment")}
+            </p>
+            <p className="page-text page-about-chatgpt">
+              <a
+                href="https://chat.openai.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="about-chatgpt-link"
+              >
+                {t("aboutUs.askChatgpt")}
+              </a>
             </p>
           </div>
         </div>
