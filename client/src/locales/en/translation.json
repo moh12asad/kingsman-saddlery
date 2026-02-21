@@ -172,7 +172,10 @@
     "emailLabel": "Your email",
     "help": "Enter an email address you actually use (e.g. Gmail, Outlook). We will not accept Apple's private relay address.",
     "submit": "Continue",
-    "submitting": "Updating...",
+    "submitting": "Sending verification link...",
+    "verificationSent": "We sent a verification link to {{email}}. Please check your inbox (and spam folder).",
+    "verificationInstructions": "Click the link in the email to confirm your address. After you've clicked it, press the button below to continue.",
+    "continueAfterVerify": "I've verified my email — Continue",
     "errors": {
       "enterEmail": "Please enter your email address",
       "invalidEmail": "Please enter a valid email address",

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { auth } from "../lib/firebase";
-import { updateEmail } from "firebase/auth";
+import { verifyBeforeUpdateEmail } from "firebase/auth";
 import { FaEnvelope, FaSpinner } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import AuthRoute from "../components/AuthRoute";
@@ -15,6 +15,7 @@ export default function AppleEmailRequired() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const isAppleWithRelay =
     user &&
@@ -51,8 +52,9 @@ export default function AppleEmailRequired() {
 
     try {
       setLoading(true);
-      await updateEmail(auth.currentUser, trimmed);
-      navigate("/create-password", { replace: true });
+      await verifyBeforeUpdateEmail(auth.currentUser, trimmed);
+      setVerificationSent(true);
+      setError("");
     } catch (err) {
       console.error("Update email error:", err);
       if (err.code === "auth/email-already-in-use") {
@@ -64,6 +66,21 @@ export default function AppleEmailRequired() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleContinueAfterVerify() {
+    try {
+      await auth.currentUser?.reload();
+      const currentEmail = auth.currentUser?.email;
+      if (currentEmail && !isPrivateRelayEmail(currentEmail)) {
+        navigate("/create-password", { replace: true });
+      }
+    } catch {
+      // Still allow navigation if reload fails; create-password will redirect back if needed
+      if (user?.email && !isPrivateRelayEmail(user.email)) {
+        navigate("/create-password", { replace: true });
+      }
     }
   }
 
@@ -98,6 +115,21 @@ export default function AppleEmailRequired() {
               </div>
             )}
 
+            {verificationSent ? (
+              <div className="card padding-lg">
+                <div className="card card-success padding-md margin-bottom-md">
+                  <p className="text-success">{t("appleEmailRequired.verificationSent", { email: email.trim().toLowerCase() })}</p>
+                </div>
+                <p className="text-muted margin-bottom-md">{t("appleEmailRequired.verificationInstructions")}</p>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleContinueAfterVerify}
+                >
+                  {t("appleEmailRequired.continueAfterVerify")}
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="card padding-lg">
               <div className="margin-bottom-md">
                 <label className="text-sm font-medium margin-bottom-sm flex-row flex-gap-sm">
@@ -132,6 +164,7 @@ export default function AppleEmailRequired() {
                 )}
               </button>
             </form>
+            )}
           </div>
         </div>
       </main>
