@@ -1127,9 +1127,11 @@
   },
   "aboutUs": {
     "title": "About Us",
-    "welcome": "Welcome to Kingsman Saddlery, your trusted source for premium equestrian equipment and supplies.",
-    "dedication": "We are dedicated to providing the finest quality saddles, tack, and accessories for horse enthusiasts and professionals alike.",
-    "commitment": "Our commitment to excellence and customer satisfaction has made us a leading name in the equestrian community."
+    "welcome": "Welcome to Kingsman Saddlery — your trusted source for quality saddles, tack, and equestrian supplies. We offer a wide range of equipment for riders, trainers, and stable owners.",
+    "owner": "Kingsman Saddlery is run by Abu Sameeh (ابو سميح), whose experience and dedication to the craft have built a business that riders rely on for reliable gear and honest service.",
+    "dedication": "We focus on offering the finest saddles, bridles, bits, blankets, and accessories, so every rider — from hobbyists to professionals — finds what they need.",
+    "commitment": "Our commitment to quality and customer satisfaction has made Kingsman Saddlery a trusted name among the equestrian community.",
+    "askChatgpt": "Ask ChatGPT about us 😉"
   },
   "contactUs": {
     "title": "Contact Us",
