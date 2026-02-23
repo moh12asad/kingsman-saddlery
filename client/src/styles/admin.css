@@ -11,10 +11,23 @@
   display: flex;
 }
 
-/* Fixed sidebar on the left edge */
+/* Sidebar overlay when menu is open - click to close */
+.admin-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 99;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Collapsible sidebar - hidden by default, slides in when .open */
 .admin-sidebar {
   position: fixed;
-  left: 0;
+  left: -240px;
   top: 0;
   width: 240px;
   height: 100vh;
@@ -22,6 +35,10 @@
   z-index: 100;
   margin-top: 150px;
   border-right: 1px solid var(--border);
+  transition: left 0.3s ease;
+}
+.admin-sidebar.open {
+  left: 0;
 }
 
 /* Sidebar navigation links */
@@ -34,7 +51,8 @@
 
 .admin-sidebar nav a {
   display: block;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
   text-decoration: none;
   color: var(--text);
   border-radius: 0.375rem;
@@ -54,13 +72,18 @@
   font-weight: 600;
 }
 
-/* Main content wrapper - accounts for sidebar */
+/* Main content wrapper - full width when sidebar closed */
 .admin-main-wrapper {
-  margin-left: 240px;
+  margin-left: 0;
   margin-top: 100px;
-  width: calc(100% - 240px);
+  width: 100%;
   padding: 1rem 2rem;
   min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+.admin-container.menu-open .admin-main-wrapper {
+  margin-left: 240px;
+  width: calc(100% - 240px);
 }
 
 /* Main content area */
@@ -70,26 +93,16 @@
   margin-top: 0;
 }
 
-/* Mobile responsive - stack vertically on small screens */
+/* Mobile responsive - less padding when narrow; menu overlays, no margin shift */
 @media (max-width: 1024px) {
-  .admin-container {
-    flex-direction: column;
-  }
-
-  .admin-sidebar {
-    position: fixed;
-    left: -240px;
-    transition: left 0.3s ease;
-    z-index: 1000;
-  }
-
-  .admin-sidebar.open {
-    left: 0;
-  }
-
-  .admin-main-wrapper {
+  .admin-container.menu-open .admin-main-wrapper {
     margin-left: 0;
     width: 100%;
+  }
+  [dir="rtl"] .admin-container.menu-open .admin-main-wrapper {
+    margin-right: 0;
+  }
+  .admin-main-wrapper {
     padding: 1rem;
   }
 }

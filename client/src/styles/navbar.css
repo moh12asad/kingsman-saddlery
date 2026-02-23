@@ -716,9 +716,12 @@
   display: none;
 }
 
-.subnavbar-link:hover {
+.subnavbar-link:hover,
+.subnavbar-link.active {
   color: rgb(255, 198, 41) !important;
   background-color: rgba(252, 211, 77, 0.1);
+}
+.subnavbar-link:hover {
   transform: translateY(-1px);
 }
 

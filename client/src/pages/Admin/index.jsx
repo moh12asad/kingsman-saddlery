@@ -15,8 +15,15 @@ export default function AdminLayout(){
         </div>
       </div>
     }>
-      <div className="admin-container">
-        <aside className={`admin-sidebar sidebar card ${menuOpen ? 'open' : ''} lg:block`}>
+      <div className={`admin-container ${menuOpen ? 'menu-open' : ''}`}>
+        {menuOpen && (
+          <div
+            className="admin-sidebar-overlay"
+            onClick={() => setMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        <aside className={`admin-sidebar sidebar card ${menuOpen ? 'open' : ''}`}>
           <nav className="flex flex-col gap-1">
             <NavLink to="." end className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.dashboard')}</NavLink>
             <NavLink to="orders" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.orders')}</NavLink>
@@ -35,17 +42,17 @@ export default function AdminLayout(){
           </nav>
         </aside>
         <div className="admin-main-wrapper">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">{t('admin.title')}</h1>
+          <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="lg:hidden btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm shrink-0"
               aria-label={t('admin.toggleMenu')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
+            <h1 className="text-2xl font-bold">{t('admin.title')}</h1>
           </div>
           <main className="admin-main-content">
             <Outlet />

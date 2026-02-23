@@ -226,7 +226,24 @@
   direction: rtl;
 }
 
-/* Admin sidebar RTL */
+/* Admin sidebar RTL - collapsible from the right */
+[dir="rtl"] .admin-sidebar {
+  left: auto;
+  right: -240px;
+  border-right: none;
+  border-left: 1px solid var(--border);
+  transition: right 0.3s ease;
+}
+[dir="rtl"] .admin-sidebar.open {
+  right: 0;
+  left: auto;
+}
+[dir="rtl"] .admin-container.menu-open .admin-main-wrapper {
+  margin-left: 0;
+  margin-right: 240px;
+  width: calc(100% - 240px);
+}
+
 [dir="rtl"] .sidebar {
   direction: rtl;
 }
