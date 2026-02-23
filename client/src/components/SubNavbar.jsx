@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getTranslated } from "../utils/translations";
 import { auth } from "../lib/firebase";
@@ -7,8 +7,27 @@ import { createPortal } from "react-dom";
 
 const API = import.meta.env.VITE_API_BASE_URL || "";
 
+const ADMIN_MENU_ITEMS = [
+  { path: "", labelKey: "admin.menu.dashboard" },
+  { path: "orders", labelKey: "admin.menu.orders" },
+  { path: "products", labelKey: "admin.menu.products" },
+  { path: "categories", labelKey: "admin.menu.categories" },
+  { path: "hero-slides", labelKey: "admin.menu.heroSlides" },
+  { path: "ads", labelKey: "admin.menu.ads" },
+  { path: "brands", labelKey: "admin.menu.brands" },
+  { path: "users", labelKey: "admin.menu.users" },
+  { path: "contact-submissions", labelKey: "admin.menu.contactSubmissions" },
+  { path: "failed-orders", labelKey: "admin.menu.failedOrders" },
+  { path: "bulk-email", labelKey: "admin.menu.bulkEmail" },
+  { path: "coupons", labelKey: "admin.menu.coupons" },
+  { path: "reports", labelKey: "admin.menu.reports" },
+  { path: "settings", labelKey: "admin.menu.settings" },
+];
+
 export default function SubNavbar() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +112,10 @@ export default function SubNavbar() {
   }, []);
 
   useEffect(() => {
+    if (isAdmin) {
+      setLoading(false);
+      return;
+    }
     async function loadData() {
       try {
         // Load categories with all languages to get translation objects
@@ -124,7 +147,7 @@ export default function SubNavbar() {
     }
 
     loadData();
-  }, [i18n.language]);
+  }, [i18n.language, isAdmin]);
 
   // Update dropdown position on scroll and resize
   useEffect(() => {
@@ -378,7 +401,20 @@ export default function SubNavbar() {
       <nav className="subnavbar" style={{ top: `${navbarHeight}px` }}>
         <div className="subnavbar-content">
           <ul className="subnavbar-list">
-            {visibleCategories.map((category) => {
+            {isAdmin ? (
+              ADMIN_MENU_ITEMS.map((item) => (
+                <li key={item.path || "dashboard"} className="subnavbar-item">
+                  <NavLink
+                    to={item.path ? `/admin/${item.path}` : "/admin"}
+                    end={item.path === ""}
+                    className={({ isActive }) => `subnavbar-link ${isActive ? "active" : ""}`}
+                  >
+                    {t(item.labelKey)}
+                  </NavLink>
+                </li>
+              ))
+            ) : (
+            visibleCategories.map((category) => {
               const hasSubCategories = category.subCategories && category.subCategories.length > 0;
               const subCategories = category.subCategories || [];
               const categoryName = getTranslated(category.name, i18n.language || 'en');
@@ -469,11 +505,12 @@ export default function SubNavbar() {
                   </button>
                 </li>
               );
-            })}
+            })
+            )}
           </ul>
         </div>
       </nav>
-      {hoveredCategory && hoveredCategoryData && hoveredSubCategories.length > 0 && createPortal(
+      {!isAdmin && hoveredCategory && hoveredCategoryData && hoveredSubCategories.length > 0 && createPortal(
         <div 
           className="subnavbar-dropdown subnavbar-dropdown-fixed"
           style={{
