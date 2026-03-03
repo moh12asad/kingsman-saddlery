@@ -5,7 +5,7 @@ import AdminGate from "../../components/AdminGate.jsx";
 
 export default function AdminLayout(){
   const { t } = useTranslation();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(true);
   
   return (
     <AdminGate fallback={
@@ -25,20 +25,20 @@ export default function AdminLayout(){
         )}
         <aside className={`admin-sidebar sidebar card ${menuOpen ? 'open' : ''}`}>
           <nav className="flex flex-col gap-1">
-            <NavLink to="." end className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.dashboard')}</NavLink>
-            <NavLink to="orders" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.orders')}</NavLink>
-            <NavLink to="products" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.products')}</NavLink>
-            <NavLink to="categories" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.categories')}</NavLink>
-            <NavLink to="hero-slides" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.heroSlides')}</NavLink>
-            <NavLink to="ads" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.ads')}</NavLink>
-            <NavLink to="brands" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.brands')}</NavLink>
-            <NavLink to="users" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.users')}</NavLink>
-            <NavLink to="contact-submissions" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.contactSubmissions')}</NavLink>
-            <NavLink to="failed-orders" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.failedOrders')}</NavLink>
-            <NavLink to="bulk-email" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.bulkEmail')}</NavLink>
-            <NavLink to="coupons" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.coupons')}</NavLink>
-            <NavLink to="reports" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.reports')}</NavLink>
-            <NavLink to="settings" className={({isActive})=>isActive?"active":""} onClick={() => setMenuOpen(false)}>{t('admin.menu.settings')}</NavLink>
+            <NavLink to="." end className={({isActive})=>isActive?"active":""}>{t('admin.menu.dashboard')}</NavLink>
+            <NavLink to="orders" className={({isActive})=>isActive?"active":""}>{t('admin.menu.orders')}</NavLink>
+            <NavLink to="products" className={({isActive})=>isActive?"active":""}>{t('admin.menu.products')}</NavLink>
+            <NavLink to="categories" className={({isActive})=>isActive?"active":""}>{t('admin.menu.categories')}</NavLink>
+            <NavLink to="hero-slides" className={({isActive})=>isActive?"active":""}>{t('admin.menu.heroSlides')}</NavLink>
+            <NavLink to="ads" className={({isActive})=>isActive?"active":""}>{t('admin.menu.ads')}</NavLink>
+            <NavLink to="brands" className={({isActive})=>isActive?"active":""}>{t('admin.menu.brands')}</NavLink>
+            <NavLink to="users" className={({isActive})=>isActive?"active":""}>{t('admin.menu.users')}</NavLink>
+            <NavLink to="contact-submissions" className={({isActive})=>isActive?"active":""}>{t('admin.menu.contactSubmissions')}</NavLink>
+            <NavLink to="failed-orders" className={({isActive})=>isActive?"active":""}>{t('admin.menu.failedOrders')}</NavLink>
+            <NavLink to="bulk-email" className={({isActive})=>isActive?"active":""}>{t('admin.menu.bulkEmail')}</NavLink>
+            <NavLink to="coupons" className={({isActive})=>isActive?"active":""}>{t('admin.menu.coupons')}</NavLink>
+            <NavLink to="reports" className={({isActive})=>isActive?"active":""}>{t('admin.menu.reports')}</NavLink>
+            <NavLink to="settings" className={({isActive})=>isActive?"active":""}>{t('admin.menu.settings')}</NavLink>
           </nav>
         </aside>
         <div className="admin-main-wrapper">

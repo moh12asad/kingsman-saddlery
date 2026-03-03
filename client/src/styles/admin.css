@@ -11,7 +11,7 @@
   display: flex;
 }
 
-/* Sidebar overlay when menu is open - click to close */
+/* Sidebar overlay when menu is open - click to close (mobile only) */
 .admin-sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -19,12 +19,18 @@
   z-index: 99;
   animation: fadeIn 0.2s ease;
 }
+/* On desktop sidebar is always visible beside content - no overlay, no dimming */
+@media (min-width: 1025px) {
+  .admin-sidebar-overlay {
+    display: none;
+  }
+}
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-/* Collapsible sidebar - hidden by default, slides in when .open */
+/* Collapsible sidebar - hidden by default on mobile, slides in when .open */
 .admin-sidebar {
   position: fixed;
   left: -240px;
@@ -35,10 +41,21 @@
   z-index: 100;
   margin-top: 150px;
   border-right: 1px solid var(--border);
-  transition: left 0.3s ease;
+  transition: none;
 }
 .admin-sidebar.open {
   left: 0;
+}
+
+/* Desktop: sidebar always open, main content always shifted */
+@media (min-width: 1025px) {
+  .admin-sidebar {
+    left: 0;
+  }
+  .admin-main-wrapper {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+  }
 }
 
 /* Sidebar navigation links */
@@ -79,7 +96,7 @@
   width: 100%;
   padding: 1rem 2rem;
   min-height: 100vh;
-  transition: margin-left 0.3s ease;
+  transition: none;
 }
 .admin-container.menu-open .admin-main-wrapper {
   margin-left: 240px;
