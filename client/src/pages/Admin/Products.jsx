@@ -260,7 +260,6 @@ export default function AdminProducts(){
                 <th className="min-w-[120px]">{t('admin.products.category')}</th>
                 <th className="min-w-[120px]">{t('admin.products.subCategory')}</th>
                 <th className="min-w-[100px]">{t('admin.products.brand')}</th>
-                <th className="min-w-[100px]">{t('admin.products.sku')}</th>
                 <th className="min-w-[80px]">Weight (kg)</th>
                 <th className="min-w-[100px]">{t('admin.products.status')}</th>
                 <th className="min-w-[120px]">{t('admin.products.sale')}</th>
@@ -271,7 +270,7 @@ export default function AdminProducts(){
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan="12" className="text-center py-8 text-gray-500">
+                  <td colSpan="11" className="text-center py-8 text-gray-500">
                     {selectedCategory === "all" 
                       ? t('admin.products.noProducts')
                       : `${t('admin.products.noProductsInCategory')} "${selectedCategory}".`}
@@ -316,7 +315,6 @@ export default function AdminProducts(){
                       )}
                     </td>
                     <td>{p.brand || "-"}</td>
-                    <td className="text-sm text-gray-600">{p.sku || "-"}</td>
                     <td className="text-sm text-gray-600">{(p.weight || 0).toFixed(2)}</td>
                     <td>
                       <div className="flex flex-col gap-2">
