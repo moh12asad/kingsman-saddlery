@@ -143,15 +143,28 @@ export default function SubCategories() {
             // Products store category/subcategory as English strings, so compare using English names
             const categoryNameEn = getTranslated(category.name, 'en');
             const subCategoryNameEn = getTranslated(subCategory.name, 'en');
-            const hasProducts = products.some(
-              (p) => {
-                // Products have category/subcategory stored as strings (usually English)
-                // So we compare the stored string directly
-                const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
-                const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
-                return pCategory === categoryNameEn && pSubCategory === subCategoryNameEn && p.available;
+            const hasProducts = products.some((p) => {
+              if (!p.available) return false;
+
+              if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+                return p.categoryPairs.some(pair => {
+                  const pCat = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, 'en');
+                  const pSub = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, 'en');
+                  return pCat === categoryNameEn && pSub === subCategoryNameEn;
+                });
               }
-            );
+
+              if (Array.isArray(p.categories)) {
+                const catIdx = p.categories.indexOf(categoryNameEn);
+                if (catIdx === -1) return false;
+                const subs = Array.isArray(p.subCategories) ? p.subCategories : [];
+                return subs[catIdx] === subCategoryNameEn;
+              }
+
+              const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
+              const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
+              return pCategory === categoryNameEn && pSubCategory === subCategoryNameEn;
+            });
 
             // Only show subcategories that have products
             if (!hasProducts) {
@@ -191,13 +204,29 @@ export default function SubCategories() {
         </div>
 
         {subCategories.filter((sub) => {
-          // Products store category/subcategory as English strings, so compare using English names
           const categoryNameEn = getTranslated(category.name, 'en');
           const subNameEn = getTranslated(sub.name, 'en');
           return products.some(p => {
+            if (!p.available) return false;
+
+            if (Array.isArray(p.categoryPairs) && p.categoryPairs.length > 0) {
+              return p.categoryPairs.some(pair => {
+                const pCat = typeof pair.category === 'string' ? pair.category : getTranslated(pair.category, 'en');
+                const pSub = typeof pair.subCategory === 'string' ? pair.subCategory : getTranslated(pair.subCategory, 'en');
+                return pCat === categoryNameEn && pSub === subNameEn;
+              });
+            }
+
+            if (Array.isArray(p.categories)) {
+              const catIdx = p.categories.indexOf(categoryNameEn);
+              if (catIdx === -1) return false;
+              const subs = Array.isArray(p.subCategories) ? p.subCategories : [];
+              return subs[catIdx] === subNameEn;
+            }
+
             const pCategory = typeof p.category === 'string' ? p.category : getTranslated(p.category, 'en');
             const pSubCategory = typeof p.subCategory === 'string' ? p.subCategory : getTranslated(p.subCategory, 'en');
-            return pCategory === categoryNameEn && pSubCategory === subNameEn && p.available;
+            return pCategory === categoryNameEn && pSubCategory === subNameEn;
           });
         }).length === 0 && (
           <div className="text-center py-12">
