@@ -80,6 +80,7 @@ app.get("/api/test-firestore", async (_req, res) => {
     
     // Get the service account email being used
     const serviceAccountEmail = adminAuth.app.options.credential?.clientEmail || "unknown";
+    const projectId = adminAuth.app.options.projectId || process.env.FIREBASE_PROJECT_ID || "unknown";
     
     // Try to read from Firestore
     const testDoc = await db.collection("_test").doc("connection").get();
@@ -87,6 +88,7 @@ app.get("/api/test-firestore", async (_req, res) => {
       ok: true, 
       message: "Service account can access Firestore",
       serviceAccountEmail: serviceAccountEmail,
+      projectId: projectId,
       testDocExists: testDoc.exists 
     });
   } catch (error) {
@@ -94,9 +96,11 @@ app.get("/api/test-firestore", async (_req, res) => {
     
     // Try to get the service account email from the error or config
     let serviceAccountEmail = "unknown";
+    let projectId = process.env.FIREBASE_PROJECT_ID || "unknown";
     try {
       const { adminAuth } = await import("./lib/firebaseAdmin.js");
       serviceAccountEmail = adminAuth.app.options.credential?.clientEmail || "unknown";
+      projectId = adminAuth.app.options.projectId || process.env.FIREBASE_PROJECT_ID || "unknown";
     } catch (e) {
       // Ignore
     }
@@ -105,6 +109,8 @@ app.get("/api/test-firestore", async (_req, res) => {
       ok: false,
       error: "Service account cannot access Firestore",
       serviceAccountEmail: serviceAccountEmail,
+      projectId: projectId,
+      envProjectId: process.env.FIREBASE_PROJECT_ID,
       code: error.code,
       message: error.message,
       fix: `Grant 'Firebase Admin SDK Administrator Service Agent' role to: ${serviceAccountEmail} in Google Cloud Console → IAM & Admin → IAM`
