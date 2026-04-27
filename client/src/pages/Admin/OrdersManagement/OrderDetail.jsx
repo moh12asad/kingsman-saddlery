@@ -281,7 +281,7 @@ export default function AdminOrderDetail() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="section-title">Order #{order.id.substring(0, 8)}</h1>
+          <h1 className="section-title">Order #{order.orderNumber ?? order.id.substring(0, 8)}</h1>
           <p className="text-sm text-gray-600 mt-1">
             Created: {formatDate(order.createdAt)}
           </p>

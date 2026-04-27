@@ -1211,7 +1211,10 @@ export default function OrderConfirmation() {
         return;
       }
 
-      // Step 3: Order created successfully - send confirmation email
+      // Step 3: Order created successfully - send confirmation email.
+      // Use the server-allocated numeric orderNumber for the user-facing label;
+      // fall back to the doc id only if the server didn't return one (older deploy).
+      const userFacingOrderNumber = orderResult.orderNumber ?? orderResult.id;
       const emailRes = await fetch(`${API}/api/email/order-confirmation`, {
         method: "POST",
         headers: {
@@ -1220,7 +1223,7 @@ export default function OrderConfirmation() {
         },
         body: JSON.stringify({
           ...orderData,
-          orderNumber: orderResult.id,
+          orderNumber: userFacingOrderNumber,
           orderDate: new Date().toLocaleDateString(),
           status: "new",
           subtotal: subtotalAfterDiscount,
@@ -1256,6 +1259,11 @@ export default function OrderConfirmation() {
       if (finalTransactionId) params.append('transactionId', finalTransactionId);
       if (verifiedAmount) params.append('amount', verifiedAmount.toString());
       if (orderResult.id) params.append('orderId', orderResult.id);
+      // Pass the user-facing order number so PaymentSuccess can display it without
+      // having to refetch the order. orderId remains for the "View Order" link.
+      if (orderResult.orderNumber != null) {
+        params.append('orderNumber', String(orderResult.orderNumber));
+      }
       navigate(`/payment/success?${params.toString()}`);
     } catch (err) {
       console.error("[Payment] Unexpected error in handlePaymentSuccess:", err);

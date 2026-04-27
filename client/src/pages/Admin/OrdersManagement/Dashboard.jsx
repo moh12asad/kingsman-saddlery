@@ -78,12 +78,14 @@ export default function OrdersDashboard() {
         const customerName = (order.customerName || "").toLowerCase();
         const customerEmail = (order.customerEmail || "").toLowerCase();
         const orderId = (order.id || "").toLowerCase();
+        const orderNumber = order.orderNumber != null ? String(order.orderNumber).toLowerCase() : "";
         const phone = (order.phone || "").toLowerCase();
         
         return (
           customerName.includes(query) ||
           customerEmail.includes(query) ||
           orderId.includes(query) ||
+          orderNumber.includes(query) ||
           phone.includes(query) ||
           (order.items || []).some(item => {
             // Handle both string and translation object for item.name
@@ -233,7 +235,9 @@ export default function OrdersDashboard() {
                     >
                       <td style={{ padding: "1rem" }}>
                         <div className="font-mono">
-                          {order.id.substring(0, 8)}...
+                          {order.orderNumber != null
+                            ? `#${order.orderNumber}`
+                            : `${order.id.substring(0, 8)}...`}
                         </div>
                       </td>
                       <td style={{ padding: "1rem" }}>

@@ -131,7 +131,7 @@ export default function Orders() {
                     <div className="flex-1" style={{ minWidth: "250px" }}>
                       <div className="flex-row flex-gap-sm margin-bottom-sm" style={{ alignItems: "center" }}>
                         <h3 className="section-title" style={{ margin: 0 }}>
-                          {t("orders.order")} #{order.id.substring(0, 8)}
+                          {t("orders.order")} #{order.orderNumber ?? order.id.substring(0, 8)}
                         </h3>
                         <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs`} style={{ alignItems: "center" }}>
                           {getStatusIcon(order.status)}

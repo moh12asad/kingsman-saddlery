@@ -215,7 +215,7 @@ export default function OrderDetail() {
             <div className="flex-row flex-gap-md" style={{ alignItems: "center" }}>
               <h1 className="heading-1 flex-row flex-gap-sm order-heading">
                 <FaShoppingBag />
-                {t("orderDetail.title")} #{order.id.substring(0, 8)}
+                {t("orderDetail.title")} #{order.orderNumber ?? order.id.substring(0, 8)}
               </h1>
               <span className={`badge ${getStatusBadgeClass(order.status)} flex-row flex-gap-xs order-badge`}>
                 {getStatusIcon(order.status)}

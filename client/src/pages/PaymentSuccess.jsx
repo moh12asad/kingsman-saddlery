@@ -14,6 +14,7 @@ export default function PaymentSuccess() {
   const [transactionId, setTransactionId] = useState(null);
   const [amount, setAmount] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [orderNumber, setOrderNumber] = useState(null);
 
   useEffect(() => {
     // Get parameters from URL (Tranzila redirects with these)
@@ -24,10 +25,12 @@ export default function PaymentSuccess() {
                  searchParams.get("TranzilaTK");
     const amt = searchParams.get("amount") || searchParams.get("sum");
     const ordId = searchParams.get("orderId");
+    const ordNum = searchParams.get("orderNumber");
 
     if (txId) setTransactionId(txId);
     if (amt) setAmount(parseFloat(amt));
     if (ordId) setOrderId(ordId);
+    if (ordNum) setOrderNumber(ordNum);
 
     // Notify parent window if we're inside an iframe (from Tranzila redirect)
     // This allows the checkout page to redirect the entire page instead of just the iframe
@@ -37,6 +40,7 @@ export default function PaymentSuccess() {
         transactionId: txId,
         amount: amt,
         orderId: ordId,
+        orderNumber: ordNum,
         url: window.location.href
       };
       window.parent.postMessage(message, "*");
@@ -82,7 +86,7 @@ export default function PaymentSuccess() {
                   {t("paymentSuccess.orderCreated") || "Your order has been created and you will receive a confirmation email shortly."}
                 </p>
                 <p className="payment-result-order-id">
-                  {t("paymentSuccess.orderNumber") || "Order Number"}: <strong>{orderId}</strong>
+                  {t("paymentSuccess.orderNumber") || "Order Number"}: <strong>#{orderNumber ?? orderId}</strong>
                 </p>
               </div>
             )}

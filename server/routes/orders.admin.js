@@ -452,26 +452,56 @@ router.post("/create", async (req, res) => {
       orderDoc.metadata = metadata;
     }
 
-    // IDEMPOTENCY: Atomic check-and-claim using a Firestore transaction over a
-    // deterministic-ID lock document keyed by transactionId. This is the LAST line of
-    // defense against duplicate orders; the client has its own dedup guards in
-    // TranzilaPayment + OrderConfirmation, but if they ever fail (browser auto-retry,
-    // future regression, etc.) the server must still be atomic.
+    // IDEMPOTENCY + ORDER NUMBER ALLOCATION
     //
-    // The previous query-then-insert approach was TOCTOU: two concurrent requests
-    // could both observe "no existing order" before either insert completed, producing
-    // two Firestore documents for the same payment.
+    // Atomic check-and-claim using a Firestore transaction over a deterministic-ID
+    // lock document keyed by transactionId. This is the LAST line of defense against
+    // duplicate orders; the client has its own dedup guards in TranzilaPayment +
+    // OrderConfirmation, but if they ever fail (browser auto-retry, future regression,
+    // etc.) the server must still be atomic.
     //
-    // runTransaction() over a deterministic doc id gives us true atomicity. Firestore's
-    // optimistic concurrency forces one of two racing transactions to retry, and the
-    // retry observes the lock and returns the existing order id. Both writes (the order
-    // and the lock) commit atomically, so we never end up with a lock pointing at a
-    // missing order.
+    // The same transaction also allocates a sequential, user-friendly numeric
+    // orderNumber from a single counter document at counters/orders. Doing this inside
+    // the transaction guarantees no two orders ever get the same number: Firestore's
+    // optimistic concurrency forces conflicting transactions to retry against the
+    // updated counter. A duplicate idempotent attempt does NOT consume a new number;
+    // it returns the orderNumber that was already stored on the lock document.
+    //
+    // ORDER_NUMBER_START - 1 is the seed value: first allocated number is
+    // ORDER_NUMBER_START.
+    const ORDER_NUMBER_START = 1000;
+
     const trimmedTransactionId =
       typeof transactionId === "string" ? transactionId.trim() : "";
 
+    const allocateInTransaction = async (txn, lockRef) => {
+      const counterRef = db.collection("counters").doc("orders");
+      const counterSnap = await txn.get(counterRef);
+      const currentValue = counterSnap.exists
+        ? Number(counterSnap.data()?.value) || ORDER_NUMBER_START - 1
+        : ORDER_NUMBER_START - 1;
+      const nextNumber = currentValue + 1;
+
+      const newOrderRef = db.collection("orders").doc();
+      const orderDocWithNumber = { ...orderDoc, orderNumber: nextNumber };
+      txn.set(newOrderRef, orderDocWithNumber);
+      txn.set(counterRef, { value: nextNumber }, { merge: true });
+
+      if (lockRef) {
+        txn.set(lockRef, {
+          orderId: newOrderRef.id,
+          orderNumber: nextNumber,
+          transactionId: trimmedTransactionId,
+          userId: uid,
+          claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+
+      return { id: newOrderRef.id, orderNumber: nextNumber };
+    };
+
     let createdOrderId;
-    let isDuplicateAttempt = false;
+    let createdOrderNumber;
 
     if (trimmedTransactionId) {
       const txResult = await db.runTransaction(async (txn) => {
@@ -481,44 +511,42 @@ router.post("/create", async (req, res) => {
         const lockSnap = await txn.get(lockRef);
 
         if (lockSnap.exists) {
+          const lockData = lockSnap.data() || {};
           return {
             duplicate: true,
-            id: lockSnap.data()?.orderId || null,
+            id: lockData.orderId || null,
+            orderNumber: lockData.orderNumber ?? null,
           };
         }
 
-        const newOrderRef = db.collection("orders").doc();
-        txn.set(newOrderRef, orderDoc);
-        txn.set(lockRef, {
-          orderId: newOrderRef.id,
-          transactionId: trimmedTransactionId,
-          userId: uid,
-          claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        return { duplicate: false, id: newOrderRef.id };
+        const allocated = await allocateInTransaction(txn, lockRef);
+        return { duplicate: false, ...allocated };
       });
 
-      createdOrderId = txResult.id;
-      isDuplicateAttempt = txResult.duplicate;
-
-      if (isDuplicateAttempt) {
+      if (txResult.duplicate) {
         console.warn(
           `[ORDERS] Duplicate create attempt for transactionId=${trimmedTransactionId} ` +
-          `by user=${uid}. Returning existing order=${createdOrderId}.`
+          `by user=${uid}. Returning existing order=${txResult.id} (#${txResult.orderNumber}).`
         );
         return res.status(200).json({
-          id: createdOrderId,
+          id: txResult.id,
+          orderNumber: txResult.orderNumber,
           message: "Order already exists for this transaction",
           duplicate: true,
         });
       }
+
+      createdOrderId = txResult.id;
+      createdOrderNumber = txResult.orderNumber;
     } else {
-      // No transactionId provided (rare path - admin/internal cases). Fall back to a
-      // plain add(); idempotency is impossible without a stable key, but this matches
-      // pre-existing behavior for those cases.
-      const docRef = await db.collection("orders").add(orderDoc);
-      createdOrderId = docRef.id;
+      // No transactionId provided (rare path - admin/internal cases). We still want a
+      // numeric orderNumber, so run a transaction over the counter alone. No lock doc
+      // because there's no idempotency key to dedupe by.
+      const txResult = await db.runTransaction(async (txn) => {
+        return allocateInTransaction(txn, null);
+      });
+      createdOrderId = txResult.id;
+      createdOrderNumber = txResult.orderNumber;
     }
 
     // Mark coupon as used if it was applied. Done outside the transaction because
@@ -534,6 +562,7 @@ router.post("/create", async (req, res) => {
 
     res.status(201).json({
       id: createdOrderId,
+      orderNumber: createdOrderNumber,
       message: "Order created successfully"
     });
   } catch (error) {

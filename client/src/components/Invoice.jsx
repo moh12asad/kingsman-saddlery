@@ -352,7 +352,7 @@ export default function Invoice({ order, onClose }) {
           <div className="invoice-meta">
             <div>
               <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Invoice #</div>
-              <div style={{ color: "#6b7280" }}>{order.id.substring(0, 8).toUpperCase()}</div>
+              <div style={{ color: "#6b7280" }}>{order.orderNumber ?? order.id.substring(0, 8).toUpperCase()}</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Date</div>
