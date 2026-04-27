@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { FaSpinner, FaLock } from "react-icons/fa";
+import { extractTranzilaTransactionId } from "../utils/tranzila";
 import "../styles/tranzila-payment.css";
 
 /**
@@ -32,6 +33,11 @@ export default function TranzilaPayment({
   const { t } = useTranslation();
   const iframeRef = useRef(null);
   const paymentDataSentRef = useRef(false); // Track if payment data has been sent to prevent duplicate calls
+  // Tranzila can deliver "payment success" to the parent through MULTIPLE channels for the
+  // same transaction (iframe onLoad URL check, postMessage from PaymentSuccess page, and
+  // direct Tranzila postMessage). Without this guard we would call onSuccess (and therefore
+  // create the order) more than once per payment, producing duplicate orders.
+  const successCalledRef = useRef(false);
   const [loading, setLoading] = useState(true);
 
   // Get Tranzila terminal name from environment variable
@@ -92,7 +98,28 @@ export default function TranzilaPayment({
   // Reset payment data sent flag when iframe URL changes (new payment)
   useEffect(() => {
     paymentDataSentRef.current = false;
+    successCalledRef.current = false;
   }, [iframeUrl]);
+
+  // Idempotent wrapper around onSuccess. Multiple Tranzila signals can fire for the
+  // same successful payment (iframe URL check + postMessage from /payment/success +
+  // direct Tranzila postMessage). We must invoke the parent's onSuccess at most once
+  // per payment, otherwise the parent creates one order per signal.
+  const fireSuccessOnce = useCallback(
+    (payload) => {
+      if (successCalledRef.current) {
+        console.log(
+          "[Tranzila] onSuccess already fired for this payment; ignoring duplicate trigger"
+        );
+        return;
+      }
+      successCalledRef.current = true;
+      if (onSuccess) {
+        onSuccess(payload);
+      }
+    },
+    [onSuccess]
+  );
 
   useEffect(() => {
     // Listen for messages from Tranzila iframe
@@ -112,18 +139,13 @@ export default function TranzilaPayment({
           setLoading(false);
           
           // CRITICAL: Only proceed if we have a valid transaction ID
-          // PaymentSuccess component should extract it from URL (TranzilaTK, RefNo, etc.)
+          // PaymentSuccess component already attempted extraction; if it failed, fall back to parsing the URL ourselves here.
           if (!data.transactionId) {
             console.warn("[Tranzila] payment_success_redirect: No transaction ID in message. URL:", data.url);
-            // Try to extract from URL if provided
             if (data.url) {
               try {
                 const urlObj = new URL(data.url);
-                const params = urlObj.searchParams;
-                const txId = params.get("transactionId") || 
-                           params.get("RefNo") || 
-                           params.get("TransactionId") ||
-                           params.get("TranzilaTK");
+                const txId = extractTranzilaTransactionId(urlObj.searchParams);
                 if (txId) {
                   console.log("[Tranzila] Extracted transaction ID from URL:", txId);
                   data.transactionId = txId;
@@ -144,7 +166,7 @@ export default function TranzilaPayment({
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
-            onSuccess({
+            fireSuccessOnce({
               transactionId: data.transactionId,
               amount: data.amount ? parseFloat(data.amount) : amount,
               currency: currency,
@@ -187,8 +209,9 @@ export default function TranzilaPayment({
 
         // Handle different message types from Tranzila
         if (data.type === "payment_success" || data.status === "success" || data.Response === "000") {
-          // Tranzila may send transaction ID as transactionId, TransactionId, RefNo, or TranzilaTK
-          const txId = data.transactionId || data.TransactionId || data.RefNo || data.TranzilaTK || null;
+          // Build a per-transaction unique identifier. TranzilaTK is a CARD TOKEN
+          // (same per card across transactions) and must NOT be used alone.
+          const txId = extractTranzilaTransactionId(data);
           setLoading(false);
           
           // CRITICAL: Only call onSuccess if we have a valid transaction ID
@@ -201,7 +224,7 @@ export default function TranzilaPayment({
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
-            onSuccess({
+            fireSuccessOnce({
               transactionId: txId,
               amount: amount,
               currency: currency,
@@ -217,8 +240,7 @@ export default function TranzilaPayment({
           
         } else if (data.type === "payment_failed" || data.status === "failed" || data.Response !== "000") {
           const errorMsg = data.message || data.ErrorMessage || t("payment.failed");
-          // Tranzila may send transaction ID as transactionId, TransactionId, RefNo, or TranzilaTK
-          const txId = data.transactionId || data.TransactionId || data.RefNo || data.TranzilaTK || null;
+          const txId = extractTranzilaTransactionId(data);
           setLoading(false);
           
           console.log("[Tranzila] Payment failed - received failure message from Tranzila");
@@ -272,7 +294,7 @@ export default function TranzilaPayment({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [amount, currency, onSuccess, onError, onCancel, t]);
+  }, [amount, currency, onSuccess, onError, onCancel, t, fireSuccessOnce]);
 
   // Send payment data to iframe when it's ready (only once)
   useEffect(() => {
@@ -338,11 +360,7 @@ export default function TranzilaPayment({
           try {
             const urlObj = new URL(iframeUrl);
             const params = urlObj.searchParams;
-            // Tranzila sends transaction ID as TranzilaTK, RefNo, TransactionId, or transactionId
-            txId = params.get("transactionId") || 
-                   params.get("RefNo") || 
-                   params.get("TransactionId") ||
-                   params.get("TranzilaTK");
+            txId = extractTranzilaTransactionId(params);
             amt = params.get("amount") || params.get("sum");
             ordId = params.get("orderId");
           } catch (urlErr) {
@@ -368,7 +386,7 @@ export default function TranzilaPayment({
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
             console.log("[Tranzila] Iframe URL check: Found transaction ID:", txId);
-            onSuccess({
+            fireSuccessOnce({
               transactionId: txId,
               amount: amt ? parseFloat(amt) : amount,
               currency: currency,

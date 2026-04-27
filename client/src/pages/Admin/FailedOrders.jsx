@@ -258,7 +258,7 @@ export default function FailedOrders() {
                   <div className="flex items-center gap-3 mb-2">
                     <FaExclamationTriangle className="text-red-500" />
                     <h3 className="text-lg font-semibold">
-                      {t("admin.failedOrders.order")} #{order.id.slice(0, 8)}
+                      {t("admin.failedOrders.order")} #{order.orderNumber ?? order.id.slice(0, 8)}
                     </h3>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadgeClass(order.status)}`}>
                       {STATUS_OPTIONS[order.status] || order.status}

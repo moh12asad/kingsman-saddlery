@@ -170,7 +170,9 @@ export default function AdminOrders() {
                     <tr key={order.id}>
                       <td>
                         <div className="font-mono text-xs">
-                          {order.id.substring(0, 8)}...
+                          {order.orderNumber != null
+                            ? `#${order.orderNumber}`
+                            : `${order.id.substring(0, 8)}...`}
                         </div>
                       </td>
                       <td>

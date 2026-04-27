@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../context/CurrencyContext";
 import { FaCheckCircle, FaShoppingBag, FaHome, FaFileInvoice } from "react-icons/fa";
+import { extractTranzilaTransactionId } from "../utils/tranzila";
 import "../styles/payment-result.css";
 
 export default function PaymentSuccess() {
@@ -14,20 +15,23 @@ export default function PaymentSuccess() {
   const [transactionId, setTransactionId] = useState(null);
   const [amount, setAmount] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [orderNumber, setOrderNumber] = useState(null);
 
   useEffect(() => {
-    // Get parameters from URL (Tranzila redirects with these)
-    // Tranzila sends transaction ID as TranzilaTK, RefNo, TransactionId, or transactionId
-    const txId = searchParams.get("transactionId") || 
-                 searchParams.get("RefNo") || 
-                 searchParams.get("TransactionId") ||
-                 searchParams.get("TranzilaTK");
+    // Build a per-transaction unique identifier from the Tranzila redirect params.
+    // TranzilaTK alone is a CARD TOKEN (same per card across transactions); using
+    // it as the transactionId would cause the server's idempotency lock to treat
+    // a second legitimate payment with the same card as a duplicate of the first.
+    // See client/src/utils/tranzila.js for details.
+    const txId = extractTranzilaTransactionId(searchParams);
     const amt = searchParams.get("amount") || searchParams.get("sum");
     const ordId = searchParams.get("orderId");
+    const ordNum = searchParams.get("orderNumber");
 
     if (txId) setTransactionId(txId);
     if (amt) setAmount(parseFloat(amt));
     if (ordId) setOrderId(ordId);
+    if (ordNum) setOrderNumber(ordNum);
 
     // Notify parent window if we're inside an iframe (from Tranzila redirect)
     // This allows the checkout page to redirect the entire page instead of just the iframe
@@ -37,6 +41,7 @@ export default function PaymentSuccess() {
         transactionId: txId,
         amount: amt,
         orderId: ordId,
+        orderNumber: ordNum,
         url: window.location.href
       };
       window.parent.postMessage(message, "*");
@@ -82,7 +87,7 @@ export default function PaymentSuccess() {
                   {t("paymentSuccess.orderCreated") || "Your order has been created and you will receive a confirmation email shortly."}
                 </p>
                 <p className="payment-result-order-id">
-                  {t("paymentSuccess.orderNumber") || "Order Number"}: <strong>{orderId}</strong>
+                  {t("paymentSuccess.orderNumber") || "Order Number"}: <strong>#{orderNumber ?? orderId?.substring(0, 8)}</strong>
                 </p>
               </div>
             )}

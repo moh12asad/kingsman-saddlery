@@ -3,6 +3,8 @@ import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
 import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../utils/discount.js";
+import { deriveOrderIdempotencyKey } from "../utils/tranzila.js";
+import { DEPLOY_FINGERPRINT } from "../lib/version.js";
 import { validateAndGetCouponDiscount, markCouponAsUsed } from "./coupons.admin.js";
 
 const db = admin.firestore();
@@ -66,6 +68,14 @@ router.use(verifyFirebaseToken);
 
 // Create order (for regular users)
 router.post("/create", async (req, res) => {
+  // Deployment fingerprint header. Lets us verify in DevTools (or in any HAR) that
+  // the request actually executed the current code (atomic idempotency + numeric
+  // orderNumber + server-side per-tx key derivation that refuses bare TranzilaTK as
+  // a lock key) vs. an older deployed binary. If the response is missing this header,
+  // the running server is on pre-fingerprint code regardless of what the dashboard
+  // claims. The value is sourced from a single shared constant so it cannot drift
+  // away from the GET / `fingerprint` field on the next bump.
+  res.setHeader("X-Orders-Create-Version", DEPLOY_FINGERPRINT);
   try {
     const { uid, email, displayName } = req.user;
     const {
@@ -78,6 +88,7 @@ router.post("/create", async (req, res) => {
       tax,
       total,
       transactionId,
+      tranzilaResponse,
       couponCode,
       metadata = {},
     } = req.body;
@@ -442,19 +453,157 @@ router.post("/create", async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Add payment transaction details if provided
-    if (transactionId) {
-      orderDoc.transactionId = transactionId;
+    // Derive the canonical per-transaction idempotency key. We DO NOT trust the
+    // client's `transactionId` blindly: a stale or buggy bundle can send the bare
+    // TranzilaTK (a CARD TOKEN that is identical for every payment with the same
+    // card), which would make the idempotency lock collide across unrelated
+    // payments. The helper prefers `tranzilaResponse.url` (always carries a
+    // per-transaction ConfirmationCode/index/Tempref from Shva and Tranzila),
+    // refuses to use a bare TranzilaTK, and only falls back to the client's
+    // `transactionId` when it is clearly transaction-unique.
+    const derivedTransactionId = deriveOrderIdempotencyKey(req.body);
+
+    if (transactionId && derivedTransactionId && derivedTransactionId !== transactionId) {
+      console.warn(
+        `[ORDERS] Client-supplied transactionId="${transactionId}" replaced with ` +
+          `derived="${derivedTransactionId}" for idempotency. ` +
+          `Likely an old/cached bundle that sent a bare TranzilaTK.`
+      );
+    } else if (transactionId && !derivedTransactionId) {
+      console.warn(
+        `[ORDERS] Refusing client transactionId="${transactionId}": looks like a bare ` +
+          `TranzilaTK and no per-transaction fields were available to compose a safe ` +
+          `idempotency key. Will allocate a new order without an idempotency lock.`
+      );
     }
 
-    // Merge metadata (includes payment method, transaction ID, etc.)
-    if (Object.keys(metadata).length > 0) {
-      orderDoc.metadata = metadata;
+    // Persist the derived key so future lookups (admin, my-orders, refunds) all
+    // reference the canonical, transaction-unique value instead of the original
+    // (possibly bare-TK) string the client sent.
+    const transactionIdForRecord = derivedTransactionId || null;
+    if (transactionIdForRecord) {
+      orderDoc.transactionId = transactionIdForRecord;
     }
 
-    const docRef = await db.collection("orders").add(orderDoc);
+    // Merge metadata (includes payment method, transaction ID, etc.). We also
+    // record the raw client-supplied id and the canonical derived id so that
+    // discrepancies (e.g. older clients still sending bare TKs) are debuggable
+    // post hoc.
+    const enrichedMetadata = {
+      ...metadata,
+      ...(transactionIdForRecord
+        ? { transactionId: transactionIdForRecord }
+        : {}),
+      ...(transactionId && transactionId !== transactionIdForRecord
+        ? { rawClientTransactionId: transactionId }
+        : {}),
+    };
+    if (Object.keys(enrichedMetadata).length > 0) {
+      orderDoc.metadata = enrichedMetadata;
+    }
 
-    // Mark coupon as used if it was applied
+    // IDEMPOTENCY + ORDER NUMBER ALLOCATION
+    //
+    // Atomic check-and-claim using a Firestore transaction over a deterministic-ID
+    // lock document keyed by the derived transactionId. This is the LAST line of
+    // defense against duplicate orders; the client has its own dedup guards in
+    // TranzilaPayment + OrderConfirmation, but if they ever fail (browser
+    // auto-retry, future regression, etc.) the server must still be atomic.
+    //
+    // The same transaction also allocates a sequential, user-friendly numeric
+    // orderNumber from a single counter document at counters/orders. Doing this inside
+    // the transaction guarantees no two orders ever get the same number: Firestore's
+    // optimistic concurrency forces conflicting transactions to retry against the
+    // updated counter. A duplicate idempotent attempt does NOT consume a new number;
+    // it returns the orderNumber that was already stored on the lock document.
+    //
+    // ORDER_NUMBER_START - 1 is the seed value: first allocated number is
+    // ORDER_NUMBER_START.
+    const ORDER_NUMBER_START = 1000;
+
+    const trimmedTransactionId =
+      typeof transactionIdForRecord === "string"
+        ? transactionIdForRecord.trim()
+        : "";
+
+    const allocateInTransaction = async (txn, lockRef) => {
+      const counterRef = db.collection("counters").doc("orders");
+      const counterSnap = await txn.get(counterRef);
+      const currentValue = counterSnap.exists
+        ? Number(counterSnap.data()?.value) || ORDER_NUMBER_START - 1
+        : ORDER_NUMBER_START - 1;
+      const nextNumber = currentValue + 1;
+
+      const newOrderRef = db.collection("orders").doc();
+      const orderDocWithNumber = { ...orderDoc, orderNumber: nextNumber };
+      txn.set(newOrderRef, orderDocWithNumber);
+      txn.set(counterRef, { value: nextNumber }, { merge: true });
+
+      if (lockRef) {
+        txn.set(lockRef, {
+          orderId: newOrderRef.id,
+          orderNumber: nextNumber,
+          transactionId: trimmedTransactionId,
+          userId: uid,
+          claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+
+      return { id: newOrderRef.id, orderNumber: nextNumber };
+    };
+
+    let createdOrderId;
+    let createdOrderNumber;
+
+    if (trimmedTransactionId) {
+      const txResult = await db.runTransaction(async (txn) => {
+        const lockRef = db
+          .collection("orders_idempotency")
+          .doc(trimmedTransactionId);
+        const lockSnap = await txn.get(lockRef);
+
+        if (lockSnap.exists) {
+          const lockData = lockSnap.data() || {};
+          return {
+            duplicate: true,
+            id: lockData.orderId || null,
+            orderNumber: lockData.orderNumber ?? null,
+          };
+        }
+
+        const allocated = await allocateInTransaction(txn, lockRef);
+        return { duplicate: false, ...allocated };
+      });
+
+      if (txResult.duplicate) {
+        console.warn(
+          `[ORDERS] Duplicate create attempt for transactionId=${trimmedTransactionId} ` +
+          `by user=${uid}. Returning existing order=${txResult.id} (#${txResult.orderNumber}).`
+        );
+        return res.status(200).json({
+          id: txResult.id,
+          orderNumber: txResult.orderNumber,
+          message: "Order already exists for this transaction",
+          duplicate: true,
+        });
+      }
+
+      createdOrderId = txResult.id;
+      createdOrderNumber = txResult.orderNumber;
+    } else {
+      // No transactionId provided (rare path - admin/internal cases). We still want a
+      // numeric orderNumber, so run a transaction over the counter alone. No lock doc
+      // because there's no idempotency key to dedupe by.
+      const txResult = await db.runTransaction(async (txn) => {
+        return allocateInTransaction(txn, null);
+      });
+      createdOrderId = txResult.id;
+      createdOrderNumber = txResult.orderNumber;
+    }
+
+    // Mark coupon as used if it was applied. Done outside the transaction because
+    // markCouponAsUsed performs its own read-modify-write and we don't want to fail
+    // the order if the coupon write fails (best-effort, matches prior behavior).
     if (couponCode && discountType === "coupon" && couponId) {
       const markResult = await markCouponAsUsed(couponCode.trim());
       if (!markResult.success) {
@@ -463,8 +612,9 @@ router.post("/create", async (req, res) => {
       }
     }
 
-    res.status(201).json({ 
-      id: docRef.id,
+    res.status(201).json({
+      id: createdOrderId,
+      orderNumber: createdOrderNumber,
       message: "Order created successfully"
     });
   } catch (error) {
@@ -872,15 +1022,15 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     const orderTax = typeof tax === "number" ? tax : 0;
     const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
 
-    const docRef = await db.collection("orders").add({
+    const adminOrderDoc = {
       customerId,
       customerName,
       customerEmail,
       items: normalizedItems,
       status,
       notes,
-      subtotal: orderSubtotal, // Subtotal after discount
-      subtotalBeforeDiscount: orderSubtotalBeforeDiscount, // Original subtotal before discount
+      subtotal: orderSubtotal,
+      subtotalBeforeDiscount: orderSubtotalBeforeDiscount,
       discount: discountInfo,
       tax: orderTax,
       total: orderTotal,
@@ -888,6 +1038,24 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       createdBy: req.user.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    // Allocate a sequential orderNumber from the same counter used by the customer
+    // /create route so all orders share a single, gapless sequence.
+    const ORDER_NUMBER_START = 1000;
+    const { id: adminOrderId, orderNumber: adminOrderNumber } = await db.runTransaction(async (txn) => {
+      const counterRef = db.collection("counters").doc("orders");
+      const counterSnap = await txn.get(counterRef);
+      const currentValue = counterSnap.exists
+        ? Number(counterSnap.data()?.value) || ORDER_NUMBER_START - 1
+        : ORDER_NUMBER_START - 1;
+      const nextNumber = currentValue + 1;
+
+      const newOrderRef = db.collection("orders").doc();
+      txn.set(newOrderRef, { ...adminOrderDoc, orderNumber: nextNumber });
+      txn.set(counterRef, { value: nextNumber }, { merge: true });
+
+      return { id: newOrderRef.id, orderNumber: nextNumber };
     });
 
     // Mark coupon as used if it was applied
@@ -895,11 +1063,10 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       const markResult = await markCouponAsUsed(couponCode.trim());
       if (!markResult.success) {
         console.error(`Failed to mark coupon as used: ${markResult.error}`);
-        // Don't fail the order creation, but log the error
       }
     }
 
-    res.status(201).json({ id: docRef.id });
+    res.status(201).json({ id: adminOrderId, orderNumber: adminOrderNumber });
   } catch (error) {
     console.error("orders.create error", error);
     res.status(500).json({ error: "Failed to create order" });

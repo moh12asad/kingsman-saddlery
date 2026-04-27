@@ -5,6 +5,7 @@ import morgan from "morgan";
 import * as dotenv from "dotenv";
 import "./lib/firebaseAdmin.js";
 import admin from "firebase-admin";
+import { DEPLOY_FINGERPRINT } from "./lib/version.js";
 
 import usersAdmin from "./routes/users.admin.basic.js";
 import productsAdmin from "./routes/products.admin.basic.js";
@@ -27,7 +28,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.get("/", (_req, res) => res.json({ ok: true, service: "kingsman API" })); // 200 instead of 404
+app.get("/", (_req, res) =>
+  res.json({
+    ok: true,
+    service: "kingsman API",
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "unknown",
+    branch: process.env.RAILWAY_GIT_BRANCH || "unknown",
+    bootedAt: globalThis.__BOOT_TS__ || null,
+    fingerprint: DEPLOY_FINGERPRINT,
+  })
+); // 200 instead of 404
 
 
 // ---------- Middleware ----------
@@ -187,8 +197,23 @@ app.use("/api/coupons", couponsAdmin);
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 
 // ---------- Start ----------
+// Deployment fingerprint - prints once on boot. Lets us read Railway logs and confirm
+// exactly which commit + build is actually serving traffic. Useful when the dashboard
+// claims one commit is "active" but responses suggest otherwise (caches, stale replicas).
+const DEPLOY_COMMIT =
+  process.env.RAILWAY_GIT_COMMIT_SHA ||
+  process.env.GIT_COMMIT_SHA ||
+  process.env.SOURCE_COMMIT ||
+  "unknown";
+const DEPLOY_BRANCH =
+  process.env.RAILWAY_GIT_BRANCH || process.env.GIT_BRANCH || "unknown";
+const BOOT_TS = new Date().toISOString();
+
 app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`);
+  console.log(
+    `[STARTUP] commit=${DEPLOY_COMMIT} branch=${DEPLOY_BRANCH} bootedAt=${BOOT_TS}`
+  );
 });
 
 export default app;
