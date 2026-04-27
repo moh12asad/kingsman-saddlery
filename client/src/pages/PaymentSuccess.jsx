@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../context/CurrencyContext";
 import { FaCheckCircle, FaShoppingBag, FaHome, FaFileInvoice } from "react-icons/fa";
+import { extractTranzilaTransactionId } from "../utils/tranzila";
 import "../styles/payment-result.css";
 
 export default function PaymentSuccess() {
@@ -17,12 +18,12 @@ export default function PaymentSuccess() {
   const [orderNumber, setOrderNumber] = useState(null);
 
   useEffect(() => {
-    // Get parameters from URL (Tranzila redirects with these)
-    // Tranzila sends transaction ID as TranzilaTK, RefNo, TransactionId, or transactionId
-    const txId = searchParams.get("transactionId") || 
-                 searchParams.get("RefNo") || 
-                 searchParams.get("TransactionId") ||
-                 searchParams.get("TranzilaTK");
+    // Build a per-transaction unique identifier from the Tranzila redirect params.
+    // TranzilaTK alone is a CARD TOKEN (same per card across transactions); using
+    // it as the transactionId would cause the server's idempotency lock to treat
+    // a second legitimate payment with the same card as a duplicate of the first.
+    // See client/src/utils/tranzila.js for details.
+    const txId = extractTranzilaTransactionId(searchParams);
     const amt = searchParams.get("amount") || searchParams.get("sum");
     const ordId = searchParams.get("orderId");
     const ordNum = searchParams.get("orderNumber");
