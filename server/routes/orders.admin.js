@@ -975,15 +975,15 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
     const orderTax = typeof tax === "number" ? tax : 0;
     const orderTotal = typeof total === "number" ? total : orderSubtotal + orderTax;
 
-    const docRef = await db.collection("orders").add({
+    const adminOrderDoc = {
       customerId,
       customerName,
       customerEmail,
       items: normalizedItems,
       status,
       notes,
-      subtotal: orderSubtotal, // Subtotal after discount
-      subtotalBeforeDiscount: orderSubtotalBeforeDiscount, // Original subtotal before discount
+      subtotal: orderSubtotal,
+      subtotalBeforeDiscount: orderSubtotalBeforeDiscount,
       discount: discountInfo,
       tax: orderTax,
       total: orderTotal,
@@ -991,6 +991,24 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       createdBy: req.user.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    // Allocate a sequential orderNumber from the same counter used by the customer
+    // /create route so all orders share a single, gapless sequence.
+    const ORDER_NUMBER_START = 1000;
+    const { id: adminOrderId, orderNumber: adminOrderNumber } = await db.runTransaction(async (txn) => {
+      const counterRef = db.collection("counters").doc("orders");
+      const counterSnap = await txn.get(counterRef);
+      const currentValue = counterSnap.exists
+        ? Number(counterSnap.data()?.value) || ORDER_NUMBER_START - 1
+        : ORDER_NUMBER_START - 1;
+      const nextNumber = currentValue + 1;
+
+      const newOrderRef = db.collection("orders").doc();
+      txn.set(newOrderRef, { ...adminOrderDoc, orderNumber: nextNumber });
+      txn.set(counterRef, { value: nextNumber }, { merge: true });
+
+      return { id: newOrderRef.id, orderNumber: nextNumber };
     });
 
     // Mark coupon as used if it was applied
@@ -998,11 +1016,10 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       const markResult = await markCouponAsUsed(couponCode.trim());
       if (!markResult.success) {
         console.error(`Failed to mark coupon as used: ${markResult.error}`);
-        // Don't fail the order creation, but log the error
       }
     }
 
-    res.status(201).json({ id: docRef.id });
+    res.status(201).json({ id: adminOrderId, orderNumber: adminOrderNumber });
   } catch (error) {
     console.error("orders.create error", error);
     res.status(500).json({ error: "Failed to create order" });

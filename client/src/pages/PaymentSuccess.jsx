@@ -86,7 +86,7 @@ export default function PaymentSuccess() {
                   {t("paymentSuccess.orderCreated") || "Your order has been created and you will receive a confirmation email shortly."}
                 </p>
                 <p className="payment-result-order-id">
-                  {t("paymentSuccess.orderNumber") || "Order Number"}: <strong>#{orderNumber ?? orderId}</strong>
+                  {t("paymentSuccess.orderNumber") || "Order Number"}: <strong>#{orderNumber ?? orderId?.substring(0, 8)}</strong>
                 </p>
               </div>
             )}
