@@ -1061,6 +1061,11 @@ export default function OrderConfirmation() {
             ...orderData,
             status: "new",
             transactionId: finalTransactionId,
+            // Forward the raw Tranzila response (in particular its `url`)
+            // so the server can independently derive a per-transaction
+            // idempotency key, even if `finalTransactionId` happens to be
+            // a bare TranzilaTK card token (which is not transaction-unique).
+            tranzilaResponse: paymentResult?.response || null,
             couponCode: appliedCoupon ? appliedCoupon.code : null,
             metadata: {
               paymentMethod: actualPaymentMethod,

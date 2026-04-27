@@ -10,7 +10,7 @@
  *
  * Per-transaction unique fields, in priority order:
  *   - transactionId / RefNo / TransactionId  (explicit fields, if upstream
- *     code already extracted one)
+ *     code already extracted one - assumed already validated)
  *   - ConfirmationCode  (bank approval code from Shva, unique per transaction)
  *   - index             (Tranzila's per-transaction sequence number)
  *   - Tempref           (Tranzila's temporary reference)
@@ -20,6 +20,14 @@
  *   - same card + same transaction        -> same key  (idempotent retries work)
  *   - same card + different transaction   -> different key (new order created)
  *   - different card                      -> different key (new order created)
+ *
+ * If ONLY TranzilaTK is available (no per-transaction field), we REFUSE to
+ * return it and return null instead. The caller MUST treat this as "not
+ * enough information yet - wait for a later signal that includes per-tx data
+ * (typically the iframe redirect URL, which always carries ConfirmationCode,
+ * index, and Tempref)". Returning the bare TranzilaTK was the original bug:
+ * it created idempotency locks keyed on the card token, so every later order
+ * paid with the same card was incorrectly reported as a duplicate.
  *
  * @param {URLSearchParams|Object|null|undefined} params
  *   Either a URLSearchParams instance or a plain object map of param names
@@ -35,7 +43,11 @@ export function extractTranzilaTransactionId(params) {
   };
 
   const explicit = get("transactionId") || get("RefNo") || get("TransactionId");
-  if (explicit) return explicit;
+  // Only trust an explicit transactionId if it doesn't look like a bare
+  // TranzilaTK (which would mean an upstream extractor fell back unsafely).
+  if (explicit && !looksLikeBareTranzilaTk(explicit, get("TranzilaTK"))) {
+    return explicit;
+  }
 
   const confirmationCode = get("ConfirmationCode");
   const index = get("index");
@@ -53,12 +65,23 @@ export function extractTranzilaTransactionId(params) {
   if (tk) {
     console.warn(
       "[Tranzila] No per-transaction identifier (ConfirmationCode/index/Tempref) " +
-        "was returned. Falling back to TranzilaTK alone, which is a CARD TOKEN " +
-        "and is identical for repeated payments with the same card. The server " +
-        "idempotency lock may incorrectly block legitimate subsequent orders."
+        "was returned. Refusing to use TranzilaTK alone as a transaction ID, " +
+        "since it is a CARD TOKEN that is identical for repeated payments with " +
+        "the same card. Caller should wait for a richer signal (e.g. the iframe " +
+        "redirect URL)."
     );
-    return tk;
+    return null;
   }
 
   return null;
+}
+
+/**
+ * Returns true if `candidate` is the same string as `tk` (the bare
+ * TranzilaTK), which means an upstream extractor returned a bare card token
+ * masquerading as a transaction ID. We must not trust this.
+ */
+function looksLikeBareTranzilaTk(candidate, tk) {
+  if (!candidate || !tk) return false;
+  return candidate === tk;
 }

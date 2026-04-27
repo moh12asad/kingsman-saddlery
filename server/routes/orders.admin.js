@@ -3,6 +3,8 @@ import admin from "firebase-admin";
 import { requireRole } from "../middlewares/roles.js";
 import { verifyFirebaseToken } from "../middlewares/auth.js";
 import { checkNewUserDiscountEligibility, calculateDiscountAmount } from "../utils/discount.js";
+import { deriveOrderIdempotencyKey } from "../utils/tranzila.js";
+import { DEPLOY_FINGERPRINT } from "../lib/version.js";
 import { validateAndGetCouponDiscount, markCouponAsUsed } from "./coupons.admin.js";
 
 const db = admin.firestore();
@@ -67,10 +69,13 @@ router.use(verifyFirebaseToken);
 // Create order (for regular users)
 router.post("/create", async (req, res) => {
   // Deployment fingerprint header. Lets us verify in DevTools (or in any HAR) that
-  // the request actually executed the v2 code (atomic idempotency + numeric orderNumber)
-  // vs. an older deployed binary. If the response is missing this header, the running
-  // server is on pre-da06df3 code regardless of what the dashboard claims.
-  res.setHeader("X-Orders-Create-Version", "v2-orderNumber-2026-04-27");
+  // the request actually executed the current code (atomic idempotency + numeric
+  // orderNumber + server-side per-tx key derivation that refuses bare TranzilaTK as
+  // a lock key) vs. an older deployed binary. If the response is missing this header,
+  // the running server is on pre-fingerprint code regardless of what the dashboard
+  // claims. The value is sourced from a single shared constant so it cannot drift
+  // away from the GET / `fingerprint` field on the next bump.
+  res.setHeader("X-Orders-Create-Version", DEPLOY_FINGERPRINT);
   try {
     const { uid, email, displayName } = req.user;
     const {
@@ -83,6 +88,7 @@ router.post("/create", async (req, res) => {
       tax,
       total,
       transactionId,
+      tranzilaResponse,
       couponCode,
       metadata = {},
     } = req.body;
@@ -447,23 +453,62 @@ router.post("/create", async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Add payment transaction details if provided
-    if (transactionId) {
-      orderDoc.transactionId = transactionId;
+    // Derive the canonical per-transaction idempotency key. We DO NOT trust the
+    // client's `transactionId` blindly: a stale or buggy bundle can send the bare
+    // TranzilaTK (a CARD TOKEN that is identical for every payment with the same
+    // card), which would make the idempotency lock collide across unrelated
+    // payments. The helper prefers `tranzilaResponse.url` (always carries a
+    // per-transaction ConfirmationCode/index/Tempref from Shva and Tranzila),
+    // refuses to use a bare TranzilaTK, and only falls back to the client's
+    // `transactionId` when it is clearly transaction-unique.
+    const derivedTransactionId = deriveOrderIdempotencyKey(req.body);
+
+    if (transactionId && derivedTransactionId && derivedTransactionId !== transactionId) {
+      console.warn(
+        `[ORDERS] Client-supplied transactionId="${transactionId}" replaced with ` +
+          `derived="${derivedTransactionId}" for idempotency. ` +
+          `Likely an old/cached bundle that sent a bare TranzilaTK.`
+      );
+    } else if (transactionId && !derivedTransactionId) {
+      console.warn(
+        `[ORDERS] Refusing client transactionId="${transactionId}": looks like a bare ` +
+          `TranzilaTK and no per-transaction fields were available to compose a safe ` +
+          `idempotency key. Will allocate a new order without an idempotency lock.`
+      );
     }
 
-    // Merge metadata (includes payment method, transaction ID, etc.)
-    if (Object.keys(metadata).length > 0) {
-      orderDoc.metadata = metadata;
+    // Persist the derived key so future lookups (admin, my-orders, refunds) all
+    // reference the canonical, transaction-unique value instead of the original
+    // (possibly bare-TK) string the client sent.
+    const transactionIdForRecord = derivedTransactionId || null;
+    if (transactionIdForRecord) {
+      orderDoc.transactionId = transactionIdForRecord;
+    }
+
+    // Merge metadata (includes payment method, transaction ID, etc.). We also
+    // record the raw client-supplied id and the canonical derived id so that
+    // discrepancies (e.g. older clients still sending bare TKs) are debuggable
+    // post hoc.
+    const enrichedMetadata = {
+      ...metadata,
+      ...(transactionIdForRecord
+        ? { transactionId: transactionIdForRecord }
+        : {}),
+      ...(transactionId && transactionId !== transactionIdForRecord
+        ? { rawClientTransactionId: transactionId }
+        : {}),
+    };
+    if (Object.keys(enrichedMetadata).length > 0) {
+      orderDoc.metadata = enrichedMetadata;
     }
 
     // IDEMPOTENCY + ORDER NUMBER ALLOCATION
     //
     // Atomic check-and-claim using a Firestore transaction over a deterministic-ID
-    // lock document keyed by transactionId. This is the LAST line of defense against
-    // duplicate orders; the client has its own dedup guards in TranzilaPayment +
-    // OrderConfirmation, but if they ever fail (browser auto-retry, future regression,
-    // etc.) the server must still be atomic.
+    // lock document keyed by the derived transactionId. This is the LAST line of
+    // defense against duplicate orders; the client has its own dedup guards in
+    // TranzilaPayment + OrderConfirmation, but if they ever fail (browser
+    // auto-retry, future regression, etc.) the server must still be atomic.
     //
     // The same transaction also allocates a sequential, user-friendly numeric
     // orderNumber from a single counter document at counters/orders. Doing this inside
@@ -477,7 +522,9 @@ router.post("/create", async (req, res) => {
     const ORDER_NUMBER_START = 1000;
 
     const trimmedTransactionId =
-      typeof transactionId === "string" ? transactionId.trim() : "";
+      typeof transactionIdForRecord === "string"
+        ? transactionIdForRecord.trim()
+        : "";
 
     const allocateInTransaction = async (txn, lockRef) => {
       const counterRef = db.collection("counters").doc("orders");

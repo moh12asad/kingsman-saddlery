@@ -5,6 +5,7 @@ import morgan from "morgan";
 import * as dotenv from "dotenv";
 import "./lib/firebaseAdmin.js";
 import admin from "firebase-admin";
+import { DEPLOY_FINGERPRINT } from "./lib/version.js";
 
 import usersAdmin from "./routes/users.admin.basic.js";
 import productsAdmin from "./routes/products.admin.basic.js";
@@ -34,7 +35,7 @@ app.get("/", (_req, res) =>
     commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || "unknown",
     branch: process.env.RAILWAY_GIT_BRANCH || "unknown",
     bootedAt: globalThis.__BOOT_TS__ || null,
-    fingerprint: "v2-orderNumber-2026-04-27",
+    fingerprint: DEPLOY_FINGERPRINT,
   })
 ); // 200 instead of 404
 
