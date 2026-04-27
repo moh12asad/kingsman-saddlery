@@ -66,6 +66,11 @@ router.use(verifyFirebaseToken);
 
 // Create order (for regular users)
 router.post("/create", async (req, res) => {
+  // Deployment fingerprint header. Lets us verify in DevTools (or in any HAR) that
+  // the request actually executed the v2 code (atomic idempotency + numeric orderNumber)
+  // vs. an older deployed binary. If the response is missing this header, the running
+  // server is on pre-da06df3 code regardless of what the dashboard claims.
+  res.setHeader("X-Orders-Create-Version", "v2-orderNumber-2026-04-27");
   try {
     const { uid, email, displayName } = req.user;
     const {

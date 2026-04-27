@@ -187,8 +187,23 @@ app.use("/api/coupons", couponsAdmin);
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 
 // ---------- Start ----------
+// Deployment fingerprint - prints once on boot. Lets us read Railway logs and confirm
+// exactly which commit + build is actually serving traffic. Useful when the dashboard
+// claims one commit is "active" but responses suggest otherwise (caches, stale replicas).
+const DEPLOY_COMMIT =
+  process.env.RAILWAY_GIT_COMMIT_SHA ||
+  process.env.GIT_COMMIT_SHA ||
+  process.env.SOURCE_COMMIT ||
+  "unknown";
+const DEPLOY_BRANCH =
+  process.env.RAILWAY_GIT_BRANCH || process.env.GIT_BRANCH || "unknown";
+const BOOT_TS = new Date().toISOString();
+
 app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`);
+  console.log(
+    `[STARTUP] commit=${DEPLOY_COMMIT} branch=${DEPLOY_BRANCH} bootedAt=${BOOT_TS}`
+  );
 });
 
 export default app;
