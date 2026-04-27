@@ -102,6 +102,14 @@ export default function OrderConfirmation() {
   // If deliveryType changes while a request is in flight, we'll ignore the stale response
   const currentRequestRef = useRef(null);
 
+  // Synchronous guard to prevent handlePaymentSuccess from running twice for the same
+  // payment. The Tranzila iframe can deliver a "success" signal through several channels
+  // (iframe onLoad URL check, postMessage from /payment/success, direct Tranzila
+  // postMessage). Using paymentCompleted state alone is not enough, because two callbacks
+  // dispatched in the same tick both read paymentCompleted=false before React re-renders.
+  // A useRef gives us synchronous deduplication.
+  const orderCreationInFlightRef = useRef(false);
+
   // Calculate total with discount - defined before useEffect to avoid initialization error
   // couponOverride: optional coupon to use instead of appliedCoupon state (for immediate updates)
   // - undefined: use appliedCoupon from state
@@ -718,6 +726,17 @@ export default function OrderConfirmation() {
 
   // Handle Tranzila payment success
   async function handlePaymentSuccess(paymentResult) {
+    // Synchronous re-entry guard. TranzilaPayment also dedupes onSuccess, but we keep
+    // this as defense-in-depth: if any future change to the iframe wrapper allows a
+    // second onSuccess through, we still must not create two orders.
+    if (orderCreationInFlightRef.current) {
+      console.log(
+        "[Payment] handlePaymentSuccess already running for this payment; ignoring duplicate invocation"
+      );
+      return;
+    }
+    orderCreationInFlightRef.current = true;
+
     try {
       setPaymentCompleted(true);
       setSendingEmail(true);
@@ -728,6 +747,10 @@ export default function OrderConfirmation() {
       if (!token) {
         setError("You must be signed in to proceed");
         setSendingEmail(false);
+        // Release the in-flight guard so this branch matches every other early-return
+        // path. Without this, the ref stays latched for the rest of the session and any
+        // future retry of handlePaymentSuccess would be silently dropped at line 732.
+        orderCreationInFlightRef.current = false;
         return;
       }
 
@@ -807,6 +830,7 @@ export default function OrderConfirmation() {
         const errorMsg = "Invalid order total. Please refresh the page and try again.";
         setError(errorMsg);
         setPaymentCompleted(false);
+        orderCreationInFlightRef.current = false;
         setShowPayment(false);
         setSendingEmail(false);
         
@@ -930,6 +954,7 @@ export default function OrderConfirmation() {
         
         setError(`Payment succeeded but verification failed due to network error. Transaction ID: ${transactionId}. Please contact support.`);
         setPaymentCompleted(false);
+        orderCreationInFlightRef.current = false;
         setShowPayment(false);
         setSendingEmail(false);
         return;
@@ -969,6 +994,7 @@ export default function OrderConfirmation() {
         
         setError(`Payment succeeded but verification failed. Transaction ID: ${transactionId}. Please contact support.`);
         setPaymentCompleted(false);
+        orderCreationInFlightRef.current = false;
         setShowPayment(false);
         setSendingEmail(false);
         return;
@@ -1005,6 +1031,7 @@ export default function OrderConfirmation() {
         
         setError(paymentVerification.error || `Payment verification failed. Transaction ID: ${transactionId}. Please contact support.`);
         setPaymentCompleted(false);
+        orderCreationInFlightRef.current = false;
         setShowPayment(false); // Reset payment iframe so user can retry
         setSendingEmail(false);
         return;
@@ -1081,6 +1108,7 @@ export default function OrderConfirmation() {
           `Please contact support with this transaction ID.`
         );
         setPaymentCompleted(false);
+        orderCreationInFlightRef.current = false;
         setShowPayment(false);
         setSendingEmail(false);
         return;
@@ -1127,6 +1155,7 @@ export default function OrderConfirmation() {
           `Please contact support with this transaction ID.`
         );
         setPaymentCompleted(false);
+        orderCreationInFlightRef.current = false;
         setShowPayment(false);
         setSendingEmail(false);
         return;
@@ -1279,6 +1308,7 @@ export default function OrderConfirmation() {
       
       setError(err.message || "Failed to process payment. Please contact support with your transaction details.");
       setPaymentCompleted(false);
+      orderCreationInFlightRef.current = false;
       setShowPayment(false);
     } finally {
       setSendingEmail(false);

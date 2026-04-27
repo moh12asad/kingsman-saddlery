@@ -452,9 +452,78 @@ router.post("/create", async (req, res) => {
       orderDoc.metadata = metadata;
     }
 
-    const docRef = await db.collection("orders").add(orderDoc);
+    // IDEMPOTENCY: Atomic check-and-claim using a Firestore transaction over a
+    // deterministic-ID lock document keyed by transactionId. This is the LAST line of
+    // defense against duplicate orders; the client has its own dedup guards in
+    // TranzilaPayment + OrderConfirmation, but if they ever fail (browser auto-retry,
+    // future regression, etc.) the server must still be atomic.
+    //
+    // The previous query-then-insert approach was TOCTOU: two concurrent requests
+    // could both observe "no existing order" before either insert completed, producing
+    // two Firestore documents for the same payment.
+    //
+    // runTransaction() over a deterministic doc id gives us true atomicity. Firestore's
+    // optimistic concurrency forces one of two racing transactions to retry, and the
+    // retry observes the lock and returns the existing order id. Both writes (the order
+    // and the lock) commit atomically, so we never end up with a lock pointing at a
+    // missing order.
+    const trimmedTransactionId =
+      typeof transactionId === "string" ? transactionId.trim() : "";
 
-    // Mark coupon as used if it was applied
+    let createdOrderId;
+    let isDuplicateAttempt = false;
+
+    if (trimmedTransactionId) {
+      const txResult = await db.runTransaction(async (txn) => {
+        const lockRef = db
+          .collection("orders_idempotency")
+          .doc(trimmedTransactionId);
+        const lockSnap = await txn.get(lockRef);
+
+        if (lockSnap.exists) {
+          return {
+            duplicate: true,
+            id: lockSnap.data()?.orderId || null,
+          };
+        }
+
+        const newOrderRef = db.collection("orders").doc();
+        txn.set(newOrderRef, orderDoc);
+        txn.set(lockRef, {
+          orderId: newOrderRef.id,
+          transactionId: trimmedTransactionId,
+          userId: uid,
+          claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        return { duplicate: false, id: newOrderRef.id };
+      });
+
+      createdOrderId = txResult.id;
+      isDuplicateAttempt = txResult.duplicate;
+
+      if (isDuplicateAttempt) {
+        console.warn(
+          `[ORDERS] Duplicate create attempt for transactionId=${trimmedTransactionId} ` +
+          `by user=${uid}. Returning existing order=${createdOrderId}.`
+        );
+        return res.status(200).json({
+          id: createdOrderId,
+          message: "Order already exists for this transaction",
+          duplicate: true,
+        });
+      }
+    } else {
+      // No transactionId provided (rare path - admin/internal cases). Fall back to a
+      // plain add(); idempotency is impossible without a stable key, but this matches
+      // pre-existing behavior for those cases.
+      const docRef = await db.collection("orders").add(orderDoc);
+      createdOrderId = docRef.id;
+    }
+
+    // Mark coupon as used if it was applied. Done outside the transaction because
+    // markCouponAsUsed performs its own read-modify-write and we don't want to fail
+    // the order if the coupon write fails (best-effort, matches prior behavior).
     if (couponCode && discountType === "coupon" && couponId) {
       const markResult = await markCouponAsUsed(couponCode.trim());
       if (!markResult.success) {
@@ -463,8 +532,8 @@ router.post("/create", async (req, res) => {
       }
     }
 
-    res.status(201).json({ 
-      id: docRef.id,
+    res.status(201).json({
+      id: createdOrderId,
       message: "Order created successfully"
     });
   } catch (error) {

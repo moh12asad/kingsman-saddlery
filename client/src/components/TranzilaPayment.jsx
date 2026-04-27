@@ -32,6 +32,11 @@ export default function TranzilaPayment({
   const { t } = useTranslation();
   const iframeRef = useRef(null);
   const paymentDataSentRef = useRef(false); // Track if payment data has been sent to prevent duplicate calls
+  // Tranzila can deliver "payment success" to the parent through MULTIPLE channels for the
+  // same transaction (iframe onLoad URL check, postMessage from PaymentSuccess page, and
+  // direct Tranzila postMessage). Without this guard we would call onSuccess (and therefore
+  // create the order) more than once per payment, producing duplicate orders.
+  const successCalledRef = useRef(false);
   const [loading, setLoading] = useState(true);
 
   // Get Tranzila terminal name from environment variable
@@ -92,7 +97,28 @@ export default function TranzilaPayment({
   // Reset payment data sent flag when iframe URL changes (new payment)
   useEffect(() => {
     paymentDataSentRef.current = false;
+    successCalledRef.current = false;
   }, [iframeUrl]);
+
+  // Idempotent wrapper around onSuccess. Multiple Tranzila signals can fire for the
+  // same successful payment (iframe URL check + postMessage from /payment/success +
+  // direct Tranzila postMessage). We must invoke the parent's onSuccess at most once
+  // per payment, otherwise the parent creates one order per signal.
+  const fireSuccessOnce = useCallback(
+    (payload) => {
+      if (successCalledRef.current) {
+        console.log(
+          "[Tranzila] onSuccess already fired for this payment; ignoring duplicate trigger"
+        );
+        return;
+      }
+      successCalledRef.current = true;
+      if (onSuccess) {
+        onSuccess(payload);
+      }
+    },
+    [onSuccess]
+  );
 
   useEffect(() => {
     // Listen for messages from Tranzila iframe
@@ -144,7 +170,7 @@ export default function TranzilaPayment({
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
-            onSuccess({
+            fireSuccessOnce({
               transactionId: data.transactionId,
               amount: data.amount ? parseFloat(data.amount) : amount,
               currency: currency,
@@ -201,7 +227,7 @@ export default function TranzilaPayment({
           // Call success callback first (for order creation)
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
-            onSuccess({
+            fireSuccessOnce({
               transactionId: txId,
               amount: amount,
               currency: currency,
@@ -272,7 +298,7 @@ export default function TranzilaPayment({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [amount, currency, onSuccess, onError, onCancel, t]);
+  }, [amount, currency, onSuccess, onError, onCancel, t, fireSuccessOnce]);
 
   // Send payment data to iframe when it's ready (only once)
   useEffect(() => {
@@ -368,7 +394,7 @@ export default function TranzilaPayment({
           // The callback will handle order creation and then redirect the entire page
           if (onSuccess) {
             console.log("[Tranzila] Iframe URL check: Found transaction ID:", txId);
-            onSuccess({
+            fireSuccessOnce({
               transactionId: txId,
               amount: amt ? parseFloat(amt) : amount,
               currency: currency,
